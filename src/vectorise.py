@@ -1,7 +1,7 @@
 from typing import List
 
 
-def detect(positions: List[int], resolution=1000):
+def vectorise(positions: List[int], resolution=100):
     window_start = 0
     window_end = window_start + resolution
     for position in positions:
