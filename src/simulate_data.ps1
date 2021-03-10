@@ -4,16 +4,15 @@ param (
     [string]
     $omToolsJar,
     [Parameter(Mandatory)]
-    [Alias("RefMap")]
     [string]
     $ref,
     [switch]
     $noError
 )
 $ErrorActionPreference = "Stop"
-$fileName = (Get-Item $ref).DirectoryName + "\" + (Get-Item $ref).BaseName
+$fileName = (Get-Item $ref).DirectoryName + "\" + (Get-Item $ref).BaseName + $(If ($noError) { "_with_error" } Else { "_without_error" })
 $simulatedMap = $fileName + "_simulated.sdata"
-$simulatedMapCmap = $fileName + "_simulated.cmap"
+# $simulatedMapCmap = $fileName + "_simulated.cmap"
 $alignment = $fileName + "_alignment.omd"
 $alignmentStats = $fileName + "_alignment_stats.txt"
 
@@ -39,5 +38,5 @@ java -jar $omToolsJar OptMapDataGenerator $aptMapDataGeneratorArgs
 java -jar $omToolsJar OMBlastMapper --refmapin $ref --optmapin $simulatedMap --optresout $alignment
 ((Get-Content -path $alignment -Raw) -replace ',', '.') | Set-Content -Path $alignment
 java -jar $omToolsJar ResultStatistics --refmapin $ref --optmapin $simulatedMap --optresin $alignment --statout $alignmentStats
-java -jar $omToolsJar DataTools --optmapin $simulatedMap --optmapout $simulatedMapCmap
-((Get-Content -path $simulatedMapCmap -Raw) -replace ',', '.') | Set-Content -Path $simulatedMapCmap
+# java -jar $omToolsJar DataTools --optmapin $simulatedMap --optmapout $simulatedMapCmap
+# ((Get-Content -path $simulatedMapCmap -Raw) -replace ',', '.') | Set-Content -Path $simulatedMapCmap

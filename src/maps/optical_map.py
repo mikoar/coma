@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List, Literal
+import numpy as np
 from maps.reference_optical_map import ReferenceOpticalMap
 from processing.correlate import crossCorrelate
 
@@ -28,6 +29,10 @@ class OpticalMap(ReferenceOpticalMap):
         self.strand = strand
         self.referenceCoordinates = referenceCoordinates
 
-    def correlate(self, reference: OpticalMap | ReferenceOpticalMap):
+    def correlate(self, reference: OpticalMap | ReferenceOpticalMap, normalize=True):
         correlation = crossCorrelate(reference.sequence, self.sequence)
+        if normalize:
+            normalizingFactor = crossCorrelate(reference.sequence, [1] * len(self.sequence))
+            correlation = np.divide(correlation, normalizingFactor)
+
         return CorrelationResult(correlation, self, reference)
