@@ -135,3 +135,5 @@ pyvenv.cfg
 .vscode/
 
 share/
+
+plots/
