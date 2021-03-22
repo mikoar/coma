@@ -3,18 +3,19 @@
 from files.map_reading import readOpticalMap, readReference
 from visuals.plot import plotCorrelation
 
+
 # %load_ext autoreload
 # %autoreload 2
 # %%
 
-withError = False
+withError = True
 resolution = 10
-blurRadius = 100
+blurRadius = 30
 referenceFile = "../data/ecoli_ref.cmap"
 referenceMap = readReference(referenceFile, resolution, blurRadius)
-# %%
-moleculeId = 2
-normalize = True
+
+moleculeId = 1
+normalize = False
 sdataMapFile = f"../data/ecoli_ref_{'with' if withError else 'without'}_error_simulated.sdata"
 
 simulatedMap = readOpticalMap(sdataMapFile, resolution, blurRadius, moleculeId)
@@ -29,3 +30,7 @@ fig.savefig(f"../plots/plot_molecule{moleculeId}_res{resolution}_blur{blurRadius
 # %%
 # TODO: opis pracy: mapowanie map na genom, jeżeli się uda to więcej: składanie odczytów, korekcja błędów, napisać co będzie wynikiem pracy, co zaimplementuję, jak przetestuję, coś co pozwoli komisji ocenić złożóność pracy, nie obiecywać zbyt wiele
 # TODO: rozciąganie cząsteczek - do przemyślenia
+# TODO: potestować dokładniej: generacja
+# TODO: fandom, saphyr: skalowanie
+
+# %%

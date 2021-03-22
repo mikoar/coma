@@ -7,7 +7,10 @@ def vectoriseSegments(segments: Iterable[int], resolution=100):
     return vectorise(positions, resolution)
 
 
-def vectorise(positions: Iterable[int], resolution=100):
+def vectorise(positions: Iterable[int], resolution: int = 100):
+    if not isinstance(resolution, int) or resolution < 1:
+        raise ValueError(resolution)
+
     window_start = 0
     window_end = window_start + resolution
     for position in positions:
@@ -24,6 +27,9 @@ def vectorise(positions: Iterable[int], resolution=100):
 
 
 def blur(vector: List[int], radius: int):
+    if not isinstance(radius, int) or radius < 0:
+        raise ValueError(radius)
+
     shifts = range(1, radius + 1)
     shiftedVectors = [vector]
     for shift in shifts:
