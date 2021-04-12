@@ -10,13 +10,13 @@ param (
     $noError
 )
 $ErrorActionPreference = "Stop"
-$fileName = (Get-Item $ref).DirectoryName + "\" + (Get-Item $ref).BaseName + $(If ($noError) { "_with_error" } Else { "_without_error" })
+$fileName = (Get-Item $ref).DirectoryName + "\" + (Get-Item $ref).BaseName + $(If ($noError) { "_without_error" } Else { "_with_error" })
 $simulatedMap = $fileName + "_simulated.sdata"
 # $simulatedMapCmap = $fileName + "_simulated.cmap"
 $alignment = $fileName + "_alignment.omd"
 $alignmentStats = $fileName + "_alignment_stats.txt"
 
-$aptMapDataGeneratorArgs = @("--refmapin", $ref, "--optmapout", $simulatedMap)
+$aptMapDataGeneratorArgs = @("--refmapin", $ref, "--optmapout", $simulatedMap, "--seed", "123")
 if ($noError) {
     $aptMapDataGeneratorArgs += "--rsln"
     $aptMapDataGeneratorArgs += "0"

@@ -31,8 +31,8 @@ class OpticalMap(ReferenceOpticalMap):
 
     def correlate(self, reference: OpticalMap | ReferenceOpticalMap, normalize=True):
         correlation = crossCorrelate(reference.sequence, self.sequence)
-        if normalize:
 
+        if normalize:
             normalizingFactor = crossCorrelate(reference.sequence, [1] * len(self.sequence))
             correlation = np.divide(correlation, normalizingFactor)
 
