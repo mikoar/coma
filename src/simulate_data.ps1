@@ -33,6 +33,28 @@ if ($noError) {
     $aptMapDataGeneratorArgs += "--fnr"
     $aptMapDataGeneratorArgs += "0"
 }
+else {
+    # $aptMapDataGeneratorArgs += "--rsln"
+    # $aptMapDataGeneratorArgs += "0"
+    # $aptMapDataGeneratorArgs += "--meas"
+    # $aptMapDataGeneratorArgs += "0"
+    $aptMapDataGeneratorArgs += "--fsize"
+    $aptMapDataGeneratorArgs += "200000"
+    $aptMapDataGeneratorArgs += "--fubound"
+    $aptMapDataGeneratorArgs += "300000"
+    $aptMapDataGeneratorArgs += "--flbound"
+    $aptMapDataGeneratorArgs += "120000"
+    $aptMapDataGeneratorArgs += "--scalesd"
+    $aptMapDataGeneratorArgs += "0.04"
+    $aptMapDataGeneratorArgs += "--subound"
+    $aptMapDataGeneratorArgs += "1.1"
+    $aptMapDataGeneratorArgs += "--slbound"
+    $aptMapDataGeneratorArgs += "0.9"
+    # $aptMapDataGeneratorArgs += "--fpr"
+    # $aptMapDataGeneratorArgs += "0.05"
+    $aptMapDataGeneratorArgs += "--fnr"
+    $aptMapDataGeneratorArgs += "0.12"
+}
 # java -jar OMTools.jar FastaToOM --fastain ../ecoli.fasta --enzyme BspQI --refmapout ../ecoli.cmap
 java -jar $omToolsJar OptMapDataGenerator $aptMapDataGeneratorArgs
 java -jar $omToolsJar OMBlastMapper --refmapin $ref --optmapin $simulatedMap --optresout $alignment

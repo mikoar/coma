@@ -22,7 +22,7 @@ def __addExpectedStartStopRect(ax, result: CorrelationResult):
             verticalalignment='top')
 
 
-def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=False):
+def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=True):
     fig = pyplot.figure(figsize=(40, 5))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
