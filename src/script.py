@@ -6,7 +6,7 @@ from matplotlib import rcParams, cycler
 from visuals.plot import plotCorrelation
 from collections import Counter
 
-rcParams["lines.linewidth"] = 3
+rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 # %load_ext autoreload
 # %autoreload 2
@@ -36,8 +36,10 @@ for moleculeId in range(1, 5):
 
 
 # %%
-# TODO: rozciąganie cząsteczek - do przemyślenia
-# TODO: potestować dokładniej: generacja
-# TODO: fandom, saphyr: skalowanie
-
+# puścić na danych z fandom
+# puścić fandom lub inne, wziąć mapy z dobrym wynikiem
+# zobaczyć czy trzeba preprocessing, poprawiać skalowanie
+# znaleźć ładny pipeline, może coś z fandom, albo coś gdzie aligner będzie grał dużą rolę
+# zobaczyć czy da sie ukraść dynapic programming np z fandom do końcowego alignmentu
+# spróbować więcej zmniejszenia rozdzielczości, mniej rozmycia
 # %%
