@@ -5,13 +5,14 @@ from processing.correlate import crossCorrelate
 
 
 class ReferenceOpticalMap:
-    def __init__(self, sequence:  List[int]) -> None:
+    def __init__(self, sequence:  List[int], positions:  List[int]) -> None:
         self.sequence = sequence
+        self.positions = positions
 
 
 class OpticalMap(ReferenceOpticalMap):
-    def __init__(self, moleculeId: int, sequence: List[int]) -> None:
-        super().__init__(sequence)
+    def __init__(self, moleculeId: int, sequence: List[int], positions:  List[int]) -> None:
+        super().__init__(sequence, positions)
         self.moleculeId = moleculeId
 
     def reverse(self):

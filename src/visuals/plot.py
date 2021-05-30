@@ -29,6 +29,8 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10 ** 7))
 
     ax.set_xlim(0, len(result.correlation) * resolution)
+
+    # ax.set_xlim(72484614, 80342046)
     # __addExpectedStartStopRect(ax, result)
 
     ax.plot(range(0, len(result.correlation) * resolution, resolution), result.correlation)

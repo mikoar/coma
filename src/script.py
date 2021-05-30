@@ -15,16 +15,25 @@ rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 # %%
 
-resolution = 10
-blurRadius = 30
-normalize = True
+
+def print1To0Ratio(sequence):
+    counts = Counter(sequence)
+    print(f"1: {counts[1]}, 0: {counts[0]}")
+    print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
+
+
+resolution = 300
+blurRadius = 1
+normalize = False
 sequenceGenerator = SequenceGenerator(resolution, blurRadius)
 reader = CmapReader(sequenceGenerator)
 referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
-queryFile = "../data/EXP_REFINEFINAL1.cmap"
-moleculeIds = [12451, ]  # [11, 12, 21, 22, 31, 32]
-
 reference = reader.readReference(referenceFile)
+print1To0Ratio(reference.sequence)
+
+queryFile = "../data/EXP_REFINEFINAL1.cmap"
+moleculeIds = [6150, ]  # [11, 12, 21, 22, 31, 32]
+
 queries = reader.readQueryMaps(queryFile, moleculeIds)
 
 query: OpticalMap
@@ -35,9 +44,10 @@ for query in queries:
     fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}_normalize_{normalize}.svg",
                 bbox_inches='tight', pad_inches=0)
 
-    counts = Counter(query.sequence)
-    print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
+    print1To0Ratio(query.sequence)
 
+
+# %%
 
 # %%
 # puścić na danych z fandom
@@ -61,4 +71,4 @@ for query in queries:
 # maps = pandas.read_csv(
 #     filePath, comment="#", delimiter="\t", names=__getCmapColumnNames(filePath))
 
-# # %%
+# plt.hist(reference.positions, bins=int(len(reference.positions)/1000))
