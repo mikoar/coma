@@ -22,14 +22,14 @@ def __addExpectedStartStopRect(ax, result: CorrelationResult):
             verticalalignment='top')
 
 
-def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=True):
+def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=False):
     fig = pyplot.figure(figsize=(40, 5))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(100000))
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(10 ** 7))
 
     ax.set_xlim(0, len(result.correlation) * resolution)
-    __addExpectedStartStopRect(ax, result)
+    # __addExpectedStartStopRect(ax, result)
 
     ax.plot(range(0, len(result.correlation) * resolution, resolution), result.correlation)
 

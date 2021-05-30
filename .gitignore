@@ -136,4 +136,5 @@ pyvenv.cfg
 
 share/
 
-plots/
+plots*/
+.local_data/

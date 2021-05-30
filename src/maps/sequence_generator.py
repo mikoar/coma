@@ -2,7 +2,7 @@
 from processing.vectorise import blur, vectorise, vectoriseSegments
 
 
-class SequenceGenerator(object):
+class SequenceGenerator:
     def __init__(self, resolution: int, blurRadius: int) -> None:
         self.resolution = resolution
         self.blurRadius = blurRadius

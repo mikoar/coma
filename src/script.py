@@ -1,38 +1,42 @@
 # %%
 
+import re
+import itertools
+import pandas
 from matplotlib import pyplot as plt
-from files.map_reading import readOpticalMap, readReference
 from matplotlib import rcParams, cycler
+from files.cmap_reader import CmapReader
+from maps.optical_map import OpticalMap
+from maps.sequence_generator import SequenceGenerator
 from visuals.plot import plotCorrelation
 from collections import Counter
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
-# %load_ext autoreload
-# %autoreload 2
 # %%
 
-withError = True
 resolution = 10
-blurRadius = 100
-referenceFile = "../data/ecoli_ref.cmap"
-referenceMap = readReference(referenceFile, resolution, blurRadius)
-# %%
-for moleculeId in range(1, 5):
-    normalize = True
-    sdataMapFile = f"../data/ecoli_ref_{'with' if withError else 'without'}_error_simulated.sdata"
+blurRadius = 30
+normalize = True
+sequenceGenerator = SequenceGenerator(resolution, blurRadius)
+reader = CmapReader(sequenceGenerator)
+referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
+queryFile = "../data/EXP_REFINEFINAL1.cmap"
+moleculeIds = [12451, ]  # [11, 12, 21, 22, 31, 32]
 
-    simulatedMap = readOpticalMap(sdataMapFile, resolution, blurRadius, moleculeId)
+reference = reader.readReference(referenceFile)
+queries = reader.readQueryMaps(queryFile, moleculeIds)
 
-    singleVsRef = simulatedMap.correlate(referenceMap, normalize)
-
-    counts = Counter(simulatedMap.sequence)
-    print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
-
-    fig = plotCorrelation(singleVsRef, resolution)
-    plt.axis('off')
-    fig.savefig(f"../plots/plot_molecule{moleculeId}_res{resolution}_blur{blurRadius}_errors_{withError}_normalize_{normalize}.png",
+query: OpticalMap
+for query in queries:
+    # query.reverse()
+    result = query.correlate(reference, normalize)
+    fig = plotCorrelation(result, resolution)
+    fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}_normalize_{normalize}.svg",
                 bbox_inches='tight', pad_inches=0)
+
+    counts = Counter(query.sequence)
+    print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
 
 
 # %%
@@ -43,3 +47,18 @@ for moleculeId in range(1, 5):
 # zobaczyć czy da sie ukraść dynapic programming np z fandom do końcowego alignmentu
 # spróbować więcej zmniejszenia rozdzielczości, mniej rozmycia
 # %%
+
+
+# def __getCmapColumnNames(filePath):
+#     with open(filePath) as file:
+#         gen = itertools.dropwhile(lambda line: not line.startswith('#h'), file)
+#         header_line = list(itertools.islice(gen, 1))[0].strip()
+#         names = re.split('\s+', header_line)[1:]
+#     return names
+
+
+# filePath = "../data/EXP_REFINEFINAL1.cmap"
+# maps = pandas.read_csv(
+#     filePath, comment="#", delimiter="\t", names=__getCmapColumnNames(filePath))
+
+# # %%
