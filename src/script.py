@@ -18,21 +18,21 @@ rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 def print1To0Ratio(sequence):
     counts = Counter(sequence)
-    print(f"1: {counts[1]}, 0: {counts[0]}")
+    print(f"1: {counts[1]:,}, 0: {counts[0]:,}")
     print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
 
 
-resolution = 300
+resolution = 50
 blurRadius = 1
 normalize = False
 sequenceGenerator = SequenceGenerator(resolution, blurRadius)
 reader = CmapReader(sequenceGenerator)
 referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
-reference = reader.readReference(referenceFile)
+reference = reader.readQueryMaps(referenceFile, [1])[0]
 print1To0Ratio(reference.sequence)
 
 queryFile = "../data/EXP_REFINEFINAL1.cmap"
-moleculeIds = [6150, ]  # [11, 12, 21, 22, 31, 32]
+moleculeIds = [1051, ]  # [11, 12, 21, 22, 31, 32]
 
 queries = reader.readQueryMaps(queryFile, moleculeIds)
 
@@ -40,7 +40,7 @@ query: OpticalMap
 for query in queries:
     # query.reverse()
     result = query.correlate(reference, normalize)
-    fig = plotCorrelation(result, resolution)
+    fig = plotCorrelation(result, resolution, False, (46997026, 51753149))
     fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}_normalize_{normalize}.svg",
                 bbox_inches='tight', pad_inches=0)
 
@@ -71,4 +71,7 @@ for query in queries:
 # maps = pandas.read_csv(
 #     filePath, comment="#", delimiter="\t", names=__getCmapColumnNames(filePath))
 
-# plt.hist(reference.positions, bins=int(len(reference.positions)/1000))
+# %%
+plt.hist(reference.positions, bins=int(reference.positions[-1]/100_000))
+
+# %%
