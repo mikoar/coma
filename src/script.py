@@ -23,8 +23,8 @@ def print1To0Ratio(sequence):
 
 
 resolution = 50
-blurRadius = 1
-normalize = False
+blurRadius = 2
+normalize = True
 sequenceGenerator = SequenceGenerator(resolution, blurRadius)
 reader = CmapReader(sequenceGenerator)
 referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
@@ -32,15 +32,15 @@ reference = reader.readQueryMaps(referenceFile, [1])[0]
 print1To0Ratio(reference.sequence)
 
 queryFile = "../data/EXP_REFINEFINAL1.cmap"
-moleculeIds = [1051, ]  # [11, 12, 21, 22, 31, 32]
+moleculeIds = [171, ]  # [11, 12, 21, 22, 31, 32]
 
 queries = reader.readQueryMaps(queryFile, moleculeIds)
 
 query: OpticalMap
 for query in queries:
-    # query.reverse()
+    query.reverse()
     result = query.correlate(reference, normalize)
-    fig = plotCorrelation(result, resolution, False, (46997026, 51753149))
+    fig = plotCorrelation(result, resolution, False, (51753149, 60405486))
     fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}_normalize_{normalize}.svg",
                 bbox_inches='tight', pad_inches=0)
 
@@ -56,6 +56,11 @@ for query in queries:
 # znaleźć ładny pipeline, może coś z fandom, albo coś gdzie aligner będzie grał dużą rolę
 # zobaczyć czy da sie ukraść dynapic programming np z fandom do końcowego alignmentu
 # spróbować więcej zmniejszenia rozdzielczości, mniej rozmycia
+
+# policzyć istotność piku (może podzielić przez 2 największą wartość),
+# na podstawie tego dobrać optymalne resolution i blur
+# sprawdzić czy ze scaling factor coś można poprawyć (jak w FANDOM)
+
 # %%
 
 

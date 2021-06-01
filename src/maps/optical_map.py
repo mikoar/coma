@@ -23,7 +23,7 @@ class OpticalMap(ReferenceOpticalMap):
 
         if normalize:
             normalizingFactor = crossCorrelate(reference.sequence, [1] * len(self.sequence))
-            correlation = np.divide(correlation, normalizingFactor)
+            correlation = np.divide(correlation, normalizingFactor + sum(self.sequence))
 
         return CorrelationResult(correlation, self, reference)
 
