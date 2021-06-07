@@ -33,7 +33,9 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
         __addExpectedStartStopRect(ax, expectedRange, result)
 
     lenght = len(result.correlation) * resolution
-    ax.plot(range(0, lenght, resolution), result.correlation)
+    x = range(0, lenght, resolution)
+    ax.plot(x, result.correlation)
+    ax.plot(result.peaks * resolution, result.correlation[result.peaks], "x", markersize=24, markeredgewidth=4)
 
     if plotReference:
         maxValue = max(result.correlation)

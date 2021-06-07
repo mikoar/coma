@@ -1,26 +1,26 @@
 
 import pytest
 
-from src.processing.vectorise import blur, vectorise, vectoriseSegments
+from src.processing.vectorise import blur, vectorisePositions, vectoriseSegments
 
 
 def test_vectorise_simple():
     seq = [2, 5, 8]
-    result = list(vectorise(seq, 1))
+    result = list(vectorisePositions(seq, 1))
 
     assert result == [0, 0, 1, 0, 0, 1, 0, 0, 1]
 
 
 def test_vectorise_in_the_middle_of_window():
     seq = [5, 15, 35]
-    result = list(vectorise(seq, 10))
+    result = list(vectorisePositions(seq, 10))
 
     assert result == [1, 1, 0, 1]
 
 
 def test_vectorise_clustered():
     seq = [10, 11, 12, 13, 14, 21]
-    result = list(vectorise(seq, 5))
+    result = list(vectorisePositions(seq, 5))
 
     assert result == [0, 0, 1, 0, 1]
 

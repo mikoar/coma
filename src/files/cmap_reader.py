@@ -1,7 +1,7 @@
 import itertools
 import pandas
 import re
-from typing import List
+from typing import List, Callable
 
 from pandas.core.frame import DataFrame
 from maps.sequence_generator import SequenceGenerator
@@ -31,32 +31,32 @@ class CmapReader:
         self.sequenceGenerator = sequenceGenerator
         self.reader = BionanoFileReader()
 
-    def readQueryMaps(self, filePath: str,  moleculeIds: List[int] = []):
+    def readQueries(self, filePath: str,  moleculeIds: List[int] = []):
+        return self.__read(OpticalMap, filePath, moleculeIds)
+
+    def readReference(self, filePath: str, chromosome: int = 1):
+        return self.__read(ReferenceOpticalMap, filePath, [chromosome])[0]
+
+    def __read(self, mapConstructor: Callable, filePath, moleculeIds):
         maps = self.reader.readFile(filePath, ["CMapId", "Position"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]
 
-        opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup, self.sequenceGenerator)
+        opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup, self.sequenceGenerator, mapConstructor)
         return opticalMaps.tolist()
 
-    def readReference(self, filePath: str):
-        maps = self.reader.readFile(filePath, ["CMapId", "Position"])
-        positions = maps["Position"].sort_values().tolist()
-        sequence = self.sequenceGenerator.positionsToSequence(positions)
-        return ReferenceOpticalMap(sequence, positions)
-
     @staticmethod
-    def __parseCmapRowsGroup(group,  sequenceGenerator: SequenceGenerator):
+    def __parseCmapRowsGroup(group,  sequenceGenerator: SequenceGenerator, mapConstructor: Callable):
         moleculeId = group["CMapId"].iloc[0]
         positions = group["Position"].sort_values().tolist()
         sequence = sequenceGenerator.positionsToSequence(positions)
-        return OpticalMap(moleculeId, sequence, positions)
+        return mapConstructor(moleculeId, sequence, positions, sequenceGenerator.resolution)
 
 
-class AlignmentReader:
-    def __init__(self) -> None:
-        self.reader = BionanoFileReader()
+# class AlignmentReader:
+#     def __init__(self) -> None:
+#         self.reader = BionanoFileReader()
 
-    def readReferenceAlignment(self, filePath: str):
-        data = self.reader.readFile(filePath, ["QryContigID", "RefStartPos", "RefEndPos", "Orientation"])
+#     def readReferenceAlignment(self, filePath: str):
+#         data = self.reader.readFile(filePath, ["QryContigID", "RefStartPos", "RefEndPos", "Orientation"])

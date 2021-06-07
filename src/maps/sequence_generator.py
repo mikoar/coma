@@ -1,5 +1,4 @@
-
-from processing.vectorise import blur, vectorise, vectoriseSegments
+from processing.vectorise import blur, vectorisePositions, vectoriseSegments
 
 
 class SequenceGenerator:
@@ -12,5 +11,5 @@ class SequenceGenerator:
         return blur(vector, self.blurRadius)
 
     def positionsToSequence(self, positions):
-        vector = list(vectorise(positions, self.resolution))
+        vector = list(vectorisePositions(positions, self.resolution))
         return blur(vector, self.blurRadius)

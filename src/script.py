@@ -4,7 +4,7 @@ import re
 import itertools
 import pandas
 from matplotlib import pyplot as plt
-from matplotlib import rcParams, cycler
+from matplotlib import rcParams, cycler  # type: ignore
 from files.cmap_reader import CmapReader
 from maps.optical_map import OpticalMap
 from maps.sequence_generator import SequenceGenerator
@@ -28,13 +28,13 @@ normalize = True
 sequenceGenerator = SequenceGenerator(resolution, blurRadius)
 reader = CmapReader(sequenceGenerator)
 referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
-reference = reader.readQueryMaps(referenceFile, [1])[0]
+reference = reader.readReference(referenceFile, 1)
 print1To0Ratio(reference.sequence)
 
 queryFile = "../data/EXP_REFINEFINAL1.cmap"
 moleculeIds = [171, ]  # [11, 12, 21, 22, 31, 32]
 
-queries = reader.readQueryMaps(queryFile, moleculeIds)
+queries = reader.readQueries(queryFile, moleculeIds)
 
 query: OpticalMap
 for query in queries:

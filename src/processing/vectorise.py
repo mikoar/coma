@@ -4,10 +4,10 @@ from itertools import accumulate, zip_longest
 
 def vectoriseSegments(segments: Iterable[int], resolution=100):
     positions = list(accumulate(segments, lambda sumOfSegments, segment: sumOfSegments + segment))
-    return vectorise(positions, resolution)
+    return vectorisePositions(positions, resolution)
 
 
-def vectorise(positions: Iterable[int], resolution: int = 100):
+def vectorisePositions(positions: Iterable[int], resolution: int = 100):
     if not isinstance(resolution, int) or resolution < 1:
         raise ValueError(resolution)
 
