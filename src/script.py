@@ -71,16 +71,11 @@ for blur in [0, 1, 2, 3, 4]:
     result = pipeline(43, blur, True)
     print(result.quality.score)
     print(len(result.quality.peaks))
-# puścić na danych z fandom
-# puścić fandom lub inne, wziąć mapy z dobrym wynikiem
-# zobaczyć czy trzeba preprocessing, poprawiać skalowanie
-# znaleźć ładny pipeline, może coś z fandom, albo coś gdzie aligner będzie grał dużą rolę
+
 # zobaczyć czy da sie ukraść dynapic programming np z fandom do końcowego alignmentu
-# spróbować więcej zmniejszenia rozdzielczości, mniej rozmycia
 
 # policzyć istotność piku (może podzielić przez 2 największą wartość),
 # na podstawie tego dobrać optymalne resolution i blur
-# sprawdzić czy ze scaling factor coś można poprawyć (jak w FANDOM)
 
 # %%
 
@@ -96,8 +91,3 @@ for blur in [0, 1, 2, 3, 4]:
 # filePath = "../data/EXP_REFINEFINAL1.cmap"
 # maps = pandas.read_csv(
 #     filePath, comment="#", delimiter="\t", names=__getCmapColumnNames(filePath))
-
-# %%
-plt.hist(reference.positions, bins=int(reference.positions[-1]/100_000))
-
-# %%
