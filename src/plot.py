@@ -1,9 +1,8 @@
 import matplotlib.patches as patches
 from matplotlib import pyplot
 import matplotlib.ticker as ticker
-import numpy as np
-
-from maps.optical_map import CorrelationResult
+from matplotlib.ticker import FuncFormatter
+from optical_map import CorrelationResult
 
 
 def __addExpectedStartStopRect(ax, expectedRange, result: CorrelationResult):
@@ -26,6 +25,7 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10 ** 7))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
 
     ax.set_xlim(0, len(result.correlation) * resolution)
 
@@ -35,7 +35,7 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
     lenght = len(result.correlation) * resolution
     x = range(0, lenght, resolution)
     ax.plot(x, result.correlation)
-    ax.plot(result.peaks * resolution, result.correlation[result.peaks], "x", markersize=24, markeredgewidth=4)
+    ax.plot(result.quality.peaks * resolution, result.correlation[result.quality.peaks], "x", markersize=24, markeredgewidth=4)
 
     if plotReference:
         maxValue = max(result.correlation)

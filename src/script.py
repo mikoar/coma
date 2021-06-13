@@ -1,19 +1,22 @@
 # %%
 
+from os import pipe
 import re
 import itertools
+from typing import List
+from numpy.lib.function_base import disp
 import pandas
 from matplotlib import pyplot as plt
 from matplotlib import rcParams, cycler  # type: ignore
-from files.cmap_reader import CmapReader
-from maps.optical_map import OpticalMap
-from maps.sequence_generator import SequenceGenerator
-from visuals.plot import plotCorrelation
+from cmap_reader import CmapReader
+from optical_map import OpticalMap
+from sequence_generator import SequenceGenerator
+from plot import plotCorrelation
 from collections import Counter
+from scipy.optimize import minimize_scalar, minimize
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
-# %%
 
 
 def print1To0Ratio(sequence):
@@ -21,35 +24,53 @@ def print1To0Ratio(sequence):
     print(f"1: {counts[1]:,}, 0: {counts[0]:,}")
     print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
 
+# %%
 
-resolution = 50
-blurRadius = 2
-normalize = True
-sequenceGenerator = SequenceGenerator(resolution, blurRadius)
-reader = CmapReader(sequenceGenerator)
-referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
-reference = reader.readReference(referenceFile, 1)
-print1To0Ratio(reference.sequence)
 
-queryFile = "../data/EXP_REFINEFINAL1.cmap"
-moleculeIds = [171, ]  # [11, 12, 21, 22, 31, 32]
+def pipeline(resolution=43, blurRadius=2, plot=False):
+    resolution = round(resolution)
+    blurRadius = round(blurRadius)
+    sequenceGenerator = SequenceGenerator(resolution, blurRadius)
+    reader = CmapReader(sequenceGenerator)
+    referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
+    reference = reader.readReference(referenceFile, 1)
 
-queries = reader.readQueries(queryFile, moleculeIds)
+    queryFile = "../data/EXP_REFINEFINAL1.cmap"
+    moleculeIds = [171, ]  # [11, 12, 21, 22, 31, 32]
 
-query: OpticalMap
-for query in queries:
+    queries = reader.readQueries(queryFile, moleculeIds)
+    query: OpticalMap = queries[0]
     query.reverse()
-    result = query.correlate(reference, normalize)
-    fig = plotCorrelation(result, resolution, False, (51753149, 60405486))
-    fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}_normalize_{normalize}.svg",
-                bbox_inches='tight', pad_inches=0)
+    result = query.correlate(reference)
 
-    print1To0Ratio(query.sequence)
+    if plot:
+        fig = plotCorrelation(result, resolution, False, (51753149, 60405486))
+        fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}.svg",
+                    bbox_inches='tight', pad_inches=0)
+
+    print(f"res: {resolution}, blur:{blurRadius}, score: {result.quality.score}")
+    return result
+    # return result.quality.reverseScore
 
 
 # %%
+minimize_scalar(pipeline, bounds=(25, 60), method='bounded', options={"disp": True, "maxiter": 25, "xatol": 1})
+# %%
+minimize_scalar(pipeline, bounds=(0, 10), method='bounded', options={"disp": True, "maxiter": 25, "xatol": 1})
 
 # %%
+# minimize(pipeline, [40, 5], method="Powell", bounds=((35, 80), (0, 50)), options={'xtol': 0.01})
+# %%
+for res in [43, 20, 60]:
+    result = pipeline(res, plot=True)
+    print(result.quality.score)
+    print(len(result.quality.peaks))
+
+# %%
+for blur in [0, 1, 2, 3, 4]:
+    result = pipeline(43, blur, True)
+    print(result.quality.score)
+    print(len(result.quality.peaks))
 # puścić na danych z fandom
 # puścić fandom lub inne, wziąć mapy z dobrym wynikiem
 # zobaczyć czy trzeba preprocessing, poprawiać skalowanie

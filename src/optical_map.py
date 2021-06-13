@@ -4,7 +4,8 @@ import numpy as np
 
 from typing import Iterable
 from scipy.signal import correlate
-from scipy.signal import find_peaks
+
+from quality import Quality
 
 
 class ReferenceOpticalMap:
@@ -36,17 +37,18 @@ class OpticalMap:
 
         correlation /= np.max(correlation)
 
-        peaks, peakProperties = find_peaks(correlation, width=(0, len(self.sequence)), height=0.7, distance=(10 ** 5 / self.resolution))
-        return CorrelationResult(correlation, self, reference, peaks, peakProperties)
+        return CorrelationResult(correlation, self, reference)
 
     def __getCorrelation(self, reference: Iterable[int], query: Iterable[int]):
         return correlate(reference, query, mode='same')
 
 
 class CorrelationResult:
-    def __init__(self, correlation, query: OpticalMap, reference: ReferenceOpticalMap, peaks: List[int], peakProperties) -> None:
+    def __init__(self, correlation: List[float], query: OpticalMap, reference: ReferenceOpticalMap) -> None:
         self.correlation = correlation
         self.query = query
         self.reference = reference
-        self.peaks = peaks
-        self.peakProperties = peakProperties
+
+    @property
+    def quality(self):
+        return Quality(self)

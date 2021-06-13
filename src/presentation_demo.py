@@ -2,8 +2,8 @@
 import matplotlib.ticker as plticker
 from matplotlib import pyplot as plt
 from matplotlib import rcParams, cycler
-from files.map_reading import readReference
-from processing.correlate import crossCorrelate
+from map_reading import readReference
+from correlate import crossCorrelate
 
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c", "k", "c"])
 

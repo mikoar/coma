@@ -4,8 +4,8 @@ import re
 from typing import List, Callable
 
 from pandas.core.frame import DataFrame
-from maps.sequence_generator import SequenceGenerator
-from maps.optical_map import OpticalMap, ReferenceOpticalMap
+from sequence_generator import SequenceGenerator
+from optical_map import OpticalMap, ReferenceOpticalMap
 
 
 class BionanoFileReader:
