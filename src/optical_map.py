@@ -1,11 +1,11 @@
 from __future__ import annotations
+from functools import cached_property
+from scipy.signal import find_peaks
 from typing import List
 import numpy as np
 
 from typing import Iterable
 from scipy.signal import correlate
-
-from quality import Quality
 
 
 class ReferenceOpticalMap:
@@ -25,10 +25,10 @@ class OpticalMap:
         self.resolution = resolution
         self.reverseStrand = False  # TODO
 
-    def reverse(self):
-        self.sequence.reverse()
+    def correlate(self, reference: ReferenceOpticalMap, reverse=False, flatten=True):
+        if reverse:
+            self.__reverse()
 
-    def correlate(self, reference: ReferenceOpticalMap, flatten=True):
         correlation = self.__getCorrelation(reference.sequence, self.sequence)
 
         if flatten:
@@ -38,6 +38,9 @@ class OpticalMap:
         correlation /= np.max(correlation)
 
         return CorrelationResult(correlation, self, reference)
+
+    def __reverse(self):
+        self.sequence.reverse()
 
     def __getCorrelation(self, reference: Iterable[int], query: Iterable[int]):
         return correlate(reference, query, mode='same')
@@ -49,6 +52,37 @@ class CorrelationResult:
         self.query = query
         self.reference = reference
 
+    @cached_property
+    def peaks(self):
+        return Peaks(self)
+
+
+class Peaks:
+    def __init__(self, correlationResult: CorrelationResult) -> None:
+        self.correlationResult = correlationResult
+        self.peaks, self.peakProperties = find_peaks(correlationResult.correlation,
+                                                     height=0.2,
+                                                     prominence=0.2,
+                                                     distance=(10 ** 7 / correlationResult.query.resolution))
+        self.score = self.__getScore()
+        self.reverseScore = 1 / self.score if self.score else 1
+        self.max = self.__getMax()
+
+    def __getScore(self):
+
+        heights = self.__peakHeights
+        if len(heights) < 2:
+            return 0
+
+        twoHighest = sorted(heights, reverse=True)[:2]
+        return twoHighest[0] - twoHighest[1]
+
+    def __getMax(self):
+        if not self.peaks.any():
+            return 0
+
+        return self.peaks[np.argmax(self.__peakHeights)]
+
     @property
-    def quality(self):
-        return Quality(self)
+    def __peakHeights(self) -> List[float]:
+        return self.peakProperties["peak_heights"]

@@ -40,7 +40,7 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
 
     queries = reader.readQueries(queryFile, moleculeIds)
     query: OpticalMap = queries[0]
-    query.reverse()
+    query.__reverse()
     result = query.correlate(reference)
 
     if plot:
@@ -48,7 +48,7 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
         fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}.svg",
                     bbox_inches='tight', pad_inches=0)
 
-    print(f"res: {resolution}, blur:{blurRadius}, score: {result.quality.score}")
+    print(f"res: {resolution}, blur:{blurRadius}, score: {result.peaks.score}")
     return result
     # return result.quality.reverseScore
 
@@ -63,14 +63,14 @@ minimize_scalar(pipeline, bounds=(0, 10), method='bounded', options={"disp": Tru
 # %%
 for res in [43, 20, 60]:
     result = pipeline(res, plot=True)
-    print(result.quality.score)
-    print(len(result.quality.peaks))
+    print(result.peaks.score)
+    print(len(result.peaks.peaks))
 
 # %%
 for blur in [0, 1, 2, 3, 4]:
     result = pipeline(43, blur, True)
-    print(result.quality.score)
-    print(len(result.quality.peaks))
+    print(result.peaks.score)
+    print(len(result.peaks.peaks))
 
 # zobaczyć czy da sie ukraść dynapic programming np z fandom do końcowego alignmentu
 

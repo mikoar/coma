@@ -2,8 +2,9 @@ import itertools
 import pandas
 import re
 from typing import List, Callable
-
+from functools import cache
 from pandas.core.frame import DataFrame
+from pandas.core.series import Series
 from sequence_generator import SequenceGenerator
 from optical_map import OpticalMap, ReferenceOpticalMap
 
@@ -31,13 +32,17 @@ class CmapReader:
         self.sequenceGenerator = sequenceGenerator
         self.reader = BionanoFileReader()
 
-    def readQueries(self, filePath: str,  moleculeIds: List[int] = []):
+    def readQueries(self, filePath: str,  moleculeIds: List[int] = []) -> List[OpticalMap]:
         return self.__read(OpticalMap, filePath, moleculeIds)
 
+    def readQuery(self, filePath: str,  moleculeId: int) -> OpticalMap:
+        return self.__read(OpticalMap, filePath, [moleculeId])[0]
+
+    @cache
     def readReference(self, filePath: str, chromosome: int = 1):
         return self.__read(ReferenceOpticalMap, filePath, [chromosome])[0]
 
-    def __read(self, mapConstructor: Callable, filePath, moleculeIds):
+    def __read(self, mapConstructor: Callable, filePath, moleculeIds=None):
         maps = self.reader.readFile(filePath, ["CMapId", "Position"])
 
         if moleculeIds:
@@ -54,9 +59,27 @@ class CmapReader:
         return mapConstructor(moleculeId, sequence, positions, sequenceGenerator.resolution)
 
 
-# class AlignmentReader:
-#     def __init__(self) -> None:
-#         self.reader = BionanoFileReader()
+class Alignment:
+    def __init__(self, queryId, refId, refStart, refEnd, orientation, confidence) -> None:
+        self.queryId = queryId
+        self.chromosome = refId
+        self.refStartPosition = int(refStart)
+        self.refEndPosition = int(refEnd)
+        self.reverseStrand = orientation == "-"
+        self.confidence = confidence
 
-#     def readReferenceAlignment(self, filePath: str):
-#         data = self.reader.readFile(filePath, ["QryContigID", "RefStartPos", "RefEndPos", "Orientation"])
+
+class AlignmentReader:
+    def __init__(self) -> None:
+        self.reader = BionanoFileReader()
+
+    def readAlignments(self, filePath: str) -> List[Alignment]:
+        alignments = self.reader.readFile(filePath,
+                                          ["QryContigID", "RefContigID", "RefStartPos",
+                                           "RefEndPos", "Orientation", "Confidence"])
+        return alignments.apply(self.__parseRow, axis=1).tolist()
+
+    @staticmethod
+    def __parseRow(row: Series):
+        return Alignment(row["QryContigID"], row["RefContigID"], row["RefStartPos"],
+                         row["RefEndPos"], row["Orientation"], row["Confidence"])

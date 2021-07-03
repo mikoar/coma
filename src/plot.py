@@ -39,7 +39,7 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
     lenght = len(result.correlation) * resolution
     x = range(0, lenght, resolution)
     ax.plot(x, result.correlation)
-    ax.plot(result.quality.peaks * resolution, result.correlation[result.quality.peaks], "x", markersize=24, markeredgewidth=4)
+    ax.plot(result.peaks.peaks * resolution, result.correlation[result.peaks.peaks], "x", markersize=24, markeredgewidth=4)
 
     if plotReference:
         maxValue = max(result.correlation)
