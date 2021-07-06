@@ -3,6 +3,7 @@ import matplotlib.patches as patches
 from matplotlib import pyplot
 import matplotlib.ticker as ticker
 from matplotlib.ticker import FuncFormatter
+import numpy as np
 from optical_map import CorrelationResult
 
 
@@ -39,7 +40,8 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
     lenght = len(result.correlation) * resolution
     x = range(0, lenght, resolution)
     ax.plot(x, result.correlation)
-    ax.plot(result.peaks.peaks * resolution, result.correlation[result.peaks.peaks], "x", markersize=24, markeredgewidth=4)
+
+    __plotPeaks(result, resolution, ax)
 
     if plotReference:
         maxValue = max(result.correlation)
@@ -47,3 +49,10 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
         # ax.fill_between(range(0, len(result.correlation) * resolution, resolution), 0, np.array(result.reference.sequence) * maxValue, alpha=0.2)
 
     return fig
+
+
+def __plotPeaks(result, resolution, ax):
+    maxPeak = result.peaks.max
+    peaksExceptMax = np.array([peak for peak in result.peaks.peaks if peak != maxPeak], dtype=np.int)
+    ax.plot(maxPeak * resolution, 1, "x", markersize=24, markeredgewidth=4)
+    ax.plot(peaksExceptMax * resolution, result.correlation[peaksExceptMax], "x", markersize=16, markeredgewidth=4, alpha=0.5)

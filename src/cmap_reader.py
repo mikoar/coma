@@ -1,12 +1,12 @@
 import itertools
+from typing import List
 import pandas
 import re
-from typing import List, Callable
 from functools import cache
 from pandas.core.frame import DataFrame
 from pandas.core.series import Series
 from sequence_generator import SequenceGenerator
-from optical_map import OpticalMap, ReferenceOpticalMap
+from optical_map import OpticalMap
 
 
 class BionanoFileReader:
@@ -32,35 +32,36 @@ class CmapReader:
         self.sequenceGenerator = sequenceGenerator
         self.reader = BionanoFileReader()
 
-    def readQueries(self, filePath: str,  moleculeIds: List[int] = []) -> List[OpticalMap]:
-        return self.__read(OpticalMap, filePath, moleculeIds)
+    def readQueries(self, filePath: str,  moleculeIds: List[int] = []):
+        return self.__read(filePath, moleculeIds)
 
-    def readQuery(self, filePath: str,  moleculeId: int) -> OpticalMap:
-        return self.__read(OpticalMap, filePath, [moleculeId])[0]
+    def readQuery(self, filePath: str,  moleculeId: int):
+        return self.__read(filePath, [moleculeId])[0]
 
     @cache
     def readReference(self, filePath: str, chromosome: int = 1):
-        return self.__read(ReferenceOpticalMap, filePath, [chromosome])[0]
+        return self.__read(filePath, [chromosome])[0]
 
-    def __read(self, mapConstructor: Callable, filePath, moleculeIds=None):
+    def __read(self, filePath, moleculeIds=None) -> List[OpticalMap]:
         maps = self.reader.readFile(filePath, ["CMapId", "Position"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]
 
-        opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup, self.sequenceGenerator, mapConstructor)
+        opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup, self.sequenceGenerator)
         return opticalMaps.tolist()
 
     @staticmethod
-    def __parseCmapRowsGroup(group,  sequenceGenerator: SequenceGenerator, mapConstructor: Callable):
+    def __parseCmapRowsGroup(group,  sequenceGenerator: SequenceGenerator):
         moleculeId = group["CMapId"].iloc[0]
         positions = group["Position"].sort_values().tolist()
         sequence = sequenceGenerator.positionsToSequence(positions)
-        return mapConstructor(moleculeId, sequence, positions, sequenceGenerator.resolution)
+        return OpticalMap(moleculeId, sequence, positions, sequenceGenerator.resolution)
 
 
 class Alignment:
-    def __init__(self, queryId, refId, refStart, refEnd, orientation, confidence) -> None:
+    def __init__(self, id, queryId, refId, refStart, refEnd, orientation, confidence) -> None:
+        self.id = id
         self.queryId = queryId
         self.chromosome = refId
         self.refStartPosition = int(refStart)
@@ -75,11 +76,11 @@ class AlignmentReader:
 
     def readAlignments(self, filePath: str) -> List[Alignment]:
         alignments = self.reader.readFile(filePath,
-                                          ["QryContigID", "RefContigID", "RefStartPos",
+                                          ["XmapEntryID", "QryContigID", "RefContigID", "RefStartPos",
                                            "RefEndPos", "Orientation", "Confidence"])
         return alignments.apply(self.__parseRow, axis=1).tolist()
 
     @staticmethod
     def __parseRow(row: Series):
-        return Alignment(row["QryContigID"], row["RefContigID"], row["RefStartPos"],
+        return Alignment(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["RefStartPos"],
                          row["RefEndPos"], row["Orientation"], row["Confidence"])
