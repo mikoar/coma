@@ -5,6 +5,7 @@ import matplotlib.ticker as ticker
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 from optical_map import CorrelationResult
+import seaborn as sns
 
 
 def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], result: CorrelationResult):
@@ -56,3 +57,11 @@ def __plotPeaks(result, resolution, ax):
     peaksExceptMax = np.array([peak for peak in result.peaks.peaks if peak != maxPeak], dtype=np.int)
     ax.plot(maxPeak * resolution, 1, "x", markersize=24, markeredgewidth=4)
     ax.plot(peaksExceptMax * resolution, result.correlation[peaksExceptMax], "x", markersize=16, markeredgewidth=4, alpha=0.5)
+
+
+def plotHeatMap(arr, count, x, y):
+    plotTitle = f"count_{count}_res_{','.join(str(x) for x in y)}_blur_{','.join(str(x) for x in x)}"
+
+    ax = sns.heatmap(arr, linewidth=0.5, annot=True, xticklabels=x, yticklabels=y)
+    ax.get_figure().savefig(
+        f"../plots_alignments/heatmap_{plotTitle}.svg")
