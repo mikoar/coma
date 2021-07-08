@@ -10,7 +10,6 @@ from optical_map import OpticalMap
 
 
 class BionanoFileReader:
-
     def readFile(self, filePath, columns: List[str]) -> DataFrame:
         return pandas.read_csv(
             filePath,
@@ -19,6 +18,7 @@ class BionanoFileReader:
             names=self.__getColumnNames(filePath),
             usecols=columns)  # type: ignore
 
+    @cache
     def __getColumnNames(self, filePath):
         with open(filePath) as file:
             gen = itertools.dropwhile(lambda line: not line.startswith('#h'), file)
@@ -38,9 +38,11 @@ class CmapReader:
     def readQuery(self, filePath: str,  moleculeId: int):
         return self.__read(filePath, [moleculeId])[0]
 
-    @cache
     def readReference(self, filePath: str, chromosome: int = 1):
         return self.__read(filePath, [chromosome])[0]
+
+    def readReferences(self, filePath: str, chromosomes: List[int] = []):
+        return self.__read(filePath, chromosomes)
 
     def __read(self, filePath, moleculeIds=None) -> List[OpticalMap]:
         maps = self.reader.readFile(filePath, ["CMapId", "Position"])
@@ -59,11 +61,40 @@ class CmapReader:
         return OpticalMap(moleculeId, sequence, positions, sequenceGenerator.resolution)
 
 
+class LazyCmapReader(CmapReader):
+    def __init__(self, sequenceGenerator: SequenceGenerator) -> None:
+        super().__init__(sequenceGenerator)
+        self.previousReferences: List[OpticalMap] = []
+        self.previousQueries: List[OpticalMap] = []
+
+    def readReferences(self, filePath: str, chromosomes: List[int] = []):
+        newReferenceIds = [c for c in chromosomes if c not in self.__previousReferenceIds()]
+        newReferences = super().readReferences(filePath, newReferenceIds)
+        referencesRequestedAgain = [r for r in self.previousReferences if r.moleculeId in chromosomes]
+        references = newReferences + referencesRequestedAgain
+        self.previousReferences = references
+        return references
+
+    def readQueries(self, filePath: str,  moleculeIds: List[int] = []):
+        newQueryIds = [c for c in moleculeIds if c not in self.__previousQueryIds()]
+        newQueries = super().readQueries(filePath, newQueryIds)
+        queriesRequestedAgain = [r for r in self.previousQueries if r.moleculeId in moleculeIds]
+        queries = newQueries + queriesRequestedAgain
+        self.previousQueries = queries
+        return queries
+
+    def __previousReferenceIds(self):
+        return list(map(lambda r: r.moleculeId, self.previousReferences))
+
+    def __previousQueryIds(self):
+        return list(map(lambda r: r.moleculeId, self.previousReferences))
+
+
 class Alignment:
     def __init__(self, id, queryId, refId, refStart, refEnd, orientation, confidence) -> None:
         self.id = id
-        self.queryId = queryId
-        self.chromosome = refId
+        self.queryId = int(queryId)
+        self.referenceId = int(refId)
         self.refStartPosition = int(refStart)
         self.refEndPosition = int(refEnd)
         self.reverseStrand = orientation == "-"

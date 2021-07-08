@@ -14,11 +14,10 @@ class OpticalMap:
         self.positions = positions
         self.moleculeId = moleculeId
         self.resolution = resolution
-        self.reverseStrand = False  # TODO
 
-    def correlate(self, reference: OpticalMap, reverse=False, flatten=True):
-        if reverse:
-            self.__reverse()
+    def correlate(self, reference: OpticalMap, reverseStrand=False, flatten=True):
+        if reverseStrand:
+            self.sequence.reverse()
 
         correlation = self.__getCorrelation(reference.sequence, self.sequence)
 
@@ -29,9 +28,6 @@ class OpticalMap:
         correlation /= np.max(correlation)
 
         return CorrelationResult(correlation, self, reference)
-
-    def __reverse(self):
-        self.sequence.reverse()
 
     def __getCorrelation(self, reference: Iterable[int], query: Iterable[int]):
         return correlate(reference, query, mode='same')
