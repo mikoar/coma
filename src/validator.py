@@ -1,5 +1,5 @@
 from cmap_reader import Alignment
-from optical_map import CorrelationResult
+from optical_map import CorrelationResult, Peaks
 
 
 class Validator:
@@ -8,4 +8,5 @@ class Validator:
 
     def validate(self, result: CorrelationResult, reference: Alignment):
         margin = len(result.query.sequence) * self.resolution / 2
-        return reference.refStartPosition - margin <= result.peaks.max * self.resolution <= reference.refEndPosition + margin
+        peaks = Peaks(result)
+        return reference.refStartPosition - margin <= peaks.max * self.resolution <= reference.refEndPosition + margin

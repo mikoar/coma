@@ -2,8 +2,8 @@
 from validator import Validator
 
 
-def doStuff(resolution, input):
-    (alignment, reference, query) = input
+def workerFunction(input):
+    (alignment, reference, query, resolution) = input
     result = query.correlate(reference, reverseStrand=alignment.reverseStrand)
     validator = Validator(resolution)
     isValid = validator.validate(result, alignment)

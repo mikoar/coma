@@ -1,9 +1,11 @@
 from typing import Iterable, List
 from itertools import accumulate, zip_longest
 
+import numpy as np
+
 
 def vectoriseSegments(segments: Iterable[int], resolution=100):
-    positions = list(accumulate(segments, lambda sumOfSegments, segment: sumOfSegments + segment))
+    positions = np.array(accumulate(segments, lambda sumOfSegments, segment: sumOfSegments + segment))
     return vectorisePositions(positions, resolution)
 
 
@@ -26,7 +28,7 @@ def vectorisePositions(positions: Iterable[int], resolution: int = 100):
         window_end += resolution
 
 
-def blur(vector: List[int], radius: int):
+def blur(vector: List[int], radius: int) -> np.ndarray:
     if not isinstance(radius, int) or radius < 0:
         raise ValueError(radius)
 
@@ -36,4 +38,4 @@ def blur(vector: List[int], radius: int):
         shiftedVectors.append(vector[shift:])
         shiftedVectors.append(shift * [0] + vector)
 
-    return [1 if any(position) else 0 for position in zip_longest(*shiftedVectors, fillvalue=0)][0: len(vector)]
+    return np.array([1 if any(position) else 0 for position in zip_longest(*shiftedVectors, fillvalue=0)][0: len(vector)])

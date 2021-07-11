@@ -2,7 +2,6 @@ import itertools
 from typing import List
 import pandas
 import re
-from functools import cache
 from pandas.core.frame import DataFrame
 from pandas.core.series import Series
 from sequence_generator import SequenceGenerator
@@ -18,7 +17,6 @@ class BionanoFileReader:
             names=self.__getColumnNames(filePath),
             usecols=columns)  # type: ignore
 
-    @cache
     def __getColumnNames(self, filePath):
         with open(filePath) as file:
             gen = itertools.dropwhile(lambda line: not line.startswith('#h'), file)
