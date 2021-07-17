@@ -71,5 +71,9 @@ class Peaks:
         return self.peaks[np.argmax(self.__peakHeights)]
 
     @property
+    def queryLength(self):
+        return len(self.correlationResult.query.sequence)
+
+    @property
     def __peakHeights(self) -> List[float]:
         return self.peakProperties["peak_heights"]

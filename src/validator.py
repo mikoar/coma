@@ -7,5 +7,6 @@ class Validator:
         self.resolution = resolution
 
     def validate(self, peaks: Peaks, reference: Alignment):
-        margin = len(peaks.correlationResult.query.sequence) * self.resolution / 2
-        return reference.refStartPosition - margin <= peaks.max * self.resolution <= reference.refEndPosition + margin
+        start = reference.refStartPosition - reference.queryStartPosition
+        end = reference.refEndPosition + peaks.queryLength - reference.queryEndPosition
+        return start <= peaks.max * self.resolution <= end

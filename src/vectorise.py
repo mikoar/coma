@@ -5,7 +5,7 @@ import numpy as np
 
 
 def vectoriseSegments(segments: Iterable[int], resolution=100):
-    positions = np.array(accumulate(segments, lambda sumOfSegments, segment: sumOfSegments + segment))
+    positions = np.array(np.fromiter(accumulate(segments, lambda sumOfSegments, segment: sumOfSegments + segment), dtype=int))
     return vectorisePositions(positions, resolution)
 
 

@@ -1,7 +1,7 @@
 
 import pytest
 
-from src.vectorise import blur, vectorisePositions, vectoriseSegments
+from vectorise import blur, vectorisePositions, vectoriseSegments
 
 
 def test_vectorise_simple():
@@ -36,7 +36,7 @@ def test_blur_radius_0():
     vector = [0, 0, 1, 0, 0]
     expect = [0, 0, 1, 0, 0]
 
-    result = blur(vector, 0)
+    result = blur(vector, 0).tolist()
 
     assert result == expect
 
@@ -45,7 +45,7 @@ def test_blur_radius_1():
     vector = [1, 0, 0, 0, 1, 0, 1, 0, 0]
     expect = [1, 1, 0, 1, 1, 1, 1, 1, 0]
 
-    result = blur(vector, 1)
+    result = blur(vector, 1).tolist()
 
     assert result == expect
 
@@ -54,7 +54,7 @@ def test_blur_radius_2():
     vector = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1]
     expect = [0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1]
 
-    result = blur(vector, 2)
+    result = blur(vector, 2).tolist()
 
     assert result == expect
 

@@ -89,10 +89,12 @@ class LazyCmapReader(CmapReader):
 
 
 class Alignment:
-    def __init__(self, id, queryId, refId, refStart, refEnd, orientation, confidence) -> None:
+    def __init__(self, id, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence) -> None:
         self.id = id
         self.queryId = int(queryId)
         self.referenceId = int(refId)
+        self.queryStartPosition = int(queryStart)
+        self.queryEndPosition = int(queryEnd)
         self.refStartPosition = int(refStart)
         self.refEndPosition = int(refEnd)
         self.reverseStrand = orientation == "-"
@@ -105,11 +107,11 @@ class AlignmentReader:
 
     def readAlignments(self, filePath: str) -> List[Alignment]:
         alignments = self.reader.readFile(filePath,
-                                          ["XmapEntryID", "QryContigID", "RefContigID", "RefStartPos",
-                                           "RefEndPos", "Orientation", "Confidence"])
+                                          ["XmapEntryID", "QryContigID", "RefContigID",  "QryStartPos",
+                                           "QryEndPos", "RefStartPos",  "RefEndPos", "Orientation", "Confidence"])
         return alignments.apply(self.__parseRow, axis=1).tolist()
 
     @staticmethod
     def __parseRow(row: Series):
-        return Alignment(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["RefStartPos"],
-                         row["RefEndPos"], row["Orientation"], row["Confidence"])
+        return Alignment(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
+                         row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"], row["Confidence"])
