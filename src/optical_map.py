@@ -50,10 +50,10 @@ class Peaks:
         heights = self.__peakHeights
 
         if len(heights) == 1:
-            return 1
+            return 1.
 
         if len(heights) < 2:
-            return 0
+            return 0.
 
         twoHighest = sorted(heights, reverse=True)[:2]
         return twoHighest[0] - twoHighest[1]
