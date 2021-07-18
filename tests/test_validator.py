@@ -1,16 +1,15 @@
 
 import pytest
-from cmap_reader import Alignment
+from alignment import Alignment
 from validator import Validator
 
 
 def test_validator_simple():
     qryStart = refStart = 0
     qryEnd = refEnd = 100
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1)
+    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
     def peaks(): return None
     peaks.max = 50
-    peaks.queryLength = 100
     validator = Validator(1)
 
     valid = validator.validate(peaks, alignment)  # type: ignore
@@ -21,10 +20,9 @@ def test_validator_simple():
 def test_validator_invalid():
     qryStart = refStart = 0
     qryEnd = refEnd = 100
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1)
+    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
     def peaks(): return None
     peaks.max = 101
-    peaks.queryLength = 100
     validator = Validator(1)
 
     valid = validator.validate(peaks, alignment)  # type: ignore
@@ -35,10 +33,9 @@ def test_validator_invalid():
 def test_validator_short_alignment_without_querys_middle():
     qryStart = refStart = 0
     qryEnd = refEnd = 20
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1)
+    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
     def peaks(): return None
     peaks.max = 50
-    peaks.queryLength = 100
     validator = Validator(1)
 
     valid = validator.validate(peaks, alignment)  # type: ignore
@@ -49,10 +46,9 @@ def test_validator_short_alignment_without_querys_middle():
 def test_validator_short_alignment_without_querys_middle_query_at_query_end():
     qryStart = refStart = 80
     qryEnd = refEnd = 100
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1)
+    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
     def peaks(): return None
     peaks.max = 50
-    peaks.queryLength = 100
     validator = Validator(1)
 
     valid = validator.validate(peaks, alignment)  # type: ignore

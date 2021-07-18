@@ -59,7 +59,6 @@ def __plotPeaks(result, resolution, ax):
     ax.plot(peaksExceptMax * resolution, result.correlation[peaksExceptMax], "x", markersize=16, markeredgewidth=4, alpha=0.5)
 
 
-def plotHeatMap(arr, title, x, y):
+def plotHeatMap(arr, fileName, x, y):
     ax = sns.heatmap(arr, linewidth=0.5, annot=True, xticklabels=x, yticklabels=y, fmt='.2f')
-    ax.get_figure().savefig(
-        f"../plots_alignments/heatmap_{title}.svg")
+    ax.get_figure().savefig(fileName)

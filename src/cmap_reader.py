@@ -4,6 +4,7 @@ import pandas
 import re
 from pandas.core.frame import DataFrame
 from pandas.core.series import Series
+from alignment import Alignment
 from sequence_generator import SequenceGenerator
 from optical_map import OpticalMap
 
@@ -88,19 +89,6 @@ class LazyCmapReader(CmapReader):
         return list(map(lambda r: r.moleculeId, self.previousReferences))
 
 
-class Alignment:
-    def __init__(self, id, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence) -> None:
-        self.id = id
-        self.queryId = int(queryId)
-        self.referenceId = int(refId)
-        self.queryStartPosition = int(queryStart)
-        self.queryEndPosition = int(queryEnd)
-        self.refStartPosition = int(refStart)
-        self.refEndPosition = int(refEnd)
-        self.reverseStrand = orientation == "-"
-        self.confidence = confidence
-
-
 class AlignmentReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
@@ -108,10 +96,10 @@ class AlignmentReader:
     def readAlignments(self, filePath: str) -> List[Alignment]:
         alignments = self.reader.readFile(filePath,
                                           ["XmapEntryID", "QryContigID", "RefContigID",  "QryStartPos",
-                                           "QryEndPos", "RefStartPos",  "RefEndPos", "Orientation", "Confidence"])
+                                           "QryEndPos", "RefStartPos",  "RefEndPos", "Orientation", "Confidence", "QryLen"])
         return alignments.apply(self.__parseRow, axis=1).tolist()
 
     @staticmethod
     def __parseRow(row: Series):
         return Alignment(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
-                         row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"], row["Confidence"])
+                         row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"], row["Confidence"], row["QryLen"])

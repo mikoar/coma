@@ -4,9 +4,9 @@ from matplotlib import cycler  # type: ignore
 from matplotlib import rcParams
 import numpy as np
 import pandas as pd
-from cmap_reader import Alignment, AlignmentReader, CmapReader
+from alignment import Alignment
+from cmap_reader import AlignmentReader, CmapReader
 from optical_map import OpticalMap
-
 from plot import plotHeatMap
 from sequence_generator import SequenceGenerator
 from worker import workerFunction
@@ -15,7 +15,6 @@ from random import sample
 from p_tqdm import p_map
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
-# %%
 
 
 def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[OpticalMap], resolution: int):
@@ -30,7 +29,7 @@ def alignmentsToDict(a: Alignment, score: float, resolution: int, blur: int, isV
     return {
         'resolution': resolution,
         'blur': blur,
-        'id': a.id,
+        'alignmentId': a.id,
         'queryId': a.queryId,
         'referenceId': a.referenceId,
         'confidence': a.confidence,
@@ -39,25 +38,29 @@ def alignmentsToDict(a: Alignment, score: float, resolution: int, blur: int, isV
     }
 
 
+indexCols = ['resolution', 'blur', 'alignmentId']
+
+
 def initAlignmentsFile(file):
     pd.DataFrame(columns=[
         'resolution',
         'blur',
-        'id',
+        'alignmentId',
         'queryId',
         'referenceId',
         'confidence',
         'score',
         'isValid'
-    ]).reset_index().to_csv(file, mode='w')
+    ]).set_index(indexCols).to_csv(file, mode='w')
 
 
 def appendAlignmentsToFile(alignments: List[Dict], file):
-    pd.DataFrame(alignments).reset_index().to_csv(file, mode='a', header=False)
+    pd.DataFrame(alignments).set_index(indexCols).to_csv(file, mode='a', header=False)
+
+# %%
 
 
 if __name__ == '__main__':
-
     alignmentsFile = "../data/EXP_REFINEFINAL1.xmap"
     referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
     queryFile = "../data/EXP_REFINEFINAL1.cmap"
@@ -111,8 +114,7 @@ if __name__ == '__main__':
 
             isoResolutionResults.append(isoBlurResults)
 
-    plotHeatMap(isoResolutionResults, title, blurs, resolutions)
-
+    plotHeatMap(isoResolutionResults, f"../output_stats/heatmap_{title}.svg", blurs, resolutions)
 
 # %%
 # 1000 dobrze zmapowanych sekwencji
