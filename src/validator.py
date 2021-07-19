@@ -11,4 +11,4 @@ class Validator:
         if not peak:
             return False
 
-        return reference.expectedQueryStart <= peak.position * self.resolution <= reference.expectedQueryEnd
+        return reference.expectedQueryStart <= peak.position <= reference.expectedQueryEnd

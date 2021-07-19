@@ -10,14 +10,14 @@ class Alignment:
         self.reverseStrand = orientation == "-"
         self.confidence = confidence
         self.queryLength = int(queryLength)
-    
+
     @property
     def expectedQueryStart(self):
-        return self.refStartPosition - self.queryStartPosition - self.__queryReferenceAlignmentLengthDifference / 2
+        return self.refStartPosition - self.queryStartPosition - self.__queryReferenceAlignmentLengthDifference
 
     @property
     def expectedQueryEnd(self):
-        return self.refEndPosition + self.queryLength - self.queryEndPosition + self.__queryReferenceAlignmentLengthDifference / 2
+        return self.refEndPosition + self.queryLength - self.queryEndPosition + self.__queryReferenceAlignmentLengthDifference
 
     @property
     def __queryReferenceAlignmentLengthDifference(self):
