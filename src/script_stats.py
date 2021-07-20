@@ -11,7 +11,7 @@ from plot import plotHeatMap
 from sequence_generator import SequenceGenerator
 from worker import workerFunction
 from tqdm import tqdm
-from random import sample
+from random import Random
 from p_tqdm import p_map
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 validAlignments = []
 
                 validCount = 0
-                sampledAlignments = sample(alignments, alignmentsCount)
+                sampledAlignments = Random(123).sample(alignments, alignmentsCount,)
                 referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
                 alignmentsGroupedByReference = [[a for a in sampledAlignments if a.referenceId == r] for r in referenceIds]
                 for alignmentsForReference, referenceId in zip(alignmentsGroupedByReference, referenceIds):

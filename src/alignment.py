@@ -12,6 +12,12 @@ class Alignment:
         self.queryLength = int(queryLength)
 
     @property
+    def expectedPeakPosition(self):
+        expectedQueryStart = self.expectedQueryStart
+        length = self.expectedQueryEnd - expectedQueryStart
+        return expectedQueryStart + length / 2
+
+    @property
     def expectedQueryStart(self):
         return self.refStartPosition - self.queryStartPosition - self.__queryReferenceAlignmentLengthDifference
 

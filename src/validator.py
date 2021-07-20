@@ -11,4 +11,5 @@ class Validator:
         if not peak:
             return False
 
-        return reference.expectedQueryStart <= peak.position <= reference.expectedQueryEnd
+        margin = reference.queryLength
+        return reference.expectedPeakPosition - margin <= peak.position <= reference.expectedPeakPosition + margin
