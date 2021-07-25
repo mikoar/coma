@@ -1,19 +1,15 @@
 # %%
 
-from os import pipe
-import re
-import itertools
-from typing import List
-from numpy.lib.function_base import disp
-import pandas
-from matplotlib import pyplot as plt
-from matplotlib import rcParams, cycler  # type: ignore
-from cmap_reader import CmapReader
-from optical_map import OpticalMap
-from sequence_generator import SequenceGenerator
-from plot import plotCorrelation
 from collections import Counter
-from scipy.optimize import minimize_scalar, minimize
+
+from matplotlib import cycler  # type: ignore
+from matplotlib import rcParams  # type: ignore
+from scipy.optimize import minimize_scalar
+
+from src.cmap_reader import CmapReader
+from src.optical_map import OpticalMap
+from src.plot import plotCorrelation
+from src.sequence_generator import SequenceGenerator
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])

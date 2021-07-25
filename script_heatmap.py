@@ -1,18 +1,21 @@
 # %%
+from random import Random
 from typing import Dict, List
-from matplotlib import cycler  # type: ignore
-from matplotlib import rcParams
+
 import numpy as np
 import pandas as pd
-from alignment import Alignment
-from cmap_reader import AlignmentReader, CmapReader
-from optical_map import OpticalMap
-from plot import plotHeatMap
-from sequence_generator import SequenceGenerator
-from worker import workerFunction
-from tqdm import tqdm
-from random import Random
+from matplotlib import cycler  # type: ignore
+from matplotlib import rcParams
 from p_tqdm import p_map
+from tqdm import tqdm
+
+from src.alignment import Alignment
+from src.cmap_reader import AlignmentReader, CmapReader
+from src.optical_map import OpticalMap, Peaks
+from src.plot import plotHeatMap
+from src.sequence_generator import SequenceGenerator
+from src.validator import Validator
+
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
@@ -57,13 +60,22 @@ def initAlignmentsFile(file):
 def appendAlignmentsToFile(alignments: List[Dict], file):
     pd.DataFrame(alignments).set_index(indexCols).to_csv(file, mode='a', header=False)
 
+
+def alignWithReference(input):
+    (alignment, reference, query, resolution) = input
+    result = query.correlate(reference, reverseStrand=alignment.reverseStrand)
+    validator = Validator(resolution)
+    peaks = Peaks(result)
+    isMaxPeakValid = validator.validate(peaks.max, alignment)
+
+    return (1 if isMaxPeakValid else 0, peaks.getRelativeScore(alignment, validator))
 # %%
 
 
 if __name__ == '__main__':
-    alignmentsFile = "../data/EXP_REFINEFINAL1.xmap"
-    referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
-    queryFile = "../data/EXP_REFINEFINAL1.cmap"
+    alignmentsFile = "data/EXP_REFINEFINAL1.xmap"
+    referenceFile = "data/hg19_NT.BSPQI_0kb_0labels.cmap"
+    queryFile = "data/EXP_REFINEFINAL1.cmap"
 
     df = pd.DataFrame()
 
@@ -72,7 +84,7 @@ if __name__ == '__main__':
     blurs = [0, 2, 4, 8, 16]
     title = f"count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 
-    alignmentsResultFile = f"../output_stats/result_{title}.csv"
+    alignmentsResultFile = f"output_heatmap/result_{title}.csv"
     initAlignmentsFile(alignmentsResultFile)
 
     alignmentReader = AlignmentReader()
@@ -99,7 +111,7 @@ if __name__ == '__main__':
                     progressBar.set_description(
                         f"Resolution: {resolution}, blur: {blur}, {len(queries)} queries for reference {referenceId}")
 
-                    poolResults = p_map(workerFunction, list(getWorkerInputs(alignmentsForReference, reference.sequence, queries, resolution)), num_cpus=8)
+                    poolResults = p_map(alignWithReference, list(getWorkerInputs(alignmentsForReference, reference.sequence, queries, resolution)), num_cpus=8)
                     areValid, scores = zip(*poolResults)
 
                     alignmentDataToStore = [alignmentsToDict(a, score, resolution, blur, isValid)
@@ -114,7 +126,7 @@ if __name__ == '__main__':
 
             isoResolutionResults.append(isoBlurResults)
 
-    plotHeatMap(isoResolutionResults, f"../output_stats/heatmap_{title}.svg", blurs, resolutions)
+    plotHeatMap(isoResolutionResults, f"output_heatmap/heatmap_{title}.svg", blurs, resolutions)
 
 # %%
 # 1000 dobrze zmapowanych sekwencji

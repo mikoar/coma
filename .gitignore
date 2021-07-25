@@ -138,4 +138,4 @@ share/
 
 plots*/
 .local_data/
-output_stats/
+output_heatmap/

@@ -1,11 +1,13 @@
 from typing import List, Tuple, Union
+
 import matplotlib.patches as patches
-from matplotlib import pyplot
 import matplotlib.ticker as ticker
-from matplotlib.ticker import FuncFormatter
-from optical_map import CorrelationResult, Peaks
 import seaborn as sns
-from matplotlib import rcParams, cycler  # type: ignore
+from matplotlib import cycler, pyplot, rcParams  # type: ignore
+from matplotlib.ticker import FuncFormatter
+
+from .optical_map import CorrelationResult, Peaks
+
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 

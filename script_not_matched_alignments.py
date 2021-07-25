@@ -1,13 +1,14 @@
 # %%
 import pandas as pd
 
-from cmap_reader import AlignmentReader, CmapReader
-from plot import plotCorrelation
-from sequence_generator import SequenceGenerator
+from src.cmap_reader import AlignmentReader, CmapReader
+from src.plot import plotCorrelation
+from src.sequence_generator import SequenceGenerator
 
-alignmentsFile = "../data/EXP_REFINEFINAL1.xmap"
-referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
-queryFile = "../data/EXP_REFINEFINAL1.cmap"
+
+alignmentsFile = "data/EXP_REFINEFINAL1.xmap"
+referenceFile = "data/hg19_NT.BSPQI_0kb_0labels.cmap"
+queryFile = "data/EXP_REFINEFINAL1.cmap"
 
 
 def plot(alignmentIds, resolution=128, blur=4):
@@ -24,14 +25,14 @@ def plot(alignmentIds, resolution=128, blur=4):
         reference = next(r for r in references if r.moleculeId == alignment.referenceId)
         result = query.correlate(reference.sequence, reverseStrand=alignment.reverseStrand)
         fig = plotCorrelation(result, resolution, (alignment.expectedQueryStart, alignment.expectedQueryEnd))
-        fig.savefig(f"../output_stats/not_mapped_molecules/alignmentId_{alignment.id}.svg", bbox_inches='tight', pad_inches=0)
+        fig.savefig(f"../output_heatmap/not_mapped_molecules/alignmentId_{alignment.id}.svg", bbox_inches='tight', pad_inches=0)
 
 
 def maxValidityRatio(isValidColumn: pd.Series, maxValidityRatio: float):
     return isValidColumn.sum() / isValidColumn.size <= maxValidityRatio
 
 
-results = pd.read_csv("../output_stats/result_count_1000_res_32,48,64,128,256,512_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur', 'alignmentId'])
+results = pd.read_csv("output_heatmap/result_count_1000_res_32,48,64,128,256,512_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur', 'alignmentId'])
 
 # %%
 groupedByAlignment = results.groupby('alignmentId')

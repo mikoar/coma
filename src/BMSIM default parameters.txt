@@ -1,2 +1,0 @@
-BMSIM default parameters
-stretch mean: 0.98, sd: 0.08

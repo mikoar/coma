@@ -1,6 +1,7 @@
 from __future__ import annotations
-from alignment import Alignment
-from peak import Peak
+
+from .alignment import Alignment
+from .peak import Peak
 
 
 class Validator:

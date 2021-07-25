@@ -1,12 +1,14 @@
 import itertools
-from typing import List
-import pandas
 import re
+from typing import List
+
+import pandas
 from pandas.core.frame import DataFrame
 from pandas.core.series import Series
-from alignment import Alignment
-from sequence_generator import SequenceGenerator
-from optical_map import OpticalMap
+
+from .alignment import Alignment
+from .optical_map import OpticalMap
+from .sequence_generator import SequenceGenerator
 
 
 class BionanoFileReader:

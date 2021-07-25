@@ -1,12 +1,13 @@
 from __future__ import annotations
-from scipy.signal import find_peaks
-from typing import List
-import numpy as np
-from scipy.signal import correlate
-from alignment import Alignment
-from peak import Peak
 
-from validator import Validator
+from typing import List
+
+import numpy as np
+from scipy.signal import correlate, find_peaks
+
+from .alignment import Alignment
+from .peak import Peak
+from .validator import Validator
 
 
 class OpticalMap:

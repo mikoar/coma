@@ -1,5 +1,5 @@
-from typing import Iterable, List
 from itertools import accumulate, zip_longest
+from typing import Iterable, List
 
 import numpy as np
 
