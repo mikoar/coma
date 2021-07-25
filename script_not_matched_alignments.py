@@ -1,11 +1,11 @@
 # %%
 import pandas as pd
+from matplotlib import pyplot as plt
 from pandas.core.groupby.groupby import GroupBy
 
-from src.cmap_reader import AlignmentReader, CmapReader
+from src.cmap_reader import AlignmentReader, BionanoFileReader, CmapReader
 from src.plot import plotCorrelation
 from src.sequence_generator import SequenceGenerator
-
 
 alignmentsFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.xmap"
 referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
@@ -33,6 +33,16 @@ def validityRatio(isValidColumn: pd.Series):
     return isValidColumn.sum() / isValidColumn.size
 
 
+def getMappedRatio(group: GroupBy):
+    return pd.Series({'mappedRatio': validityRatio(group['isValid'])})
+
+
+def getAlignmentLengthToQueryLength(group: GroupBy):
+    return pd.Series({'alignmentLengthToQueryLength':
+                      abs(group['QryEndPos'].iloc[0] - group['QryStartPos'].iloc[0]) / group['QryLen'].iloc[0],
+                      'length':  group['QryLen'].iloc[0]})
+
+
 results = pd.read_csv("output_heatmap/result_count_1000_res_32,48,64,128,256,512_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur', 'alignmentId'])
 
 # %%
@@ -44,12 +54,25 @@ plot(notAlignedAlignmentIds)
 # %%
 
 
-def getMappedRatioSeries(group: GroupBy):
-    return pd.Series({'mappedRatio': validityRatio(group['isValid'])})
-
-
 groupedByAlignment = results.groupby('alignmentId')
-groupedByAlignment.apply(getMappedRatioSeries).to_csv('output_heatmap/not_mapped_molecules/alignmentMappedRatio.csv')
+mappedRatio = groupedByAlignment.apply(getMappedRatio)
+mappedRatio.to_csv('output_heatmap/not_mapped_molecules/alignmentMappedRatio.csv')
+
+# %%
+
+
+alignments = BionanoFileReader().readFile(alignmentsFile, ["XmapEntryID", "QryStartPos", "QryEndPos", "QryLen"])
+resultsWithLengths = results.reset_index().join(alignments.set_index('XmapEntryID'), on='alignmentId', how='left')
+groupedByAlignment = resultsWithLengths.groupby('alignmentId')
+
+mappedRatio: pd.DataFrame = groupedByAlignment.apply(getMappedRatio)
+alignmentLengthToQueryLength: pd.DataFrame = groupedByAlignment.apply(getAlignmentLengthToQueryLength)
+
+queryAlignmentSpanVsMappingRatio = pd.concat([mappedRatio, alignmentLengthToQueryLength], axis=1)
+queryAlignmentSpanVsMappingRatio[['mappedRatio', 'alignmentLengthToQueryLength']].plot(
+    x='mappedRatio', y='alignmentLengthToQueryLength', kind='scatter')
+plt.savefig('output_heatmap/not_mapped_molecules/mapped_ratio_vs_alignment_length_to_query_length.svg')
+
 
 # przeanalizować niezmapowane contigi, + porównnać długość alignmentu/długość query, scharakteryzować dlaczego się nie mapują
 # znaleźć contigi, które nigdzie się nie mapują (przy żadnych parametrach)
