@@ -73,9 +73,9 @@ def alignWithReference(input):
 
 
 if __name__ == '__main__':
-    alignmentsFile = "data/EXP_REFINEFINAL1.xmap"
-    referenceFile = "data/hg19_NT.BSPQI_0kb_0labels.cmap"
-    queryFile = "data/EXP_REFINEFINAL1.cmap"
+    alignmentsFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.xmap"
+    referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
+    queryFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.cmap"
 
     df = pd.DataFrame()
 
