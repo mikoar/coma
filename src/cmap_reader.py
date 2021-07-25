@@ -93,10 +93,13 @@ class AlignmentReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
-    def readAlignments(self, filePath: str) -> List[Alignment]:
+    def readAlignments(self, filePath: str, alignmentIds=None) -> List[Alignment]:
         alignments = self.reader.readFile(filePath,
                                           ["XmapEntryID", "QryContigID", "RefContigID",  "QryStartPos",
                                            "QryEndPos", "RefStartPos",  "RefEndPos", "Orientation", "Confidence", "QryLen"])
+        if alignmentIds:
+            alignments = alignments[alignments["XmapEntryID"].isin(alignmentIds)]
+
         return alignments.apply(self.__parseRow, axis=1).tolist()
 
     @staticmethod

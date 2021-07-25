@@ -3,15 +3,17 @@ import matplotlib.patches as patches
 from matplotlib import pyplot
 import matplotlib.ticker as ticker
 from matplotlib.ticker import FuncFormatter
-import numpy as np
-from optical_map import CorrelationResult
+from optical_map import CorrelationResult, Peaks
 import seaborn as sns
+from matplotlib import rcParams, cycler  # type: ignore
+rcParams["lines.linewidth"] = 1
+rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
 def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], result: CorrelationResult):
     start = (expectedReferenceRange[0], 0)
     width = expectedReferenceRange[1] - expectedReferenceRange[0]
-    height = max(result.correlation)
+    height = result.correlation.max()
 
     rect = patches.Rectangle(start, width, height, edgecolor="none", facecolor="black", alpha=0.2)  # type: ignore
     ax.add_patch(rect)
@@ -23,7 +25,7 @@ def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], resu
             verticalalignment='top')
 
 
-def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=False, expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
+def plotCorrelation(result: CorrelationResult, resolution: int,  expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
     fig = pyplot.figure(figsize=(40, 5))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
@@ -44,19 +46,19 @@ def plotCorrelation(result: CorrelationResult, resolution: int, plotReference=Fa
 
     __plotPeaks(result, resolution, ax)
 
-    if plotReference:
-        maxValue = max(result.correlation)
-        ax.plot(result.reference.positions, [maxValue] * len(result.reference.positions), 'bo')
-        # ax.fill_between(range(0, len(result.correlation) * resolution, resolution), 0, np.array(result.reference.sequence) * maxValue, alpha=0.2)
-
     return fig
 
 
-def __plotPeaks(result, resolution, ax):
-    maxPeak = result.peaks.max
-    peaksExceptMax = np.array([peak for peak in result.peaks.peaks if peak != maxPeak], dtype=np.int)
-    ax.plot(maxPeak * resolution, 1, "x", markersize=24, markeredgewidth=4)
-    ax.plot(peaksExceptMax * resolution, result.correlation[peaksExceptMax], "x", markersize=16, markeredgewidth=4, alpha=0.5)
+def __plotPeaks(result: CorrelationResult, resolution, ax):
+    peaks = Peaks(result)
+    maxPeak = peaks.max
+    if not maxPeak:
+        return
+
+    peaksExceptMax = [peak for peak in peaks.peaks if peak != maxPeak.position]
+    ax.plot(maxPeak.positionInReference, 1, "x", markersize=24, markeredgewidth=4)
+    ax.plot([p.positionInReference for p in peaksExceptMax], result.correlation[[
+            p.position for p in peaksExceptMax]], "x", markersize=16, markeredgewidth=4, alpha=0.5)
 
 
 def plotHeatMap(arr, fileName, x, y):

@@ -64,19 +64,19 @@ class Peaks:
             return
 
         maxIndex = np.argmax(self.__peakHeights)
-        return Peak(self.peakPositions[maxIndex] * self.correlationResult.query.resolution, self.__peakHeights[maxIndex])
+        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.correlationResult.query.resolution)
 
     @property
-    def __peaks(self):
+    def peaks(self):
         for position, height in zip(self.peakPositions, self.__peakHeights):
-            yield Peak(position * self.correlationResult.query.resolution, height)
+            yield Peak(position, height, self.correlationResult.query.resolution)
 
     @property
     def __peakHeights(self) -> List[float]:
         return self.peakProperties["peak_heights"]
 
     def __getMaxValidPeakHeight(self, reference: Alignment, validator: Validator):
-        validPeaks = [peak for peak in self.__peaks if validator.validate(peak, reference)]
+        validPeaks = [peak for peak in self.peaks if validator.validate(peak, reference)]
         maxValidPeakHeight = max(validPeaks, key=lambda peak: peak.height).height if validPeaks else None
         return maxValidPeakHeight
 

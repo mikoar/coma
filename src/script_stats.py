@@ -124,11 +124,6 @@ if __name__ == '__main__':
 # kolejny wykres x - jakość,  y - liczba cząsteczek o tej wartości jakości, kernel density
 
 # ustalić z których danych korzystam
-# przeanalizować niezmapowane contigi, + porównnać długość alignmentu/długość query, scharakteryzować dlaczego się nie mapują
-# znaleźć contigi, które nigdzie się nie mapują (przy żadnych parametrach)
-# wziąć 8 kafelków >98%,
-#
-# poprawić ref start/stop
 
-# podzielić contigi na grupy - te co się lepiej/gorzej mapują, jaka część contigu jest zawarta w alignmencie
+
 # powtórzyć heat mapę, peak z obszaru oczekiwanego (lub max jeśli brak peaka) porównać z 5. peakiem, wyłączyć min-height

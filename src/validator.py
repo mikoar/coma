@@ -12,4 +12,4 @@ class Validator:
             return False
 
         margin = reference.queryLength
-        return reference.expectedPeakPosition - margin <= peak.position <= reference.expectedPeakPosition + margin
+        return reference.expectedPeakPosition - margin <= peak.positionInReference <= reference.expectedPeakPosition + margin
