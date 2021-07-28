@@ -26,6 +26,7 @@ def plot(alignmentIds, resolution=128, blur=4):
         reference = next(r for r in references if r.moleculeId == alignment.referenceId)
         result = query.correlate(reference.sequence, reverseStrand=alignment.reverseStrand)
         fig = plotCorrelation(result, resolution, (alignment.expectedQueryStart, alignment.expectedQueryEnd))
+        fig.suptitle(f'Alignment {alignment.id}')
         fig.savefig(f"output_heatmap/not_mapped_molecules/alignmentId_{alignment.id}.svg", bbox_inches='tight', pad_inches=0)
 
 
@@ -73,6 +74,9 @@ queryAlignmentSpanVsMappingRatio[['mappedRatio', 'alignmentLengthToQueryLength']
     x='mappedRatio', y='alignmentLengthToQueryLength', kind='scatter')
 plt.savefig('output_heatmap/not_mapped_molecules/mapped_ratio_vs_alignment_length_to_query_length.svg')
 
+
+# %%
+qualityHist = plt.hist(results.score, 100)
 
 # przeanalizować niezmapowane contigi, + porównnać długość alignmentu/długość query, scharakteryzować dlaczego się nie mapują
 # znaleźć contigi, które nigdzie się nie mapują (przy żadnych parametrach)
