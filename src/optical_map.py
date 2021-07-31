@@ -47,7 +47,6 @@ class Peaks:
         self.correlationResult = correlationResult
         self.peakPositions, self.peakProperties = find_peaks(correlationResult.correlation,
                                                              height=0.01,
-                                                             prominence=0.2,
                                                              distance=((5 * 10 ** 6) / correlationResult.query.resolution))
 
     def getRelativeScore(self, reference: Alignment, validator: Validator):

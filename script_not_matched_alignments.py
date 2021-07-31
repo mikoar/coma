@@ -75,6 +75,7 @@ queryAlignmentSpanVsMappingRatio[['mappedRatio', 'alignmentLengthToQueryLength']
 plt.savefig('output_heatmap/not_mapped_molecules/mapped_ratio_vs_alignment_length_to_query_length.svg')
 
 
+# TODO:2 morep plots: just alignment length min(ref, q), not ratio and confidence
 # %%
 qualityHist = plt.hist(results.score, 100)
 

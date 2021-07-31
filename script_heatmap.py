@@ -140,3 +140,5 @@ if __name__ == '__main__':
 
 
 # powtórzyć heat mapę, peak z obszaru oczekiwanego (lub max jeśli brak peaka) porównać z 5. peakiem, wyłączyć min-height
+
+# sprawdzić czy skopałem obracanie zapytania -> policzyć tylko dla + nową metodą walidacji
