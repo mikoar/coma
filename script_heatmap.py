@@ -37,6 +37,7 @@ def alignmentsToDict(a: Alignment, score: float, resolution: int, blur: int, isV
         'referenceId': a.referenceId,
         'confidence': a.confidence,
         'score': score,
+        'reverseStrand': a.reverseStrand,
         'isValid': isValid
     }
 
@@ -53,6 +54,7 @@ def initAlignmentsFile(file):
         'referenceId',
         'confidence',
         'score',
+        'reverseStrand',
         'isValid'
     ]).set_index(indexCols).to_csv(file, mode='w')
 
@@ -81,7 +83,7 @@ if __name__ == '__main__':
 
     alignmentReader = AlignmentReader()
     alignments = alignmentReader.readAlignments(alignmentsFile)
-    alignmentsCount = 200
+    alignmentsCount = len(alignments)
     resolutions = [128]  # [32, 48, 64, 128, 256, 512]
     blurs = [4]  # [0, 2, 4, 8, 16]
     title = f"count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
@@ -102,7 +104,7 @@ if __name__ == '__main__':
                 validAlignments = []
 
                 validCount = 0
-                sampledAlignments = [a for a in Random(123).sample(alignments, alignmentsCount)]
+                sampledAlignments = [a for a in Random(123).sample([a for a in alignments], alignmentsCount)]
                 referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
                 alignmentsGroupedByReference = [[a for a in sampledAlignments if a.referenceId == r] for r in referenceIds]
                 for alignmentsForReference, referenceId in zip(alignmentsGroupedByReference, referenceIds):

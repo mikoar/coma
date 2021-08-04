@@ -13,9 +13,9 @@ class Alignment:
 
     @property
     def expectedPeakPosition(self):
-        expectedQueryStart = self.queryAlignmentStartPosition
-        length = self.queryAlignmentEndPosition - expectedQueryStart
-        return expectedQueryStart + length / 2
+        expectedQueryMoleculeStart = self.expectedQueryMoleculeStart
+        moleculeLength = self.expectedQueryMoleculeEnd - expectedQueryMoleculeStart
+        return expectedQueryMoleculeStart + moleculeLength / 2
 
     @property
     def queryAlignmentStartPosition(self):
@@ -27,13 +27,13 @@ class Alignment:
 
     @property
     def expectedQueryMoleculeStart(self):
-        return self.referenceAlignmentStartPosition - self.queryAlignmentStartPosition - self.__queryReferenceAlignmentLengthDifference
+        return self.referenceAlignmentStartPosition - self.queryAlignmentStartPosition - self.queryReferenceAlignmentLengthDifference
 
     @property
     def expectedQueryMoleculeEnd(self):
-        return self.referenceAlignmentEndPosition + self.queryLength - self.queryAlignmentEndPosition + self.__queryReferenceAlignmentLengthDifference
+        return self.referenceAlignmentEndPosition + self.queryLength - self.queryAlignmentEndPosition + self.queryReferenceAlignmentLengthDifference
 
     @property
-    def __queryReferenceAlignmentLengthDifference(self):
+    def queryReferenceAlignmentLengthDifference(self):
         """Alignment length on reference and query sequences may differ due to insertions and deletions"""
         return (self.queryAlignmentEndPosition - self.queryAlignmentStartPosition) - (self.referenceAlignmentEndPosition - self.referenceAlignmentStartPosition)
