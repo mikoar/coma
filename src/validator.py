@@ -12,6 +12,4 @@ class Validator:
         if not peak:
             return False
 
-        # TODO: peak position e +/- middle of query + alignment q/r diff/2  + resolution
-        margin = reference.queryLength
-        return reference.expectedPeakPosition - margin <= peak.positionInReference <= reference.expectedPeakPosition + margin
+        return reference.expectedQueryMoleculeStart + self.resolution <= peak.positionInReference <= reference.expectedQueryMoleculeEnd + self.resolution

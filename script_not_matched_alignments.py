@@ -25,7 +25,7 @@ def plot(alignmentIds, resolution=128, blur=4):
         query = next(q for q in queries if q.moleculeId == alignment.queryId)
         reference = next(r for r in references if r.moleculeId == alignment.referenceId)
         result = query.correlate(reference.sequence, reverseStrand=alignment.reverseStrand)
-        fig = plotCorrelation(result, resolution, (alignment.expectedQueryStart, alignment.expectedQueryEnd))
+        fig = plotCorrelation(result, resolution, (alignment.expectedQueryMoleculeStart, alignment.expectedQueryMoleculeEnd))
         fig.suptitle(f'Alignment {alignment.id}')
         fig.savefig(f"output_heatmap/not_mapped_molecules/alignmentId_{alignment.id}.svg", bbox_inches='tight', pad_inches=0)
 

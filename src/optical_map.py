@@ -81,8 +81,8 @@ class Peaks:
         return maxValidPeakHeight
 
     def __getMaxCorrelationValueInAlignmentRange(self, reference: Alignment) -> float:
-        expectedQueryStartPosition = int(reference.expectedQueryStart / self.correlationResult.query.resolution)
-        expectedQueryEndPosition = int(reference.expectedQueryStart / self.correlationResult.query.resolution)
+        expectedQueryStartPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.query.resolution)
+        expectedQueryEndPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.query.resolution)
         expectedQueryRange: np.ndarray = self.correlationResult.correlation[expectedQueryStartPosition: expectedQueryEndPosition]
         return np.max(expectedQueryRange) if expectedQueryRange.any() else 0.
 

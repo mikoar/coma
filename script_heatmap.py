@@ -79,17 +79,16 @@ if __name__ == '__main__':
 
     df = pd.DataFrame()
 
-    alignmentsCount = 1000
-    resolutions = [32, 48, 64, 128, 256, 512]
-    blurs = [0, 2, 4, 8, 16]
-    excludedAlignmentIds = [110, 1490, 1561, 1562]
+    alignmentReader = AlignmentReader()
+    alignments = alignmentReader.readAlignments(alignmentsFile)
+    alignmentsCount = 200
+    resolutions = [128]  # [32, 48, 64, 128, 256, 512]
+    blurs = [4]  # [0, 2, 4, 8, 16]
     title = f"count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 
     alignmentsResultFile = f"output_heatmap/result_{title}.csv"
     initAlignmentsFile(alignmentsResultFile)
 
-    alignmentReader = AlignmentReader()
-    alignments = alignmentReader.readAlignments(alignmentsFile)
     # %%
 
     isoResolutionResults = []
@@ -103,7 +102,7 @@ if __name__ == '__main__':
                 validAlignments = []
 
                 validCount = 0
-                sampledAlignments = [a for a in Random(123).sample(alignments, alignmentsCount) if a.id not in excludedAlignmentIds]
+                sampledAlignments = [a for a in Random(123).sample(alignments, alignmentsCount)]
                 referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
                 alignmentsGroupedByReference = [[a for a in sampledAlignments if a.referenceId == r] for r in referenceIds]
                 for alignmentsForReference, referenceId in zip(alignmentsGroupedByReference, referenceIds):
