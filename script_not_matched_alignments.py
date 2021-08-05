@@ -44,7 +44,17 @@ def getAlignmentLengthToQueryLength(group: GroupBy):
                       'length':  group['QryLen'].iloc[0]})
 
 
-results = pd.read_csv("output_heatmap/result_count_1000_res_32,48,64,128,256,512_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur', 'alignmentId'])
+def getAlignmentLength(group: GroupBy):
+    return pd.Series({'alignmentLength': min(
+                      abs(group['QryEndPos'].iloc[0] - group['QryStartPos'].iloc[0]),
+                      abs(group['RefEndPos'].iloc[0] - group['RefStartPos'].iloc[0]))})
+
+
+def getConfidence(group: GroupBy):
+    return pd.Series({'confidence': group['confidence'].iloc[0]})
+
+
+results = pd.read_csv("output_heatmap/result_count_1703_res_128_blur_4.csv").set_index(['resolution', 'blur', 'alignmentId'])
 
 # %%
 groupedByAlignment = results.groupby('alignmentId')
@@ -62,7 +72,7 @@ mappedRatio.to_csv('output_heatmap/not_mapped_molecules/alignmentMappedRatio.csv
 # %%
 
 
-alignments = BionanoFileReader().readFile(alignmentsFile, ["XmapEntryID", "QryStartPos", "QryEndPos", "QryLen"])
+alignments = BionanoFileReader().readFile(alignmentsFile, ["XmapEntryID", "QryStartPos", "QryEndPos", "RefStartPos", "RefEndPos", "QryLen"])
 resultsWithLengths = results.reset_index().join(alignments.set_index('XmapEntryID'), on='alignmentId', how='left')
 groupedByAlignment = resultsWithLengths.groupby('alignmentId')
 
@@ -75,7 +85,16 @@ queryAlignmentSpanVsMappingRatio[['mappedRatio', 'alignmentLengthToQueryLength']
 plt.savefig('output_heatmap/not_mapped_molecules/mapped_ratio_vs_alignment_length_to_query_length.svg')
 
 
-# TODO:2 morep plots: just alignment length min(ref, q), not ratio and confidence
+# %%
+alignmentLength: pd.DataFrame = groupedByAlignment.apply(getAlignmentLength)
+alignmentLengthVsMappingRatio = pd.concat([mappedRatio, alignmentLength], axis=1)
+alignmentLengthVsMappingRatio[['mappedRatio', 'alignmentLength']].plot(
+    x='mappedRatio', y='alignmentLength', kind='scatter')
+# %%
+confidence: pd.DataFrame = groupedByAlignment.apply(getConfidence)
+confidenceVsMappingRatio = pd.concat([mappedRatio, confidence], axis=1)
+confidenceVsMappingRatio[['mappedRatio', 'confidence']].plot(
+    x='mappedRatio', y='confidence', kind='scatter')
 # %%
 qualityHist = plt.hist(results.score, 100)
 
