@@ -54,7 +54,7 @@ def getConfidence(group: GroupBy):
     return pd.Series({'confidence': group['confidence'].iloc[0]})
 
 
-results = pd.read_csv("output_heatmap/result_count_1703_res_128_blur_4.csv").set_index(['resolution', 'blur', 'alignmentId'])
+results = pd.read_csv("output_heatmap/result_count_1703_res_64,128,256,512,1024_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur', 'alignmentId'])
 
 # %%
 groupedByAlignment = results.groupby('alignmentId')
@@ -106,3 +106,9 @@ qualityHist = plt.hist(results.score, 100)
 # wykres rozkład stosunku długości alignmentu do długości zapytania i jak to się ma do wykrywalności
 # lista alignmentId -> % zmapowane
 # %%
+
+# pełne heatmapy dla 2 nwych funkcji waidacji
+# wybrać najlepsze kafelki, tylko je do scatter plotów, y - skala log
+# może plot 3d dla lepszego  odseparowania niealignujących się cząsteczek
+# histogram tylko dla wybranych kafelków
+# powtózenie dla molekuł, nie contigów (NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/)

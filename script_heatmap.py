@@ -84,7 +84,7 @@ if __name__ == '__main__':
     alignmentReader = AlignmentReader()
     alignments = alignmentReader.readAlignments(alignmentsFile)
     alignmentsCount = len(alignments)
-    resolutions = [128]  # [32, 48, 64, 128, 256, 512]
+    resolutions = [128]  # [64, 128, 256, 512, 1024]
     blurs = [4]  # [0, 2, 4, 8, 16]
     title = f"count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 

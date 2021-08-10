@@ -36,4 +36,10 @@ class Alignment:
     @property
     def queryReferenceAlignmentLengthDifference(self):
         """Alignment length on reference and query sequences may differ due to insertions and deletions"""
-        return (self.queryAlignmentEndPosition - self.queryAlignmentStartPosition) - (self.referenceAlignmentEndPosition - self.referenceAlignmentStartPosition)
+        return (self.queryAlignmentLength()) - (self.referenceAlignmentLength())
+
+    def referenceAlignmentLength(self):
+        return abs(self.referenceAlignmentEndPosition - self.referenceAlignmentStartPosition)
+
+    def queryAlignmentLength(self):
+        return abs(self.queryAlignmentEndPosition - self.queryAlignmentStartPosition)
