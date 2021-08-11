@@ -84,9 +84,9 @@ if __name__ == '__main__':
     alignmentReader = AlignmentReader()
     alignments = alignmentReader.readAlignments(alignmentsFile)
     alignmentsCount = len(alignments)
-    resolutions = [128]  # [64, 128, 256, 512, 1024]
-    blurs = [4]  # [0, 2, 4, 8, 16]
-    title = f"count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
+    resolutions = [64, 128, 256, 512, 1024]
+    blurs = [0, 2, 4, 8, 16]
+    title = f"peakWithinAlignmentSizeUncertainityFromCenter_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 
     alignmentsResultFile = f"output_heatmap/result_{title}.csv"
     initAlignmentsFile(alignmentsResultFile)
@@ -114,14 +114,14 @@ if __name__ == '__main__':
                         f"Resolution: {resolution}, blur: {blur}, {len(queries)} queries for reference {referenceId}")
 
                     poolResults = p_map(alignWithReference, list(getWorkerInputs(alignmentsForReference, reference.sequence, queries, resolution)), num_cpus=8)
-                    areValid, scores = zip(*poolResults)
+                    validationResults, scores = zip(*poolResults)
 
-                    alignmentDataToStore = [alignmentsToDict(a, score, resolution, blur, isValid)
-                                            for a, score, isValid in zip(alignmentsForReference, scores, areValid)]
+                    alignmentDataToStore = [alignmentsToDict(a, score, resolution, blur, validationResult)
+                                            for a, score, validationResult in zip(alignmentsForReference, scores, validationResults)]
 
                     appendAlignmentsToFile(alignmentDataToStore, alignmentsResultFile)
 
-                    validCount += sum(areValid)
+                    validCount += sum(validationResults)
                     progressBar.update(len(alignmentsForReference))
 
                 isoBlurResults.append(validCount / len(sampledAlignments) * 100)
