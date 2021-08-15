@@ -54,7 +54,10 @@ def getConfidence(group: GroupBy):
     return pd.Series({'confidence': group['confidence'].iloc[0]})
 
 
-results = pd.read_csv("output_heatmap/result_count_1703_res_64,128,256,512,1024_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur', 'alignmentId'])
+results = pd.read_csv(
+    "data/result_peakWithinAlignmentSizeFromCenter_count_1703_res_64,128,256,512,1024_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur'])
+bestResBlurPairs = [(64, 4), (64, 8), (128, 2), (128, 4), (256, 2)]
+results = results[results.index.isin(bestResBlurPairs)]
 
 # %%
 groupedByAlignment = results.groupby('alignmentId')
@@ -96,7 +99,7 @@ confidenceVsMappingRatio = pd.concat([mappedRatio, confidence], axis=1)
 confidenceVsMappingRatio[['mappedRatio', 'confidence']].plot(
     x='mappedRatio', y='confidence', kind='scatter')
 # %%
-qualityHist = plt.hist(results.score, 100)
+qualityHist = plt.hist(results[results.index == (128, 4)].score, 100)
 
 # przeanalizować niezmapowane contigi, + porównnać długość alignmentu/długość query, scharakteryzować dlaczego się nie mapują
 # znaleźć contigi, które nigdzie się nie mapują (przy żadnych parametrach)

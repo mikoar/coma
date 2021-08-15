@@ -12,7 +12,7 @@ class Validator:
         if not peak:
             return False
 
-        return self.__peakWithinAlignmentSizeUncertainityFromCenter(peak, reference)
+        return self.__peakWithinAlignmentSizeFromCenter(peak, reference)
 
     def __peakWithinAlignmentSizeFromCenter(self, peak: Peak, reference: Alignment):
         margin = max(reference.queryAlignmentLength(), reference.referenceAlignmentLength())/2 + self.resolution
