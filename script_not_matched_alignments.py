@@ -92,14 +92,25 @@ plt.savefig('output_heatmap/not_mapped_molecules/mapped_ratio_vs_alignment_lengt
 alignmentLength: pd.DataFrame = groupedByAlignment.apply(getAlignmentLength)
 alignmentLengthVsMappingRatio = pd.concat([mappedRatio, alignmentLength], axis=1)
 alignmentLengthVsMappingRatio[['mappedRatio', 'alignmentLength']].plot(
-    x='mappedRatio', y='alignmentLength', kind='scatter')
+    x='mappedRatio', y='alignmentLength', kind='scatter', logy=True)
 # %%
 confidence: pd.DataFrame = groupedByAlignment.apply(getConfidence)
 confidenceVsMappingRatio = pd.concat([mappedRatio, confidence], axis=1)
 confidenceVsMappingRatio[['mappedRatio', 'confidence']].plot(
-    x='mappedRatio', y='confidence', kind='scatter')
+    x='mappedRatio', y='confidence', kind='scatter', logy=True)
 # %%
-qualityHist = plt.hist(results[results.index == (128, 4)].score, 100)
+
+
+def plotHist(results, params):
+    plt.hist(results[results.index == params].score, 100)
+    plt.title(f"res {params[0]}; blur {params[1]}")
+
+
+plotHist(results, (64, 8))
+# %%
+plotHist(results, (128, 4))
+# %%
+plotHist(results, (256, 2))
 
 # przeanalizować niezmapowane contigi, + porównnać długość alignmentu/długość query, scharakteryzować dlaczego się nie mapują
 # znaleźć contigi, które nigdzie się nie mapują (przy żadnych parametrach)
