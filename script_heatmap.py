@@ -75,6 +75,10 @@ def alignWithReference(input):
 
 
 if __name__ == '__main__':
+    # baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge'
+    # alignmentsFile = f"{baseDir}/alignmolvref_contig1.xmap"
+    # referenceFile = f"{baseDir}/alignmolvref_contig1_r.cmap"
+    # queryFile = f"{baseDir}/alignmolvref_contig1_q.cmap"
     alignmentsFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.xmap"
     referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
     queryFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.cmap"
@@ -84,9 +88,9 @@ if __name__ == '__main__':
     alignmentReader = AlignmentReader()
     alignments = alignmentReader.readAlignments(alignmentsFile)
     alignmentsCount = len(alignments)
-    resolutions = [64, 128, 256, 512, 1024]
-    blurs = [0, 2, 4, 8, 16]
-    title = f"peakWithinAlignmentSizeUncertainityFromCenter_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
+    resolutions = [128, 256, 512, 1024]
+    blurs = [1, 2, 3, 4]
+    title = f"peakWithinAlignmentSizeUncertainityFromCenterWithFixedMargin_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 
     alignmentsResultFile = f"output_heatmap/result_{title}.csv"
     initAlignmentsFile(alignmentsResultFile)

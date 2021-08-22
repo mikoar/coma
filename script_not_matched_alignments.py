@@ -126,3 +126,8 @@ plotHist(results, (256, 2))
 # może plot 3d dla lepszego  odseparowania niealignujących się cząsteczek
 # histogram tylko dla wybranych kafelków
 # powtózenie dla molekuł, nie contigów (NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/)
+
+# 3 metoda, stare zostawić do opisania: peakWithinAlignmentSizeUncertainityFromCenter +- 1024 zamiast resolution
+# blur: [1,2,3,4]
+# res : bez 64
+# dla kazdego kafekla histogram, wszystkie na jednym plocie i z jedną skalą
