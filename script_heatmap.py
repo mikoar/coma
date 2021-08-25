@@ -140,10 +140,3 @@ if __name__ == '__main__':
 # wynik: ile % wyników się pokrywa z ref aligner, druga heatmapa z czasami obliczeń
 # potem przefiltrować cząsteczki i parametry, tak żeby zawsze mieć 100%, heat mapa parametry -> średnia/mediana score + odchylenie
 # kolejny wykres x - jakość,  y - liczba cząsteczek o tej wartości jakości, kernel density
-
-# ustalić z których danych korzystam
-
-
-# powtórzyć heat mapę, peak z obszaru oczekiwanego (lub max jeśli brak peaka) porównać z 5. peakiem, wyłączyć min-height
-
-# sprawdzić czy skopałem obracanie zapytania -> policzyć tylko dla + nową metodą walidacji

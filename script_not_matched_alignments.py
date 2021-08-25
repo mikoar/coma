@@ -1,6 +1,7 @@
 # %%
+import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, ticker
 from pandas.core.groupby.groupby import GroupBy
 
 from src.cmap_reader import AlignmentReader, BionanoFileReader, CmapReader
@@ -54,10 +55,13 @@ def getConfidence(group: GroupBy):
     return pd.Series({'confidence': group['confidence'].iloc[0]})
 
 
-results = pd.read_csv(
-    "data/result_peakWithinAlignmentSizeFromCenter_count_1703_res_64,128,256,512,1024_blur_0,2,4,8,16.csv").set_index(['resolution', 'blur'])
-bestResBlurPairs = [(64, 4), (64, 8), (128, 2), (128, 4), (256, 2)]
-results = results[results.index.isin(bestResBlurPairs)]
+# fileName = "data/result_peakWithinAlignmentSizeFromCenter_count_1703_res_64,128,256,512,1024_blur_0,2,4,8,16.csv"
+fileName = "output_heatmap/result_peakWithinAlignmentSizeUncertainityFromCenterWithFixedMargin_count_1703_res_128,256,512,1024_blur_1,2,3,4.csv"
+results = pd.read_csv(fileName).set_index(['resolution', 'blur'])
+# bestResBlurPairs = [(64, 4), (64, 8), (128, 2), (128, 4), (256, 2)]
+# results = results[results.index.isin(bestResBlurPairs)]
+
+# %%
 
 # %%
 groupedByAlignment = results.groupby('alignmentId')
@@ -100,17 +104,16 @@ confidenceVsMappingRatio[['mappedRatio', 'confidence']].plot(
     x='mappedRatio', y='confidence', kind='scatter', logy=True)
 # %%
 
+resolutions, blurs = list(zip(*results.index.drop_duplicates()))
+resolutionsCount = len(set(resolutions))
+blursCount = len(set(blurs))
+fig, axes = plt.subplots(resolutionsCount, blursCount, figsize=(10, 10), constrained_layout=True)
+xTicker = ticker.MultipleLocator(0.4)
+for resolution, blur, ax in zip(resolutions, blurs, axes.flat):
+    ax.hist(results[results.index == (resolution, blur)].score, 100, range=(-0.2, 1))
+    ax.xaxis.set_major_locator(xTicker)
+    ax.set_title(f"resolution: {resolution}, blur: {blur}")
 
-def plotHist(results, params):
-    plt.hist(results[results.index == params].score, 100)
-    plt.title(f"res {params[0]}; blur {params[1]}")
-
-
-plotHist(results, (64, 8))
-# %%
-plotHist(results, (128, 4))
-# %%
-plotHist(results, (256, 2))
 
 # przeanalizować niezmapowane contigi, + porównnać długość alignmentu/długość query, scharakteryzować dlaczego się nie mapują
 # znaleźć contigi, które nigdzie się nie mapują (przy żadnych parametrach)
