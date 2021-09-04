@@ -75,13 +75,13 @@ def alignWithReference(input):
 
 
 if __name__ == '__main__':
-    # baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge'
-    # alignmentsFile = f"{baseDir}/alignmolvref_contig1.xmap"
-    # referenceFile = f"{baseDir}/alignmolvref_contig1_r.cmap"
-    # queryFile = f"{baseDir}/alignmolvref_contig1_q.cmap"
-    alignmentsFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.xmap"
-    referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
-    queryFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.cmap"
+    baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/alignmolvref_contig7'
+    alignmentsFile = f"{baseDir}.xmap"
+    referenceFile = f"{baseDir}_r.cmap"
+    queryFile = f"{baseDir}_q.cmap"
+    # alignmentsFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.xmap"
+    # referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
+    # queryFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.cmap"
 
     df = pd.DataFrame()
 
@@ -89,8 +89,8 @@ if __name__ == '__main__':
     alignments = alignmentReader.readAlignments(alignmentsFile)
     alignmentsCount = len(alignments)
     resolutions = [128, 256, 512, 1024]
-    blurs = [1, 2, 3, 4]
-    title = f"peakWithinAlignmentSizeUncertainityFromCenterWithFixedMargin_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
+    blurs = [0, 2, 4, 8, 16]
+    title = f"contig7_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 
     alignmentsResultFile = f"output_heatmap/result_{title}.csv"
     initAlignmentsFile(alignmentsResultFile)
