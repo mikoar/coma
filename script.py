@@ -7,7 +7,7 @@ from matplotlib import rcParams  # type: ignore
 from scipy.optimize import minimize_scalar
 
 from src.cmap_reader import CmapReader
-from src.optical_map import OpticalMap
+from src.optical_map import VectorisedOpticalMap
 from src.plot import plotCorrelation
 from src.sequence_generator import SequenceGenerator
 
@@ -35,7 +35,7 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
     moleculeIds = [171, ]  # [11, 12, 21, 22, 31, 32]
 
     queries = reader.readQueries(queryFile, moleculeIds)
-    query: OpticalMap = queries[0]
+    query: VectorisedOpticalMap = queries[0]
     query.__reverse()
     result = query.correlate(reference)
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 
 from typing import List
 
@@ -10,21 +11,18 @@ from .peak import Peak
 from .validator import Validator
 
 
-class OpticalMap:
-    def __init__(self, moleculeId: int, sequence: np.ndarray, positions:  List[int], resolution: int) -> None:
-        self.sequence = sequence
-        self.positions = positions
-        self.moleculeId = moleculeId
-        self.resolution = resolution
+@dataclass(frozen=True)
+class VectorisedOpticalMap:
+    moleculeId: int
+    sequence: np.ndarray
+    positions:  List[int]
+    resolution: int
 
     def correlate(self, reference: np.ndarray, reverseStrand=False, flatten=True):
-        if reverseStrand:
-            self.sequence = self.sequence[::-1]
-
-        correlation = self.__getCorrelation(reference, self.sequence)
-
+        sequence = self.sequence[::-1] if reverseStrand else self.sequence
+        correlation = self.__getCorrelation(reference, sequence)
         if flatten:
-            normalizingFactor = self.__getCorrelation(reference, np.ones(len(self.sequence))) + np.sum(self.sequence)
+            normalizingFactor = self.__getCorrelation(reference, np.ones(len(sequence))) + np.sum(sequence)
             correlation = correlation / normalizingFactor
 
         correlation /= np.max(correlation)
@@ -35,11 +33,11 @@ class OpticalMap:
         return correlate(reference, query, mode='same', method='fft')
 
 
+@dataclass(frozen=True)
 class CorrelationResult:
-    def __init__(self, correlation: np.ndarray, query: OpticalMap, reference: np.ndarray) -> None:
-        self.correlation = correlation
-        self.query = query
-        self.reference = reference
+    correlation: np.ndarray
+    query: VectorisedOpticalMap
+    reference: np.ndarray
 
 
 class Peaks:

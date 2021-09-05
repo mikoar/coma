@@ -9,7 +9,7 @@ import pandas
 from matplotlib import pyplot as plt
 from matplotlib import rcParams, cycler  # type: ignore
 from cmap_reader import CmapReader
-from optical_map import OpticalMap
+from optical_map import VectorisedOpticalMap
 from sequence_generator import SequenceGenerator
 from plot import plotCorrelation
 from collections import Counter
@@ -41,7 +41,7 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
     moleculeIds = [testCase["moleculeId"]]
 
     queries = reader.readQueries(queryFile, moleculeIds)
-    query: OpticalMap = queries[0]
+    query: VectorisedOpticalMap = queries[0]
     if testCase["reverse"]:
         query.__reverse()
     result = query.correlate(reference)

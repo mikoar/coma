@@ -7,7 +7,7 @@ from pandas.core.frame import DataFrame
 from pandas.core.series import Series
 
 from .alignment import Alignment
-from .optical_map import OpticalMap
+from .optical_map import VectorisedOpticalMap
 from .sequence_generator import SequenceGenerator
 
 
@@ -45,7 +45,7 @@ class CmapReader:
     def readReferences(self, filePath: str, chromosomes: List[int] = []):
         return self.__read(filePath, chromosomes)
 
-    def __read(self, filePath, moleculeIds=None) -> List[OpticalMap]:
+    def __read(self, filePath, moleculeIds=None) -> List[VectorisedOpticalMap]:
         maps = self.reader.readFile(filePath, ["CMapId", "Position"])
 
         if moleculeIds:
@@ -59,14 +59,14 @@ class CmapReader:
         moleculeId = group["CMapId"].iloc[0]
         positions = group["Position"].sort_values().tolist()
         sequence = sequenceGenerator.positionsToSequence(positions)
-        return OpticalMap(moleculeId, sequence, positions, sequenceGenerator.resolution)
+        return VectorisedOpticalMap(moleculeId, sequence, positions, sequenceGenerator.resolution)
 
 
 class LazyCmapReader(CmapReader):
     def __init__(self, sequenceGenerator: SequenceGenerator) -> None:
         super().__init__(sequenceGenerator)
-        self.previousReferences: List[OpticalMap] = []
-        self.previousQueries: List[OpticalMap] = []
+        self.previousReferences: List[VectorisedOpticalMap] = []
+        self.previousQueries: List[VectorisedOpticalMap] = []
 
     def readReferences(self, filePath: str, chromosomes: List[int] = []):
         newReferenceIds = [c for c in chromosomes if c not in self.__previousReferenceIds()]

@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from src.alignment import Alignment
 from src.cmap_reader import AlignmentReader, CmapReader
-from src.optical_map import OpticalMap, Peaks
+from src.optical_map import VectorisedOpticalMap, Peaks
 from src.plot import plotHeatMap
 from src.sequence_generator import SequenceGenerator
 from src.validator import Validator
@@ -20,7 +20,7 @@ rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[OpticalMap], resolution: int):
+def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[VectorisedOpticalMap], resolution: int):
     for alignment in alignments:
         yield (alignment,
                reference,
