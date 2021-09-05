@@ -1,6 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
 
+from collections import namedtuple
+from dataclasses import dataclass
 from typing import List
 
 import numpy as np
@@ -9,6 +10,28 @@ from scipy.signal import correlate, find_peaks
 from .alignment import Alignment
 from .peak import Peak
 from .validator import Validator
+
+PositionWithSiteId = namedtuple("PositionWithIndex", ["siteId", "position"])
+
+
+@dataclass(frozen=True)
+class OpticalMap:
+    moleculeId: int
+    length: int
+    positions: List[int]
+
+    def getPositionsWithSiteIds(self, reverse: bool = False):
+        if reverse:
+            i = len(self.positions)
+            moleculeEndPosition = self.length - 1
+            for position in self.positions[::-1]:
+                yield PositionWithSiteId(i,  moleculeEndPosition - position)
+                i -= 1
+        else:
+            i = 1
+            for position in self.positions:
+                yield PositionWithSiteId(i, position)
+                i += 1
 
 
 @dataclass(frozen=True)
