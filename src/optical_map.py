@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import List
+from typing import Generator, List, NamedTuple
 
 import numpy as np
 from scipy.signal import correlate, find_peaks
@@ -11,7 +11,10 @@ from .alignment import Alignment
 from .peak import Peak
 from .validator import Validator
 
-PositionWithSiteId = namedtuple("PositionWithIndex", ["siteId", "position"])
+
+class PositionWithSiteId(NamedTuple):
+    siteId: int
+    position: int
 
 
 @dataclass(frozen=True)
