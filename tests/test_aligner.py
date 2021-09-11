@@ -47,13 +47,13 @@ def test_ignoresExtraPositionsOnReferenceBeforeAndAfterAlignment():
 
 
 def test_alignsPositionsWithinMaxDistanceOnly():
-    reference = OpticalMap(1, length=300, positions=[88, 89, 149, 198, 199])
-    query = OpticalMap(1, length=100, positions=[0, 49, 89])
     maxDistance = 10
+    reference = OpticalMap(1, length=300, positions=[88, 114, 149, 183, 209])
+    query = OpticalMap(1, length=100, positions=[0, 24, 49, 74, 99])
 
     result = Aligner(maxDistance).align(reference, query, 149)
 
-    assert [(2, 1), (3, 2), (4, 3)] == result.alignedPairs
+    assert [(2, 2), (3, 3), (4, 4)] == result.alignedPairs
 
 
 def test_ignoresPositionBeyondMaxDistance():

@@ -40,7 +40,7 @@ class Aligner:
         referenceStartPosition = round(peakPosition - query.length/2)
         referenceEndPosition = round(peakPosition + query.length/2)
 
-        referencePositions = list(takewhile(lambda x: x.position <= referenceEndPosition, dropwhile(
+        referencePositions = list(takewhile(lambda x: x.position <= referenceEndPosition + self.maxDistance, dropwhile(
             lambda x: x.position < referenceStartPosition - self.maxDistance, reference.getPositionsWithSiteIds())))
 
         queryPositions = query.getPositionsWithSiteIds(isReverse)
