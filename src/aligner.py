@@ -8,15 +8,15 @@ from .optical_map import OpticalMap, PositionWithSiteId
 
 
 class AlignedPair(NamedTuple):
-    reference: int
-    query: int
+    referencePositionIndex: int
+    queryPositionIndex: int
     distance: int
 
     def __repr__(self) -> str:
-        return f"({self.reference}, {self.query})"
+        return f"({self.referencePositionIndex}, {self.queryPositionIndex})"
 
     def __eq__(self, other) -> bool:
-        return self.reference == other[0] and self.query == other[1]
+        return self.referencePositionIndex == other[0] and self.queryPositionIndex == other[1]
 
 
 @dataclass
@@ -90,7 +90,7 @@ class Aligner:
         return _ReferenceIndexWithDistanceToQuery(index, distance) if distance <= self.maxDistance else None
 
     def __removeDuplicatedPairsWithNonMinimalDistance(self, pairs: Iterator[AlignedPair]):
-        referenceSelector: Callable[[AlignedPair], int] = lambda pair: pair.reference
+        referenceSelector: Callable[[AlignedPair], int] = lambda pair: pair.referencePositionIndex
         distanceSelector: Callable[[AlignedPair], int] = lambda pair: pair.distance
         for _, ambiguousPairs in groupby(pairs, referenceSelector):
             yield min(ambiguousPairs, key=distanceSelector)

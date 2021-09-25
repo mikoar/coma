@@ -1,27 +1,27 @@
 from typing import List, NamedTuple
 
 
-class Segment(NamedTuple):
+class AlignmentSegment(NamedTuple):
     start: int
     end: int
-    segmentScore: float
+    score: float
 
 
-class SegmentScorer:
+class AlignmentScorer:
     def getSegmentWithMaxScore(self, alignmentScores: List[float]):
         start = end = 0
-        currentScore = 0.
-        maxScore = Segment(0, 0, 0)
+        currentScore = 0
+        segmentWithMaxScore = AlignmentSegment(0, 0, 0)
 
         alignmentEnd = len(alignmentScores) - 1
         while end <= alignmentEnd:
             if currentScore + alignmentScores[end] > 0:
                 currentScore += alignmentScores[end]
-                if currentScore > maxScore.segmentScore:
-                    maxScore = Segment(start, end, currentScore)
+                if currentScore > segmentWithMaxScore.score:
+                    segmentWithMaxScore = AlignmentSegment(start, end, currentScore)
                 end += 1
             else:
                 start = end = end + 1
                 currentScore = 0
 
-        return maxScore
+        return segmentWithMaxScore
