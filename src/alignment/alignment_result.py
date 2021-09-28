@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Iterable
+from typing import List
 
 from src.alignment.aligned_pair import AlignedPair
-from src.alignment.alignment_score import RegionScorePenalties
+from src.alignment.region_score_penalties import RegionScorePenalties
+from src.alignment.region_scores import RegionScores
 
 
 @dataclass
@@ -13,7 +14,10 @@ class AlignmentResult:
     referenceEndPosition: int
     alignedPairs: List[AlignedPair]
 
-    def getRegionScores(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000) -> Iterable[int | float]:
+    def getRegionScores(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000):
+        return RegionScores(list(self.__getRegionScoresIterable(penalties, perfectMatchScore)))
+
+    def __getRegionScoresIterable(self, penalties, perfectMatchScore):
         previousPair: AlignedPair | None = None
         for pair in self.alignedPairs:
             yield (perfectMatchScore

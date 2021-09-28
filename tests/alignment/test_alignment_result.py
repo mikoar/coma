@@ -5,7 +5,7 @@ from mock import Mock, call
 
 from src.alignment.aligned_pair import AlignedPair
 from src.alignment.alignment_result import AlignmentResult
-from src.alignment.alignment_score import RegionScorePenalties
+from src.alignment.region_score_penalties import RegionScorePenalties
 
 
 def test_getRegionScores_appliesPenalties_1pair():
@@ -16,10 +16,10 @@ def test_getRegionScores_appliesPenalties_1pair():
     penalties.getUnmatchedLabelPenalty = Mock(return_value=5)
 
     perfectMatchScore = 100
-    regionScores = list(alignmentResult.getRegionScores(penalties, perfectMatchScore))
+    regionScores = alignmentResult.getRegionScores(penalties, perfectMatchScore)
 
-    assert len(regionScores) == 1
-    assert regionScores == [100 - 2 - 5]
+    assert len(regionScores.scores) == 1
+    assert regionScores.scores == [100 - 2 - 5]
     penalties.getDistancePenalty.assert_called_once_with(None, pairs[0])
     penalties.getUnmatchedLabelPenalty.assert_called_once_with(None, pairs[0])
 
@@ -32,10 +32,10 @@ def test_getRegionScores_appliesPenalties_2pairs():
     penalties.getUnmatchedLabelPenalty = Mock(return_value=5)
 
     perfectMatchScore = 100
-    regionScores = list(alignmentResult.getRegionScores(penalties, perfectMatchScore))
+    regionScores = alignmentResult.getRegionScores(penalties, perfectMatchScore)
 
-    assert len(regionScores) == 2
-    assert regionScores == [100 - 2 - 5] * 2
+    assert len(regionScores.scores) == 2
+    assert regionScores.scores == [100 - 2 - 5] * 2
     calls = [call(None, pairs[0]), call(pairs[0], pairs[1])]
     penalties.getDistancePenalty.assert_has_calls(calls)
     penalties.getUnmatchedLabelPenalty.assert_has_calls(calls)
