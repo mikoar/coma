@@ -1,6 +1,7 @@
 
+from typing import Callable
 import pytest
-from src.aligner import Aligner
+from src.aligner import AlignedPair, Aligner
 from src.optical_map import OpticalMap
 
 
@@ -48,12 +49,23 @@ def test_ignoresExtraPositionsOnReferenceBeforeAndAfterAlignment():
 
 def test_alignsPositionsWithinMaxDistanceOnly():
     maxDistance = 10
-    reference = OpticalMap(1, length=300, positions=[88, 114, 149, 183, 209])
-    query = OpticalMap(1, length=100, positions=[0, 24, 49, 74, 99])
+    reference = OpticalMap(1, length=300, positions=[89, 115, 150, 185, 210])
+    query = OpticalMap(1, length=100, positions=[0, 25, 50, 75, 99])
 
-    result = Aligner(maxDistance).align(reference, query, 149)
+    result = Aligner(maxDistance).align(reference, query, 150)
 
     assert [(2, 2), (3, 3), (4, 4)] == result.alignedPairs
+
+
+def test_returnsCorrectQueryShifts():
+    maxDistance = 10
+    reference = OpticalMap(1, length=300, positions=[105, 115, 150, 185, 194])
+    query = OpticalMap(1, length=100, positions=[0, 25, 50, 75, 99])
+
+    result = Aligner(maxDistance).align(reference, query, 150)
+
+    distanceSelector: Callable[[AlignedPair], int] = lambda pair: pair.queryShift
+    assert [-5, 10, 0, -10, 5] == list(map(distanceSelector, result.alignedPairs))
 
 
 def test_ignoresPositionBeyondMaxDistance():

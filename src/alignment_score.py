@@ -1,4 +1,7 @@
-from typing import List, NamedTuple
+from __future__ import annotations
+from typing import Iterable, List, NamedTuple, Union
+
+from .aligner import AlignmentResult, AlignedPair
 
 
 class AlignmentSegment(NamedTuple):
@@ -25,3 +28,33 @@ class AlignmentScorer:
                 currentScore = 0
 
         return segmentWithMaxScore
+
+
+class RegionScorer:
+    def __init__(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000) -> None:
+        self.perfectMatchScore = perfectMatchScore
+        self.penalties = penalties
+
+    def getRegionScores(self, alignmentResult: AlignmentResult) -> Iterable[Union[int, float]]:
+        previousPair: AlignedPair | None = None
+        for pair in alignmentResult.alignedPairs:
+            yield (self.perfectMatchScore
+                   - self.penalties.getUnmatchedLabelPenalty(previousPair, pair)
+                   - self.penalties.getDistancePenalty(previousPair, pair))
+            previousPair = pair
+
+
+class RegionScorePenalties:
+    def __init__(self, unmatchedLabelPenalty: int = 5000, distancePenaltyExponent: float = 1.2) -> None:
+        self.unmatchedLabelPenalty = unmatchedLabelPenalty
+        self.distancePenaltyExponent = distancePenaltyExponent
+
+    def getUnmatchedLabelPenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair):
+        if not previousPair:
+            return 0
+        else:
+            return self.unmatchedLabelPenalty * (currentPair.getFalseNegativesCount(previousPair)
+                                                 + currentPair.getFalsePositivesCount(previousPair))
+
+    def getDistancePenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair):
+        return 0.
