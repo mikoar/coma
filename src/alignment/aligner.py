@@ -1,40 +1,12 @@
 from __future__ import annotations
+
 from bisect import bisect_left
-from collections import namedtuple
-from dataclasses import dataclass
 from itertools import dropwhile, takewhile, groupby
-from typing import Callable, Iterator, List, NamedTuple, Tuple
+from typing import Callable, Iterator, List, NamedTuple
 
-from .optical_map import OpticalMap, PositionWithSiteId
-
-
-class AlignedPair(NamedTuple):
-    referencePositionIndex: int
-    queryPositionIndex: int
-    queryShift: int = 0
-
-    @property
-    def distance(self):
-        return abs(self.queryShift)
-
-    def getFalseNegativesCount(self, previousPair: AlignedPair | None):
-        return 0 if not previousPair else self.referencePositionIndex - previousPair.referencePositionIndex - 1
-
-    def getFalsePositivesCount(self, previousPair: AlignedPair | None):
-        return 0 if not previousPair else abs(self.queryPositionIndex - previousPair.queryPositionIndex) - 1
-
-    def __repr__(self) -> str:
-        return f"({self.referencePositionIndex}, {self.queryPositionIndex})"
-
-    def __eq__(self, other) -> bool:
-        return self.referencePositionIndex == other[0] and self.queryPositionIndex == other[1]
-
-
-@dataclass
-class AlignmentResult:
-    referenceStartPosition: int
-    referenceEndPosition: int
-    alignedPairs: List[AlignedPair]
+from src.alignment.aligned_pair import AlignedPair
+from src.alignment.alignment_result import AlignmentResult
+from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
 
 class _ReferenceIndexWithDistance(NamedTuple):
@@ -52,13 +24,13 @@ class _ReferenceIndexWithDistance(NamedTuple):
 
 
 class Aligner:
-
     def __init__(self, maxDistance: int) -> None:
         self.maxDistance = maxDistance
 
-    def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int, isReverse: bool = False) -> AlignmentResult:
-        referenceStartPosition = round(peakPosition - query.length/2)
-        referenceEndPosition = round(peakPosition + query.length/2)
+    def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
+              isReverse: bool = False) -> AlignmentResult:
+        referenceStartPosition = round(peakPosition - query.length / 2)
+        referenceEndPosition = round(peakPosition + query.length / 2)
 
         referencePositions = list(takewhile(lambda x: x.position <= referenceEndPosition + self.maxDistance, dropwhile(
             lambda x: x.position < referenceStartPosition - self.maxDistance, reference.getPositionsWithSiteIds())))
@@ -83,18 +55,27 @@ class Aligner:
         index = bisect_left(referencePositions, queryPosition)
 
         if index == 0:
-            distanceToNextReferencePosition = self.__getDistanceToNextReferencePosition(queryPosition, referencePositions, index)
-            return self.__returnIfisWithinMaxDistance(_ReferenceIndexWithDistance.withQueryBeforeReference(index, distanceToNextReferencePosition))
+            distanceToNextReferencePosition = self.__getDistanceToNextReferencePosition(queryPosition,
+                                                                                        referencePositions, index)
+            return self.__returnIfIsWithinMaxDistance(
+                _ReferenceIndexWithDistance.withQueryBeforeReference(index, distanceToNextReferencePosition))
         if index == len(referencePositions):
-            distanceToPreviousReferencePosition = self.__getDistanceToPreviousReferencePosition(queryPosition, referencePositions, index)
-            return self.__returnIfisWithinMaxDistance(_ReferenceIndexWithDistance.withQueryAfterReference(-1, distanceToPreviousReferencePosition))
+            distanceToPreviousReferencePosition = self.__getDistanceToPreviousReferencePosition(queryPosition,
+                                                                                                referencePositions,
+                                                                                                index)
+            return self.__returnIfIsWithinMaxDistance(
+                _ReferenceIndexWithDistance.withQueryAfterReference(-1, distanceToPreviousReferencePosition))
 
-        distanceToNextReferencePosition = self.__getDistanceToNextReferencePosition(queryPosition, referencePositions, index)
-        distanceToPreviousReferencePosition = self.__getDistanceToPreviousReferencePosition(queryPosition, referencePositions, index)
+        distanceToNextReferencePosition = self.__getDistanceToNextReferencePosition(queryPosition, referencePositions,
+                                                                                    index)
+        distanceToPreviousReferencePosition = self.__getDistanceToPreviousReferencePosition(queryPosition,
+                                                                                            referencePositions, index)
         if distanceToNextReferencePosition < distanceToPreviousReferencePosition:
-            return self.__returnIfisWithinMaxDistance(_ReferenceIndexWithDistance.withQueryBeforeReference(index, distanceToNextReferencePosition))
+            return self.__returnIfIsWithinMaxDistance(
+                _ReferenceIndexWithDistance.withQueryBeforeReference(index, distanceToNextReferencePosition))
         else:
-            return self.__returnIfisWithinMaxDistance(_ReferenceIndexWithDistance.withQueryAfterReference(index - 1, distanceToPreviousReferencePosition))
+            return self.__returnIfIsWithinMaxDistance(
+                _ReferenceIndexWithDistance.withQueryAfterReference(index - 1, distanceToPreviousReferencePosition))
 
     def __getDistanceToNextReferencePosition(self, queryPosition, referencePositions, index):
         nextRef = referencePositions[index]
@@ -104,7 +85,7 @@ class Aligner:
         previousRefPosition = referencePositions[index - 1]
         return queryPosition - previousRefPosition
 
-    def __returnIfisWithinMaxDistance(self, pair: _ReferenceIndexWithDistance):
+    def __returnIfIsWithinMaxDistance(self, pair: _ReferenceIndexWithDistance):
         return pair if pair.distance <= self.maxDistance else None
 
     def __removeDuplicatedPairsWithNonMinimalDistance(self, pairs: Iterator[AlignedPair]):

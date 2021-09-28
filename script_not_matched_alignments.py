@@ -1,12 +1,11 @@
 # %%
-import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt, ticker
 from pandas.core.groupby.groupby import GroupBy
 
-from src.cmap_reader import AlignmentReader, BionanoFileReader, CmapReader
-from src.plot import plotCorrelation
-from src.sequence_generator import SequenceGenerator
+from src.correlation.cmap_reader import AlignmentReader, BionanoFileReader, CmapReader
+from src.correlation.plot import plotCorrelation
+from src.correlation.sequence_generator import SequenceGenerator
 
 alignmentsFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.xmap"
 referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
@@ -27,8 +26,8 @@ def plot(alignmentIds, resolution=128, blur=4):
         reference = next(r for r in references if r.moleculeId == alignment.referenceId)
         result = query.correlate(reference.sequence, reverseStrand=alignment.reverseStrand)
         fig = plotCorrelation(result, resolution, (alignment.expectedQueryMoleculeStart, alignment.expectedQueryMoleculeEnd))
-        fig.suptitle(f'Alignment {alignment.id}')
-        fig.savefig(f"output_heatmap/not_mapped_molecules/alignmentId_{alignment.id}.svg", bbox_inches='tight', pad_inches=0)
+        fig.suptitle(f'Alignment {alignment.alignmentId}')
+        fig.savefig(f"output_heatmap/not_mapped_molecules/alignmentId_{alignment.alignmentId}.svg", bbox_inches='tight', pad_inches=0)
 
 
 def validityRatio(isValidColumn: pd.Series):

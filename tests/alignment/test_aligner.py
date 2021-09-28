@@ -1,25 +1,27 @@
-
 from typing import Callable
+
 import pytest
-from src.aligner import AlignedPair, Aligner
-from src.optical_map import OpticalMap
+
+from src.alignment.aligned_pair import AlignedPair
+from src.alignment.aligner import Aligner
+from src.correlation.optical_map import OpticalMap
 
 
 @pytest.mark.parametrize("reference,query,peakPosition", [
     (
-        OpticalMap(1, length=9, positions=[0, 4, 8]),
-        OpticalMap(1, length=9, positions=[0, 4, 8]),
-        4
+            OpticalMap(1, length=9, positions=[0, 4, 8]),
+            OpticalMap(1, length=9, positions=[0, 4, 8]),
+            4
     ),
     (
-        OpticalMap(1, length=10, positions=[0, 5, 9]),
-        OpticalMap(1, length=10, positions=[0, 5, 9]),
-        5
+            OpticalMap(1, length=10, positions=[0, 5, 9]),
+            OpticalMap(1, length=10, positions=[0, 5, 9]),
+            5
     ),
     (
-        OpticalMap(1, length=30, positions=[10, 15, 19]),
-        OpticalMap(1, length=10, positions=[0, 5, 9]),
-        15
+            OpticalMap(1, length=30, positions=[10, 15, 19]),
+            OpticalMap(1, length=10, positions=[0, 5, 9]),
+            15
     )
 ])
 def test_perfectMatch(reference, query, peakPosition):
@@ -81,14 +83,14 @@ def test_ignoresPositionBeyondMaxDistance():
 
 @pytest.mark.parametrize("reference,query", [
     (
-        OpticalMap(1, length=300, positions=[100, 149, 174, 189]),
-        OpticalMap(1, length=100, positions=[0, 49, 89])
+            OpticalMap(1, length=300, positions=[100, 149, 174, 189]),
+            OpticalMap(1, length=100, positions=[0, 49, 89])
     ), (
-        OpticalMap(1, length=300, positions=[100, 149, 150, 189]),
-        OpticalMap(1, length=100, positions=[0, 49, 89])
+            OpticalMap(1, length=300, positions=[100, 149, 150, 189]),
+            OpticalMap(1, length=100, positions=[0, 49, 89])
     ), (
-        OpticalMap(1, length=300, positions=[100, 149, 188, 189]),
-        OpticalMap(1, length=100, positions=[0, 49, 89])
+            OpticalMap(1, length=300, positions=[100, 149, 188, 189]),
+            OpticalMap(1, length=100, positions=[0, 49, 89])
     )
 ])
 def test_handlesDeletions_noAlignmentForReferencePosition3(reference, query):
@@ -100,14 +102,14 @@ def test_handlesDeletions_noAlignmentForReferencePosition3(reference, query):
 
 @pytest.mark.parametrize("reference,query", [
     (
-        OpticalMap(1, length=300, positions=[100, 149, 189]),
-        OpticalMap(1, length=100, positions=[0, 49, 74, 89])
+            OpticalMap(1, length=300, positions=[100, 149, 189]),
+            OpticalMap(1, length=100, positions=[0, 49, 74, 89])
     ), (
-        OpticalMap(1, length=300, positions=[100, 149, 189]),
-        OpticalMap(1, length=100, positions=[0, 49, 50, 89])
+            OpticalMap(1, length=300, positions=[100, 149, 189]),
+            OpticalMap(1, length=100, positions=[0, 49, 50, 89])
     ), (
-        OpticalMap(1, length=300, positions=[100, 149, 189]),
-        OpticalMap(1, length=100, positions=[0, 49, 88, 89])
+            OpticalMap(1, length=300, positions=[100, 149, 189]),
+            OpticalMap(1, length=100, positions=[0, 49, 88, 89])
     )
 ])
 def test_handlesInsertions_noAlignmentForQueryPosition3(reference, query):

@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from collections import namedtuple
 from dataclasses import dataclass
-from typing import Generator, List, NamedTuple
+from typing import List, NamedTuple
 
 import numpy as np
 from scipy.signal import correlate, find_peaks
 
-from .alignment import Alignment
-from .peak import Peak
-from .validator import Validator
+from src.correlation.alignment import Alignment
+from src.correlation.peak import Peak
+from src.correlation.validator import Validator
 
 
 class PositionWithSiteId(NamedTuple):
@@ -28,7 +27,7 @@ class OpticalMap:
             i = len(self.positions)
             moleculeEndPosition = self.length - 1
             for position in self.positions[::-1]:
-                yield PositionWithSiteId(i,  moleculeEndPosition - position)
+                yield PositionWithSiteId(i, moleculeEndPosition - position)
                 i -= 1
         else:
             i = 1
@@ -41,7 +40,7 @@ class OpticalMap:
 class VectorisedOpticalMap:
     moleculeId: int
     sequence: np.ndarray
-    positions:  List[int]
+    positions: List[int]
     resolution: int
 
     def correlate(self, reference: np.ndarray, reverseStrand=False, flatten=True):
@@ -69,9 +68,10 @@ class CorrelationResult:
 class Peaks:
     def __init__(self, correlationResult: CorrelationResult) -> None:
         self.correlationResult = correlationResult
-        self.peakPositions, self.peakProperties = find_peaks(correlationResult.correlation,
-                                                             height=0.01,
-                                                             distance=((5 * 10 ** 6) / correlationResult.query.resolution))
+        self.peakPositions, self.peakProperties = find_peaks(
+            correlationResult.correlation,
+            height=0.01,
+            distance=((5 * 10 ** 6) / correlationResult.query.resolution))
 
     def getRelativeScore(self, reference: Alignment, validator: Validator):
         maxPeak = self.max
@@ -79,7 +79,9 @@ class Peaks:
         if maxPeak and isMaxValid:
             peakHeight = maxPeak.height
         else:
-            peakHeight = self.__getMaxValidPeakHeight(reference, validator) or self.__getMaxCorrelationValueInAlignmentRange(reference)
+            peakHeight = self.__getMaxValidPeakHeight(reference,
+                                                      validator) or self.__getMaxCorrelationValueInAlignmentRange(
+                reference)
         return self.__score(peakHeight)
 
     @property
@@ -107,7 +109,8 @@ class Peaks:
     def __getMaxCorrelationValueInAlignmentRange(self, reference: Alignment) -> float:
         expectedQueryStartPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.query.resolution)
         expectedQueryEndPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.query.resolution)
-        expectedQueryRange: np.ndarray = self.correlationResult.correlation[expectedQueryStartPosition: expectedQueryEndPosition]
+        expectedQueryRange: np.ndarray = self.correlationResult.correlation[
+                                         expectedQueryStartPosition: expectedQueryEndPosition]
         return np.max(expectedQueryRange) if expectedQueryRange.any() else 0.
 
     def __score(self, peakHeight: float | None):

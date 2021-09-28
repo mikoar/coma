@@ -6,9 +6,9 @@ import pandas
 from pandas.core.frame import DataFrame
 from pandas.core.series import Series
 
-from .alignment import Alignment
-from .optical_map import VectorisedOpticalMap
-from .sequence_generator import SequenceGenerator
+from src.correlation.alignment import Alignment
+from src.correlation.optical_map import VectorisedOpticalMap
+from src.correlation.sequence_generator import SequenceGenerator
 
 
 class BionanoFileReader:
@@ -62,35 +62,6 @@ class CmapReader:
         return VectorisedOpticalMap(moleculeId, sequence, positions, sequenceGenerator.resolution)
 
 
-class LazyCmapReader(CmapReader):
-    def __init__(self, sequenceGenerator: SequenceGenerator) -> None:
-        super().__init__(sequenceGenerator)
-        self.previousReferences: List[VectorisedOpticalMap] = []
-        self.previousQueries: List[VectorisedOpticalMap] = []
-
-    def readReferences(self, filePath: str, chromosomes: List[int] = []):
-        newReferenceIds = [c for c in chromosomes if c not in self.__previousReferenceIds()]
-        newReferences = super().readReferences(filePath, newReferenceIds)
-        referencesRequestedAgain = [r for r in self.previousReferences if r.moleculeId in chromosomes]
-        references = newReferences + referencesRequestedAgain
-        self.previousReferences = references
-        return references
-
-    def readQueries(self, filePath: str,  moleculeIds: List[int] = []):
-        newQueryIds = [c for c in moleculeIds if c not in self.__previousQueryIds()]
-        newQueries = super().readQueries(filePath, newQueryIds)
-        queriesRequestedAgain = [r for r in self.previousQueries if r.moleculeId in moleculeIds]
-        queries = newQueries + queriesRequestedAgain
-        self.previousQueries = queries
-        return queries
-
-    def __previousReferenceIds(self):
-        return list(map(lambda r: r.moleculeId, self.previousReferences))
-
-    def __previousQueryIds(self):
-        return list(map(lambda r: r.moleculeId, self.previousReferences))
-
-
 class AlignmentReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
@@ -107,4 +78,5 @@ class AlignmentReader:
     @staticmethod
     def __parseRow(row: Series):
         return Alignment(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
-                         row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"], row["Confidence"], row["QryLen"])
+                         row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
+                         row["Confidence"], row["QryLen"])

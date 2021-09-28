@@ -1,7 +1,7 @@
 
 import pytest
-from src.alignment import Alignment
-from src.validator import Validator
+from src.correlation.alignment import Alignment
+from src.correlation.validator import Validator
 
 
 @pytest.mark.skip

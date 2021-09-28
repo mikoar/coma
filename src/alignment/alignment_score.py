@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Iterable, List, NamedTuple, Union
 
-from .aligner import AlignmentResult, AlignedPair
+from typing import List, NamedTuple
+
+from src.alignment.aligned_pair import AlignedPair
 
 
 class AlignmentSegment(NamedTuple):
@@ -28,20 +29,6 @@ class AlignmentScorer:
                 currentScore = 0
 
         return segmentWithMaxScore
-
-
-class RegionScorer:
-    def __init__(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000) -> None:
-        self.perfectMatchScore = perfectMatchScore
-        self.penalties = penalties
-
-    def getRegionScores(self, alignmentResult: AlignmentResult) -> Iterable[Union[int, float]]:
-        previousPair: AlignedPair | None = None
-        for pair in alignmentResult.alignedPairs:
-            yield (self.perfectMatchScore
-                   - self.penalties.getUnmatchedLabelPenalty(previousPair, pair)
-                   - self.penalties.getDistancePenalty(previousPair, pair))
-            previousPair = pair
 
 
 class RegionScorePenalties:

@@ -1,4 +1,4 @@
-from .vectorise import blur, vectorisePositions, vectoriseSegments
+from src.correlation.vectorise import vectorisePositions, vectoriseSegments, blur
 
 
 class SequenceGenerator:

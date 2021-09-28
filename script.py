@@ -6,10 +6,10 @@ from matplotlib import cycler  # type: ignore
 from matplotlib import rcParams  # type: ignore
 from scipy.optimize import minimize_scalar
 
-from src.cmap_reader import CmapReader
-from src.optical_map import VectorisedOpticalMap
-from src.plot import plotCorrelation
-from src.sequence_generator import SequenceGenerator
+from src.correlation.cmap_reader import CmapReader
+from src.correlation.optical_map import VectorisedOpticalMap
+from src.correlation.plot import plotCorrelation
+from src.correlation.sequence_generator import SequenceGenerator
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])

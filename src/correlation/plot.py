@@ -6,7 +6,7 @@ import seaborn as sns
 from matplotlib import cycler, pyplot, rcParams  # type: ignore
 from matplotlib.ticker import FuncFormatter
 
-from .optical_map import CorrelationResult, Peaks
+from src.correlation.optical_map import CorrelationResult, Peaks
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -27,7 +27,8 @@ def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], resu
             verticalalignment='top')
 
 
-def plotCorrelation(result: CorrelationResult, resolution: int,  expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
+def plotCorrelation(result: CorrelationResult, resolution: int,
+                    expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
     fig = pyplot.figure(figsize=(40, 5))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
@@ -60,7 +61,7 @@ def __plotPeaks(result: CorrelationResult, resolution, ax):
     peaksExceptMax = [peak for peak in peaks.peaks if peak != maxPeak.position]
     ax.plot(maxPeak.positionInReference, 1, "x", markersize=24, markeredgewidth=4)
     ax.plot([p.positionInReference for p in peaksExceptMax], result.correlation[[
-            p.position for p in peaksExceptMax]], "x", markersize=16, markeredgewidth=4, alpha=0.5)
+        p.position for p in peaksExceptMax]], "x", markersize=16, markeredgewidth=4, alpha=0.5)
 
 
 def plotHeatMap(arr, fileName, x, y):

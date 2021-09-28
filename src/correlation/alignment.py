@@ -1,6 +1,6 @@
 class Alignment:
-    def __init__(self, id, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence, queryLength) -> None:
-        self.id = id
+    def __init__(self, alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence, queryLength) -> None:
+        self.alignmentId = alignmentId
         self.queryId = int(queryId)
         self.referenceId = int(refId)
         self.__queryStartPositionRelativeToStrand = int(queryStart)

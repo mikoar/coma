@@ -133,7 +133,7 @@ Scripts/
 pyvenv.cfg
 
 .vscode/
-
+.idea/
 share/
 
 plots*/

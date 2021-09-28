@@ -1,7 +1,7 @@
 
 import pytest
 
-from src.vectorise import blur, vectorisePositions, vectoriseSegments
+from src.correlation.vectorise import blur, vectorisePositions, vectoriseSegments
 
 
 def test_vectorise_simple():

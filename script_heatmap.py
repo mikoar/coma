@@ -10,11 +10,11 @@ from p_tqdm import p_map
 from tqdm import tqdm
 
 from src.alignment import Alignment
-from src.cmap_reader import AlignmentReader, CmapReader
-from src.optical_map import VectorisedOpticalMap, Peaks
-from src.plot import plotHeatMap
-from src.sequence_generator import SequenceGenerator
-from src.validator import Validator
+from src.correlation.cmap_reader import AlignmentReader, CmapReader
+from src.correlation.optical_map import VectorisedOpticalMap, Peaks
+from src.correlation.plot import plotHeatMap
+from src.correlation.sequence_generator import SequenceGenerator
+from src.correlation.validator import Validator
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -32,7 +32,7 @@ def alignmentsToDict(a: Alignment, score: float, resolution: int, blur: int, isV
     return {
         'resolution': resolution,
         'blur': blur,
-        'alignmentId': a.id,
+        'alignmentId': a.alignmentId,
         'queryId': a.queryId,
         'referenceId': a.referenceId,
         'confidence': a.confidence,
