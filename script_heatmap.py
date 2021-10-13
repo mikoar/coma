@@ -9,7 +9,7 @@ from matplotlib import rcParams
 from p_tqdm import p_map
 from tqdm import tqdm
 
-from src.alignment import Alignment
+from src.correlation.alignment import Alignment
 from src.correlation.cmap_reader import AlignmentReader, CmapReader
 from src.correlation.optical_map import VectorisedOpticalMap, Peaks
 from src.correlation.plot import plotHeatMap
@@ -20,7 +20,8 @@ rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[VectorisedOpticalMap], resolution: int):
+def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[VectorisedOpticalMap],
+                    resolution: int):
     for alignment in alignments:
         yield (alignment,
                reference,
@@ -71,6 +72,8 @@ def alignWithReference(input):
     isMaxPeakValid = validator.validate(peaks.max, alignment)
 
     return (1 if isMaxPeakValid else 0, peaks.getRelativeScore(alignment, validator))
+
+
 # %%
 
 
@@ -110,18 +113,21 @@ if __name__ == '__main__':
                 validCount = 0
                 sampledAlignments = [a for a in Random(123).sample([a for a in alignments], alignmentsCount)]
                 referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
-                alignmentsGroupedByReference = [[a for a in sampledAlignments if a.referenceId == r] for r in referenceIds]
+                alignmentsGroupedByReference = [[a for a in sampledAlignments if a.referenceId == r] for r in
+                                                referenceIds]
                 for alignmentsForReference, referenceId in zip(alignmentsGroupedByReference, referenceIds):
                     reference = reader.readReference(referenceFile, referenceId)
                     queries = reader.readQueries(queryFile, list(map(lambda a: a.queryId, alignmentsForReference)))
                     progressBar.set_description(
                         f"Resolution: {resolution}, blur: {blur}, {len(queries)} queries for reference {referenceId}")
 
-                    poolResults = p_map(alignWithReference, list(getWorkerInputs(alignmentsForReference, reference.sequence, queries, resolution)), num_cpus=8)
+                    poolResults = p_map(alignWithReference, list(
+                        getWorkerInputs(alignmentsForReference, reference.sequence, queries, resolution)), num_cpus=8)
                     validationResults, scores = zip(*poolResults)
 
                     alignmentDataToStore = [alignmentsToDict(a, score, resolution, blur, validationResult)
-                                            for a, score, validationResult in zip(alignmentsForReference, scores, validationResults)]
+                                            for a, score, validationResult in
+                                            zip(alignmentsForReference, scores, validationResults)]
 
                     appendAlignmentsToFile(alignmentDataToStore, alignmentsResultFile)
 
@@ -140,3 +146,5 @@ if __name__ == '__main__':
 # wynik: ile % wyników się pokrywa z ref aligner, druga heatmapa z czasami obliczeń
 # potem przefiltrować cząsteczki i parametry, tak żeby zawsze mieć 100%, heat mapa parametry -> średnia/mediana score + odchylenie
 # kolejny wykres x - jakość,  y - liczba cząsteczek o tej wartości jakości, kernel density
+
+# TODO: contigi 21 w mniejszym zakresie blur, podesłać scatter ploty

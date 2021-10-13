@@ -15,9 +15,9 @@ class AlignmentResult:
     alignedPairs: List[AlignedPair]
 
     def getRegionScores(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000):
-        return RegionScores(list(self.__getRegionScoresIterable(penalties, perfectMatchScore)))
+        return RegionScores(list(self.__getRegionScoresGenerator(penalties, perfectMatchScore)))
 
-    def __getRegionScoresIterable(self, penalties, perfectMatchScore):
+    def __getRegionScoresGenerator(self, penalties, perfectMatchScore):
         previousPair: AlignedPair | None = None
         for pair in self.alignedPairs:
             yield (perfectMatchScore

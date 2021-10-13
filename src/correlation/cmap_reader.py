@@ -33,10 +33,10 @@ class CmapReader:
         self.sequenceGenerator = sequenceGenerator
         self.reader = BionanoFileReader()
 
-    def readQueries(self, filePath: str,  moleculeIds: List[int] = []):
+    def readQueries(self, filePath: str, moleculeIds: List[int] = []):
         return self.__read(filePath, moleculeIds)
 
-    def readQuery(self, filePath: str,  moleculeId: int):
+    def readQuery(self, filePath: str, moleculeId: int):
         return self.__read(filePath, [moleculeId])[0]
 
     def readReference(self, filePath: str, chromosome: int = 1):
@@ -46,7 +46,7 @@ class CmapReader:
         return self.__read(filePath, chromosomes)
 
     def __read(self, filePath, moleculeIds=None) -> List[VectorisedOpticalMap]:
-        maps = self.reader.readFile(filePath, ["CMapId", "Position"])
+        maps = self.reader.readFile(filePath, ["CMapId", "Position", "ContigLength"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]
@@ -55,11 +55,12 @@ class CmapReader:
         return opticalMaps.tolist()
 
     @staticmethod
-    def __parseCmapRowsGroup(group,  sequenceGenerator: SequenceGenerator):
+    def __parseCmapRowsGroup(group, sequenceGenerator: SequenceGenerator):
         moleculeId = group["CMapId"].iloc[0]
+        length = int(group["ContigLength"].iloc[0])
         positions = group["Position"].sort_values().tolist()
         sequence = sequenceGenerator.positionsToSequence(positions)
-        return VectorisedOpticalMap(moleculeId, sequence, positions, sequenceGenerator.resolution)
+        return VectorisedOpticalMap(moleculeId, length, positions, sequence, sequenceGenerator.resolution)
 
 
 class AlignmentReader:
@@ -68,8 +69,9 @@ class AlignmentReader:
 
     def readAlignments(self, filePath: str, alignmentIds=None) -> List[Alignment]:
         alignments = self.reader.readFile(filePath,
-                                          ["XmapEntryID", "QryContigID", "RefContigID",  "QryStartPos",
-                                           "QryEndPos", "RefStartPos",  "RefEndPos", "Orientation", "Confidence", "QryLen"])
+                                          ["XmapEntryID", "QryContigID", "RefContigID", "QryStartPos",
+                                           "QryEndPos", "RefStartPos", "RefEndPos", "Orientation",
+                                           "Confidence", "QryLen", "Alignment"])
         if alignmentIds:
             alignments = alignments[alignments["XmapEntryID"].isin(alignmentIds)]
 
@@ -77,6 +79,6 @@ class AlignmentReader:
 
     @staticmethod
     def __parseRow(row: Series):
-        return Alignment(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
-                         row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
-                         row["Confidence"], row["QryLen"])
+        return Alignment.parse(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
+                               row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
+                               row["Confidence"], row["QryLen"], row["Alignment"])

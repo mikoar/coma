@@ -37,10 +37,8 @@ class OpticalMap:
 
 
 @dataclass(frozen=True)
-class VectorisedOpticalMap:
-    moleculeId: int
+class VectorisedOpticalMap(OpticalMap):
     sequence: np.ndarray
-    positions: List[int]
     resolution: int
 
     def correlate(self, reference: np.ndarray, reverseStrand=False, flatten=True):

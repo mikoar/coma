@@ -139,3 +139,4 @@ share/
 plots*/
 .local_data/
 output_heatmap/
+output_alignments/

@@ -1,15 +1,39 @@
+from typing import NamedTuple, List
+
+
+class RefAlignedPair(NamedTuple):
+    referencePositionIndex: int
+    queryPositionIndex: int
+
+
 class Alignment:
-    def __init__(self, alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence, queryLength) -> None:
+    def __init__(self, alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, reverseStrand, confidence,
+                 queryLength, alignedPairs: List[RefAlignedPair]) -> None:
         self.alignmentId = alignmentId
-        self.queryId = int(queryId)
-        self.referenceId = int(refId)
-        self.__queryStartPositionRelativeToStrand = int(queryStart)
-        self.__queryEndPositionRelativeToStrand = int(queryEnd)
-        self.referenceAlignmentStartPosition = int(refStart)
-        self.referenceAlignmentEndPosition = int(refEnd)
-        self.reverseStrand = orientation == "-"
+        self.queryId = queryId
+        self.referenceId = refId
+        self.__queryStartPositionRelativeToStrand = queryStart
+        self.__queryEndPositionRelativeToStrand = queryEnd
+        self.referenceAlignmentStartPosition = refStart
+        self.referenceAlignmentEndPosition = refEnd
+        self.reverseStrand = reverseStrand
         self.confidence = confidence
-        self.queryLength = int(queryLength)
+        self.queryLength = queryLength
+        self.alignedPairs = alignedPairs
+
+    @staticmethod
+    def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence,
+              queryLength, alignment: str):
+        return Alignment(
+            alignmentId,
+            int(queryId),
+            int(refId), int(queryStart), int(queryEnd),
+            int(refStart),
+            int(refEnd),
+            orientation == "-",
+            confidence,
+            int(queryLength),
+            list(map(lambda pair: RefAlignedPair(*pair.split(',')), alignment[:-1].replace('(', '').split(')'))))
 
     @property
     def expectedPeakPosition(self):
