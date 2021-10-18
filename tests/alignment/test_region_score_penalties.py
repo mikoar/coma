@@ -26,8 +26,8 @@ def test_regionScorePenalties_unmatchedLabelPenalty(previousPair: AlignedPair | 
 
 @pytest.mark.parametrize("previousPair, pair, distance", [
     (None, AlignedPair(1, 1, 0), 0),
-    (None, AlignedPair(1, 1, 5), 5),
-    (None, AlignedPair(1, 1, -5), 5),
+    (None, AlignedPair(1, 1, 5), 0),
+    (None, AlignedPair(1, 1, -5), 0),
     (AlignedPair(1, 1, 5), AlignedPair(1, 1, 5), 0),
     (AlignedPair(1, 1, -5), AlignedPair(1, 1, 5), 10),
 ])

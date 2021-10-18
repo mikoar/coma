@@ -78,7 +78,7 @@ def alignWithReference(input):
 
 
 if __name__ == '__main__':
-    baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/alignmolvref_contig7'
+    baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/alignmolvref_contig21'
     alignmentsFile = f"{baseDir}.xmap"
     referenceFile = f"{baseDir}_r.cmap"
     queryFile = f"{baseDir}_q.cmap"
@@ -92,8 +92,8 @@ if __name__ == '__main__':
     alignments = alignmentReader.readAlignments(alignmentsFile)
     alignmentsCount = len(alignments)
     resolutions = [128, 256, 512, 1024]
-    blurs = [0, 2, 4, 8, 16]
-    title = f"contig7_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
+    blurs = [1, 2, 3, 4]  # [0, 2, 4, 8, 16]
+    title = f"contig21_count_{alignmentsCount}_res_{','.join(str(x) for x in resolutions)}_blur_{','.join(str(x) for x in blurs)}"
 
     alignmentsResultFile = f"output_heatmap/result_{title}.csv"
     initAlignmentsFile(alignmentsResultFile)

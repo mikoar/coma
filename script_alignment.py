@@ -56,7 +56,7 @@ def alignWithReference(params: Tuple[Alignment, VectorisedOpticalMap, Vectorised
     if not isMaxPeakValid:
         return
 
-    alignmentResult = Aligner(1000).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
+    alignmentResult = Aligner(2500).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
     return AlignmentComparer().compare(refAlignment, alignmentResult)
 
 
@@ -100,3 +100,5 @@ if __name__ == '__main__':
 
             appendToFile(alignmentComparisonResults, alignmentComparisonResultFile)
             progressBar.update(len(alignmentsForReference))
+
+            # TODO: wyzualizacje porównań alignmentów, zaaplikować ucinanie segmentów, zaznaczyć na wizualizacji gdzie ucina

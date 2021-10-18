@@ -16,5 +16,6 @@ class RegionScorePenalties:
                                                  + currentPair.getFalsePositivesCount(previousPair))
 
     def getDistancePenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair):
-        previousPairQueryShift = previousPair.queryShift if previousPair else 0
-        return abs(previousPairQueryShift - currentPair.queryShift) ** self.distancePenaltyExponent
+        if not previousPair:
+            return 0
+        return abs(previousPair.queryShift - currentPair.queryShift) ** self.distancePenaltyExponent
