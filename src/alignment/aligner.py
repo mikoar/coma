@@ -5,7 +5,7 @@ from itertools import dropwhile, takewhile, groupby
 from typing import Callable, Iterator, List, NamedTuple
 
 from src.alignment.aligned_pair import AlignedPair
-from src.alignment.alignment_result import AlignmentResult
+from src.alignment.alignment_results import AlignmentResultRow
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
 
@@ -28,7 +28,7 @@ class Aligner:
         self.maxDistance = maxDistance
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
-              isReverse: bool = False) -> AlignmentResult:
+              isReverse: bool = False) -> AlignmentResultRow:
         referenceStartPosition = round(peakPosition - query.length / 2)
         referenceEndPosition = round(peakPosition + query.length / 2)
 
@@ -39,7 +39,12 @@ class Aligner:
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceStartPosition)
         deduplicatedAlignedPairs = self.__removeDuplicatedPairsWithNonMinimalDistance(alignedPairs)
 
-        return AlignmentResult(referenceStartPosition, referenceEndPosition, list(deduplicatedAlignedPairs))
+        return AlignmentResultRow(query.moleculeId,
+                                  reference.moleculeId,
+                                  referenceStartPosition,
+                                  referenceEndPosition,
+                                  isReverse,
+                                  list(deduplicatedAlignedPairs))
 
     def __getAlignedPairs(self, referencePositions: List[PositionWithSiteId],
                           queryPositions: Iterator[PositionWithSiteId], referenceStartPosition: int):

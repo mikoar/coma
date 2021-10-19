@@ -3,9 +3,11 @@ import pandas as pd
 from matplotlib import pyplot as plt, ticker
 from pandas.core.groupby.groupby import GroupBy
 
-from src.correlation.cmap_reader import AlignmentReader, CmapReader, BionanoFileReader
 from src.correlation.plot import plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
+from src.parsers.bionano_file_reader import BionanoFileReader
+from src.parsers.cmap_reader import CmapReader
+from src.parsers.xmap_reader import XmapReader
 
 baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/alignmolvref_contig21'
 alignmentsFile = f"{baseDir}.xmap"
@@ -14,7 +16,7 @@ queryFile = f"{baseDir}_q.cmap"
 
 
 def plot(alignmentIds, resolution=128, blur=4):
-    alignmentReader = AlignmentReader()
+    alignmentReader = XmapReader()
     alignments = alignmentReader.readAlignments(alignmentsFile, alignmentIds)
     queryIds = [a.queryId for a in alignments]
     referenceIds = [a.referenceId for a in alignments]
@@ -43,7 +45,7 @@ def getMappedRatio(group: GroupBy):
 
 def getAlignmentLengthToQueryLength(group: GroupBy):
     return pd.Series({'alignmentLengthToQueryLength':
-                      abs(group['QryEndPos'].iloc[0] - group['QryStartPos'].iloc[0]) / group['QryLen'].iloc[0],
+                          abs(group['QryEndPos'].iloc[0] - group['QryStartPos'].iloc[0]) / group['QryLen'].iloc[0],
                       'length': group['QryLen'].iloc[0]})
 
 

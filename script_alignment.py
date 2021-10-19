@@ -11,11 +11,14 @@ from tqdm import tqdm
 
 from src.alignment.aligner import Aligner
 from src.alignment.alignment_comparer import AlignmentComparer, AlignmentComparisonResult
+from src.alignment.alignment_results import AlignmentResults
 from src.correlation.alignment import Alignment
-from src.correlation.cmap_reader import AlignmentReader, CmapReader
 from src.correlation.optical_map import VectorisedOpticalMap, Peaks
 from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
+from src.parsers.cmap_reader import CmapReader
+from src.parsers.xmap_reader import XmapReader
+
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -56,8 +59,8 @@ def alignWithReference(params: Tuple[Alignment, VectorisedOpticalMap, Vectorised
     if not isMaxPeakValid:
         return
 
-    alignmentResult = Aligner(2500).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
-    return AlignmentComparer().compare(refAlignment, alignmentResult)
+    alignmentResultRow = Aligner(2500).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
+    return AlignmentComparer().compare(refAlignment, alignmentResultRow), alignmentResultRow
 
 
 if __name__ == '__main__':
@@ -69,22 +72,22 @@ if __name__ == '__main__':
     # referenceFile = "data/NA12878_BSPQI/hg19_NT.BSPQI_0kb_0labels.cmap"
     # queryFile = "data/NA12878_BSPQI/EXP_REFINEFINAL1.cmap"
 
-    alignmentReader = AlignmentReader()
-    alignments = alignmentReader.readAlignments(alignmentsFile)
+    xmapReader = XmapReader()
+    alignments = xmapReader.readAlignments(alignmentsFile)
     alignmentsCount = 100  # len(alignments)
     resolution = 256  # [128, 256, 512, 1024]
     blur = 4  # [0, 2, 4, 8, 16]
     title = f"count_{alignmentsCount}_res_{resolution}_blur_{blur}"
 
-    alignmentComparisonResultFile = f"output_alignments/result_{title}.csv"
+    alignmentComparisonResultFile = f"output_alignments/compare_{title}.csv"
+    alignmentResultFile = f"output_alignments/alignment_{title}.xmap"
     os.makedirs("output_alignments", exist_ok=True)
     initFile(alignmentComparisonResultFile)
-    # %%
 
     with tqdm(total=alignmentsCount) as progressBar:
         sequenceGenerator = SequenceGenerator(resolution, blur)
         reader = CmapReader(sequenceGenerator)
-
+        alignmentResultRows = []
         sampledAlignments = [a for a in Random(123).sample([a for a in alignments], alignmentsCount)]
         referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
         alignmentsGroupedByReference = [[a for a in sampledAlignments if a.referenceId == r] for r in
@@ -95,10 +98,14 @@ if __name__ == '__main__':
             progressBar.set_description(
                 f"Resolution: {resolution}, blur: {blur}, {len(queries)} queries for reference {referenceId}")
 
-            alignmentComparisonResults = p_map(alignWithReference, list(
+            poolResults = p_map(alignWithReference, list(
                 getWorkerInputs(alignmentsForReference, reference, queries, resolution)), num_cpus=8)
-
+            alignmentComparisonResults, alignmentResultRowsForReference = zip(*[r for r in poolResults if r])
+            alignmentResultRows += alignmentResultRowsForReference
             appendToFile(alignmentComparisonResults, alignmentComparisonResultFile)
             progressBar.update(len(alignmentsForReference))
 
-            # TODO: wyzualizacje porównań alignmentów, zaaplikować ucinanie segmentów, zaznaczyć na wizualizacji gdzie ucina
+        alignmentResults = AlignmentResults(referenceFile, queryFile, alignmentResultRows)
+        xmapReader.writeAlignments(alignmentResultFile, alignmentResults)
+
+        # TODO: wyzualizacje porównań alignmentów, zaaplikować ucinanie segmentów, zaznaczyć na wizualizacji gdzie ucina

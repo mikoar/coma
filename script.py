@@ -6,10 +6,10 @@ from matplotlib import cycler  # type: ignore
 from matplotlib import rcParams  # type: ignore
 from scipy.optimize import minimize_scalar
 
-from src.correlation.cmap_reader import CmapReader
 from src.correlation.optical_map import VectorisedOpticalMap
 from src.correlation.plot import plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
+from src.parsers.cmap_reader import CmapReader
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -18,7 +18,8 @@ rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 def print1To0Ratio(sequence):
     counts = Counter(sequence)
     print(f"1: {counts[1]:,}, 0: {counts[0]:,}")
-    print("1 to 0 ratio: %.3f" % ((counts[1]/counts[0])))
+    print("1 to 0 ratio: %.3f" % ((counts[1] / counts[0])))
+
 
 # %%
 

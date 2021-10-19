@@ -10,11 +10,12 @@ from p_tqdm import p_map
 from tqdm import tqdm
 
 from src.correlation.alignment import Alignment
-from src.correlation.cmap_reader import AlignmentReader, CmapReader
 from src.correlation.optical_map import VectorisedOpticalMap, Peaks
 from src.correlation.plot import plotHeatMap
 from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
+from src.parsers.cmap_reader import CmapReader
+from src.parsers.xmap_reader import XmapReader
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -88,7 +89,7 @@ if __name__ == '__main__':
 
     df = pd.DataFrame()
 
-    alignmentReader = AlignmentReader()
+    alignmentReader = XmapReader()
     alignments = alignmentReader.readAlignments(alignmentsFile)
     alignmentsCount = len(alignments)
     resolutions = [128, 256, 512, 1024]
