@@ -1,3 +1,4 @@
+import os.path
 from typing import List
 
 import pandas as pd
@@ -30,22 +31,37 @@ class XmapReader:
                 "XmapEntryID": "int",
                 "QryContigID": "int",
                 "RefContigID": "int",
+                "QryStartPos": "float",
+                "QryEndPos": "float",
                 "RefStartPos": "float",
                 "RefEndPos": "float",
                 "Orientation": "string",
                 "Confidence": "float",
+                "HitEnum": "string",
+                "QryLen": "float",
+                "RefLen": "float",
+                "LabelChannel": "int",
                 "Alignment": "string"
             }
+            file.write("# XMAP File Version:\t0.2\n")
+            file.write(f"# Reference Maps From:\t{os.path.abspath(alignmentResults.referenceFilePath)}\n")
+            file.write(f"# Query Maps From:\t{os.path.abspath(alignmentResults.queryFilePath)}\n")
             file.write("\t".join([columnName for columnName in columns.keys()]) + "\n")
-            file.write("\t".join([columnType for columnType in columns.values()])+ "\n")
+            file.write("\t".join([columnType for columnType in columns.values()]) + "\n")
 
             dataFrame = DataFrame([{
                 "QryContigID": row.queryId,
                 "RefContigID": row.referenceId,
+                "QryStartPos": "{:.1f}".format(row.queryStartPosition),
+                "QryEndPos": "{:.1f}".format(row.queryEndPosition),
                 "RefStartPos": "{:.1f}".format(row.referenceStartPosition),
                 "RefEndPos": "{:.1f}".format(row.referenceEndPosition),
                 "Orientation": "-" if row.reverseStrand else "+",
                 "Confidence": "{:.2f}".format(row.score),
+                "HitEnum": row.cigarString,
+                "QryLen": "{:.1f}".format(row.queryLength),
+                "RefLen": "{:.1f}".format(row.referenceLength),
+                "LabelChannel": 1,
                 "Alignment": "".join(
                     [f"({pair.referencePositionIndex},{pair.queryPositionIndex})" for pair in row.alignedPairs]),
             } for row in alignmentResults.rows], index=pd.RangeIndex(start=1, stop=len(alignmentResults.rows) + 1))

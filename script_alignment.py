@@ -64,7 +64,8 @@ def alignWithReference(params: Tuple[Alignment, VectorisedOpticalMap, Vectorised
 
 
 if __name__ == '__main__':
-    baseDir = '.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/alignmolvref_contig21'
+    chromosome = 21
+    baseDir = f'.local_data/NA12878_BSPQI_pipeline_results/output/contigs/alignmolvref/merge/alignmolvref_contig{chromosome}'
     alignmentsFile = f"{baseDir}.xmap"
     referenceFile = f"{baseDir}_r.cmap"
     queryFile = f"{baseDir}_q.cmap"
@@ -79,8 +80,8 @@ if __name__ == '__main__':
     blur = 4  # [0, 2, 4, 8, 16]
     title = f"count_{alignmentsCount}_res_{resolution}_blur_{blur}"
 
-    alignmentComparisonResultFile = f"output_alignments/compare_{title}.csv"
-    alignmentResultFile = f"output_alignments/alignment_{title}.xmap"
+    alignmentComparisonResultFile = f"output_alignments/compare_{chromosome}_{title}.csv"
+    alignmentResultFile = f"output_alignments/alignment_{chromosome}_{title}.xmap"
     os.makedirs("output_alignments", exist_ok=True)
     initFile(alignmentComparisonResultFile)
 

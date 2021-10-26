@@ -39,12 +39,16 @@ class Aligner:
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceStartPosition)
         deduplicatedAlignedPairs = self.__removeDuplicatedPairsWithNonMinimalDistance(alignedPairs)
 
-        return AlignmentResultRow(query.moleculeId,
+        return AlignmentResultRow(list(deduplicatedAlignedPairs),
+                                  query.moleculeId,
                                   reference.moleculeId,
+                                  1,
+                                  query.length,
                                   referenceStartPosition,
                                   referenceEndPosition,
-                                  isReverse,
-                                  list(deduplicatedAlignedPairs))
+                                  query.length,
+                                  reference.length,
+                                  isReverse)
 
     def __getAlignedPairs(self, referencePositions: List[PositionWithSiteId],
                           queryPositions: Iterator[PositionWithSiteId], referenceStartPosition: int):
