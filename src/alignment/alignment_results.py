@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
-from itertools import zip_longest
 from typing import List
 
 from src.alignment.aligned_pair import AlignedPair, HitEnum
@@ -35,12 +35,36 @@ class AlignmentResultRow:
 
     @property
     def cigarString(self):
-        hits = [hit for pair, nextPair in zip_longest(self.alignedPairs, self.alignedPairs[1:]) for hit in
-                pair.getHitEnums(nextPair)]
-        return "".join(self.__hitEnumGenerator(hits))
+        hitEnums = list(self.__getHitEnums())
+        return "".join(self.__aggregateHitEnums(hitEnums))
+
+    def __getHitEnums(self):
+        pairs = list(self.__deduplicatedPairs)
+        pairsIterator = iter(pairs)
+        currentPair: AlignedPair = next(pairsIterator)
+        previousQuery = currentPair.queryPositionIndex
+        for referenceIndex in range(pairs[0].referencePositionIndex,
+                                    pairs[-1].referencePositionIndex + 1):
+            queryIncrement = abs(currentPair.queryPositionIndex - previousQuery)
+            if queryIncrement > 1:
+                for _ in range(1, queryIncrement):
+                    yield HitEnum.INSERTION
+                previousQuery = currentPair.queryPositionIndex
+            if currentPair.referencePositionIndex == referenceIndex:
+                previousQuery = currentPair.queryPositionIndex
+                currentPair = next(pairsIterator, None)
+                yield HitEnum.MATCH
+            elif currentPair.referencePositionIndex > referenceIndex:
+                yield HitEnum.DELETION
+
+    @property
+    def __deduplicatedPairs(self):
+        for _, ambiguousPairs in itertools.groupby(self.alignedPairs, lambda pair: pair.queryPositionIndex):
+            *_, lastPair = ambiguousPairs
+            yield lastPair
 
     @staticmethod
-    def __hitEnumGenerator(hits: List[HitEnum]):
+    def __aggregateHitEnums(hits: List[HitEnum]):
         count = 1
         previousHit: HitEnum = hits[0]
         for hit in hits[1:]:

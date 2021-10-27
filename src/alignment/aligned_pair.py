@@ -25,17 +25,6 @@ class AlignedPair(NamedTuple):
     def getFalsePositivesCount(self, previousPair: AlignedPair | None):
         return 0 if not previousPair else abs(self.queryPositionIndex - previousPair.queryPositionIndex) - 1
 
-    def getHitEnums(self, nextPair: AlignedPair | None):
-        if not nextPair:
-            return [HitEnum.MATCH]
-
-        queryIncrement = abs(nextPair.queryPositionIndex - self.queryPositionIndex)
-        referenceIncrement = nextPair.referencePositionIndex - self.referencePositionIndex
-        if queryIncrement == 0 or referenceIncrement > 1:
-            return [HitEnum.DELETION] * (referenceIncrement - queryIncrement)
-        else:
-            return [HitEnum.MATCH] + [HitEnum.INSERTION] * (queryIncrement - 1)
-
     def __repr__(self) -> str:
         return f"({self.referencePositionIndex}, {self.queryPositionIndex})"
 
