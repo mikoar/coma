@@ -77,7 +77,8 @@ class AlignmentResultRow:
                 yield AlignmentResultRow.__hitToString(count, previousHit)
                 previousHit = hit
                 count = 1
-        yield AlignmentResultRow.__hitToString(count, hit)
+        if hit:
+            yield AlignmentResultRow.__hitToString(count, hit)
 
     @staticmethod
     def __hitToString(count, hit):

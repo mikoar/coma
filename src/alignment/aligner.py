@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from bisect import bisect_left
 from itertools import dropwhile, takewhile, groupby
 from typing import Callable, Iterator, List, NamedTuple
 
@@ -32,72 +31,44 @@ class Aligner:
         referenceStartPosition = round(peakPosition - query.length / 2)
         referenceEndPosition = round(peakPosition + query.length / 2)
 
-        referencePositions = list(takewhile(lambda x: x.position <= referenceEndPosition + self.maxDistance, dropwhile(
-            lambda x: x.position < referenceStartPosition - self.maxDistance, reference.getPositionsWithSiteIds())))
+        referencePositions = self.__getReferencePositionsWithinRange(reference, referenceStartPosition,
+                                                                     referenceEndPosition)
 
-        queryPositions = query.getPositionsWithSiteIds(isReverse)
+        queryPositions = list(query.getPositionsWithSiteIds(isReverse))
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceStartPosition)
-        deduplicatedAlignedPairs = self.__removeDuplicatedPairsWithNonMinimalDistance(alignedPairs)
+        deduplicatedAlignedPairs = self.__removeDuplicatedReferenceAlignments(alignedPairs)
 
         return AlignmentResultRow(list(deduplicatedAlignedPairs),
                                   query.moleculeId,
                                   reference.moleculeId,
                                   *((query.positions[-1], query.positions[0]) if isReverse else (
-                                    query.positions[0], query.positions[-1])),
+                                      query.positions[0], query.positions[-1])),
                                   referenceStartPosition,
                                   referenceEndPosition,
                                   query.length,
                                   reference.length,
                                   isReverse)
 
+    def __getReferencePositionsWithinRange(self, reference: OpticalMap, referenceStartPosition: int,
+                                           referenceEndPosition: int):
+        return list(takewhile(lambda x: x.position <= referenceEndPosition + self.maxDistance, dropwhile(
+            lambda x: x.position < referenceStartPosition - self.maxDistance,
+            reference.getPositionsWithSiteIds())))
+
     def __getAlignedPairs(self, referencePositions: List[PositionWithSiteId],
-                          queryPositions: Iterator[PositionWithSiteId], referenceStartPosition: int):
-        referencePositionsWithoutIndices = list(map(lambda x: x.position, referencePositions))
-        for queryPosition in queryPositions:
-            indexWithDistance = self.__findClosestPositionInReference(referencePositionsWithoutIndices,
-                                                                      queryPosition.position + referenceStartPosition)
-            if indexWithDistance is not None:
-                referencePosition = referencePositions[indexWithDistance.index]
-                yield AlignedPair(referencePosition.siteId, queryPosition.siteId, indexWithDistance.queryShift)
+                          queryPositions: List[PositionWithSiteId], referenceStartPosition: int):
+        for referencePosition in referencePositions:
+            referencePositionAdjustedToQuery = referencePosition.position - referenceStartPosition
+            queryPositionsWithinDistance = takewhile(
+                lambda x: x.position <= referencePositionAdjustedToQuery + self.maxDistance, dropwhile(
+                    lambda x: x.position < referencePositionAdjustedToQuery - self.maxDistance,
+                    queryPositions))
+            for queryPosition in queryPositionsWithinDistance:
+                yield AlignedPair(referencePosition.siteId, queryPosition.siteId,
+                                  queryPosition.position - referencePositionAdjustedToQuery)
 
-    def __findClosestPositionInReference(self, referencePositions: List[int], queryPosition: int):
-        index = bisect_left(referencePositions, queryPosition)
-
-        if index == 0:
-            distanceToNextReferencePosition = self.__getDistanceToNextReferencePosition(queryPosition,
-                                                                                        referencePositions, index)
-            return self.__returnIfIsWithinMaxDistance(
-                _ReferenceIndexWithDistance.withQueryBeforeReference(index, distanceToNextReferencePosition))
-        if index == len(referencePositions):
-            distanceToPreviousReferencePosition = self.__getDistanceToPreviousReferencePosition(queryPosition,
-                                                                                                referencePositions,
-                                                                                                index)
-            return self.__returnIfIsWithinMaxDistance(
-                _ReferenceIndexWithDistance.withQueryAfterReference(-1, distanceToPreviousReferencePosition))
-
-        distanceToNextReferencePosition = self.__getDistanceToNextReferencePosition(queryPosition, referencePositions,
-                                                                                    index)
-        distanceToPreviousReferencePosition = self.__getDistanceToPreviousReferencePosition(queryPosition,
-                                                                                            referencePositions, index)
-        if distanceToNextReferencePosition < distanceToPreviousReferencePosition:
-            return self.__returnIfIsWithinMaxDistance(
-                _ReferenceIndexWithDistance.withQueryBeforeReference(index, distanceToNextReferencePosition))
-        else:
-            return self.__returnIfIsWithinMaxDistance(
-                _ReferenceIndexWithDistance.withQueryAfterReference(index - 1, distanceToPreviousReferencePosition))
-
-    def __getDistanceToNextReferencePosition(self, queryPosition, referencePositions, index):
-        nextRef = referencePositions[index]
-        return nextRef - queryPosition
-
-    def __getDistanceToPreviousReferencePosition(self, queryPosition, referencePositions, index):
-        previousRefPosition = referencePositions[index - 1]
-        return queryPosition - previousRefPosition
-
-    def __returnIfIsWithinMaxDistance(self, pair: _ReferenceIndexWithDistance):
-        return pair if pair.distance <= self.maxDistance else None
-
-    def __removeDuplicatedPairsWithNonMinimalDistance(self, pairs: Iterator[AlignedPair]):
+    @staticmethod
+    def __removeDuplicatedReferenceAlignments(pairs: Iterator[AlignedPair]):
         referenceSelector: Callable[[AlignedPair], int] = lambda pair: pair.referencePositionIndex
         distanceSelector: Callable[[AlignedPair], int] = lambda pair: pair.distance
         for _, ambiguousPairs in groupby(pairs, referenceSelector):
