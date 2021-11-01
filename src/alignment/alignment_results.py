@@ -38,6 +38,9 @@ class AlignmentResultRow:
         hitEnums = list(self.__getHitEnums())
         return "".join(self.__aggregateHitEnums(hitEnums))
 
+    def getRegionScores(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000):
+        return RegionScores(list(self.__getRegionScoresGenerator(penalties, perfectMatchScore)))
+
     def __getHitEnums(self):
         pairs = list(self.__deduplicatedPairs)
         pairsIterator = iter(pairs)
@@ -80,9 +83,6 @@ class AlignmentResultRow:
     def __hitToString(count, hit):
         x = f"{count}{hit.value}"
         return x
-
-    def getRegionScores(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000):
-        return RegionScores(list(self.__getRegionScoresGenerator(penalties, perfectMatchScore)))
 
     def __getRegionScoresGenerator(self, penalties: RegionScorePenalties, perfectMatchScore: int):
         previousPair: AlignedPair | None = None

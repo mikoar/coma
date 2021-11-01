@@ -27,7 +27,9 @@ class Alignment:
         return Alignment(
             alignmentId,
             int(queryId),
-            int(refId), int(queryStart), int(queryEnd),
+            int(refId),
+            int(queryStart),
+            int(queryEnd),
             int(refStart),
             int(refEnd),
             orientation == "-",

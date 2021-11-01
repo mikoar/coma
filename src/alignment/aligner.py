@@ -42,7 +42,8 @@ class Aligner:
         return AlignmentResultRow(list(deduplicatedAlignedPairs),
                                   query.moleculeId,
                                   reference.moleculeId,
-                                  *((query.length, 1) if isReverse else (1, query.length)),
+                                  *((query.positions[-1], query.positions[0]) if isReverse else (
+                                    query.positions[0], query.positions[-1])),
                                   referenceStartPosition,
                                   referenceEndPosition,
                                   query.length,
