@@ -106,7 +106,7 @@ if __name__ == '__main__':
             appendToFile(alignmentComparisonResults, alignmentComparisonResultFile)
             progressBar.update(len(alignmentsForReference))
 
-        alignmentResults = AlignmentResults(referenceFile, queryFile, alignmentResultRows)
+        alignmentResults = AlignmentResults(referenceFile, queryFile, [r for r in alignmentResultRows])
         xmapReader.writeAlignments(alignmentResultFile, alignmentResults)
 
         # TODO: wyzualizacje porównań alignmentów, zaaplikować ucinanie segmentów, zaznaczyć na wizualizacji gdzie ucina

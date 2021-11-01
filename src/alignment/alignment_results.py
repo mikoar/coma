@@ -31,7 +31,7 @@ class AlignmentResultRow:
 
     @property
     def score(self):
-        return 0.
+        return 6.66
 
     @property
     def cigarString(self):
