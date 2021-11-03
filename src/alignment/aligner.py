@@ -28,23 +28,23 @@ class Aligner:
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
               isReverse: bool = False) -> AlignmentResultRow:
-        referenceStartPosition = round(peakPosition - query.length / 2)
-        referenceEndPosition = round(peakPosition + query.length / 2)
+        referenceWindowStartPosition = round(peakPosition - query.length / 2)
+        referenceWindowEndPosition = round(peakPosition + query.length / 2)
 
-        referencePositions = self.__getReferencePositionsWithinRange(reference, referenceStartPosition,
-                                                                     referenceEndPosition)
+        referencePositions = self.__getReferencePositionsWithinRange(reference, referenceWindowStartPosition,
+                                                                     referenceWindowEndPosition)
 
         queryPositions = list(query.getPositionsWithSiteIds(isReverse))
-        alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceStartPosition)
-        deduplicatedAlignedPairs = self.__removeDuplicatedReferenceAlignments(alignedPairs)
+        alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceWindowStartPosition)
+        deduplicatedAlignedPairs = list(self.__removeDuplicatedReferenceAlignments(alignedPairs))
 
-        return AlignmentResultRow(list(deduplicatedAlignedPairs),
+        return AlignmentResultRow(deduplicatedAlignedPairs,
                                   query.moleculeId,
                                   reference.moleculeId,
                                   *((query.positions[-1], query.positions[0]) if isReverse else (
                                       query.positions[0], query.positions[-1])),
-                                  referenceStartPosition,
-                                  referenceEndPosition,
+                                  reference.positions[deduplicatedAlignedPairs[0].referencePositionIndex - 1],
+                                  reference.positions[deduplicatedAlignedPairs[-1].referencePositionIndex - 1],
                                   query.length,
                                   reference.length,
                                   isReverse)

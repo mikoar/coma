@@ -77,7 +77,7 @@ def test_ignoresPositionBeyondMaxDistance():
 
     result = Aligner(maxDistance).align(reference, query, 149)
 
-    assert result.referenceEndPosition == 199
+    assert result.referenceEndPosition == 149
     assert result.alignedPairs == [(1, 1), (2, 2)]
 
 
@@ -90,7 +90,7 @@ def test_ignoresPositionBeyondMaxDistance():
 def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, query):
     result = Aligner(10).align(reference, query, 150)
 
-    assert result.referenceEndPosition == 200
+    assert result.referenceEndPosition == 189
     assert result.alignedPairs == [(1, 1), (2, 2), (4, 3)]
 
 
@@ -108,7 +108,7 @@ def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, que
 def test_handlesDeletions_referencePosition3InRange_Aligns2ReferencesTo1Query(reference, query, expected):
     result = Aligner(10).align(reference, query, 150)
 
-    assert result.referenceEndPosition == 200
+    assert result.referenceEndPosition == 189
     assert result.alignedPairs == expected
 
 
@@ -127,8 +127,32 @@ def test_handlesDeletions_referencePosition3InRange_Aligns2ReferencesTo1Query(re
 def test_handlesInsertions_noAlignmentForQueryPosition3(reference, query):
     result = Aligner(10).align(reference, query, 150)
 
-    assert result.referenceEndPosition == 200
+    assert result.referenceEndPosition == 189
     assert result.alignedPairs == [(1, 1), (2, 2), (3, 4)]
+
+
+@pytest.mark.parametrize("reference,query,refStart,refEnd,queryStart,queryEnd", [
+    (
+            OpticalMap(1, length=101, positions=[0, 100]),
+            OpticalMap(1, length=101, positions=[0, 100]),
+            0, 100, 0, 100
+    ), (
+            OpticalMap(1, length=100, positions=[1, 100]),
+            OpticalMap(1, length=100, positions=[1, 100]),
+            1, 100, 1, 100
+    ), (
+            OpticalMap(1, length=200, positions=[1, 105, 200]),
+            OpticalMap(1, length=100, positions=[5, 100]),
+            1, 105, 5, 100
+    )
+])
+def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd, queryStart, queryEnd):
+    result = Aligner(10).align(reference, query, 50)
+
+    assert result.referenceStartPosition == refStart
+    assert result.referenceEndPosition == refEnd
+    assert result.queryStartPosition == queryStart
+    assert result.queryEndPosition == queryEnd
 
 
 if __name__ == '__main__':

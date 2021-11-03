@@ -59,7 +59,7 @@ def alignWithReference(params: Tuple[Alignment, VectorisedOpticalMap, Vectorised
     if not isMaxPeakValid:
         return
 
-    alignmentResultRow = Aligner(2500).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
+    alignmentResultRow = Aligner(3000).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
     return AlignmentComparer().compare(refAlignment, alignmentResultRow), alignmentResultRow
 
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     title = f"count_{alignmentsCount}_res_{resolution}_blur_{blur}"
 
     alignmentComparisonResultFile = f"output_alignments/compare_{chromosome}_{title}.csv"
-    alignmentResultFile = f"output_alignments/alignment_{chromosome}_{title}.xmap"
+    alignmentResultFile = f"output_alignments/alignment_v2_{chromosome}_{title}.xmap"
     os.makedirs("output_alignments", exist_ok=True)
     initFile(alignmentComparisonResultFile)
 
