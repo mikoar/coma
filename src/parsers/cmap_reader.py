@@ -23,7 +23,7 @@ class CmapReader:
         return self.__read(filePath, chromosomes)
 
     def __read(self, filePath, moleculeIds=None) -> List[VectorisedOpticalMap]:
-        maps = self.reader.readFile(filePath, ["CMapId", "Position", "ContigLength"])
+        maps = self.reader.readFile(filePath, ["CMapId", "Position", "ContigLength", "LabelChannel"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]
@@ -33,6 +33,7 @@ class CmapReader:
 
     @staticmethod
     def __parseCmapRowsGroup(group, sequenceGenerator: SequenceGenerator):
+        group = group[group["LabelChannel"] != 0]
         moleculeId = group["CMapId"].iloc[0]
         length = int(group["ContigLength"].iloc[0])
         positions = group["Position"].sort_values().tolist()
