@@ -5,7 +5,7 @@ import pandas as pd
 from pandas import Series, DataFrame
 
 from src.alignment.alignment_results import AlignmentResults
-from src.correlation.alignment import Alignment
+from src.correlation.bionano_alignment import BionanoAlignment
 from src.parsers.bionano_file_reader import BionanoFileReader
 
 
@@ -13,7 +13,7 @@ class XmapReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
-    def readAlignments(self, filePath: str, alignmentIds=None) -> List[Alignment]:
+    def readAlignments(self, filePath: str, alignmentIds=None) -> List[BionanoAlignment]:
         alignments = self.reader.readFile(filePath,
                                           ["XmapEntryID", "QryContigID", "RefContigID", "QryStartPos",
                                            "QryEndPos", "RefStartPos", "RefEndPos", "Orientation",
@@ -70,6 +70,6 @@ class XmapReader:
 
     @staticmethod
     def __parseRow(row: Series):
-        return Alignment.parse(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
-                               row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
-                               row["Confidence"], row["QryLen"], row["Alignment"])
+        return BionanoAlignment.parse(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
+                                      row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
+                                      row["Confidence"], row["QryLen"], row["Alignment"])

@@ -5,7 +5,7 @@ from typing import Callable, Tuple, List
 
 from src.alignment.aligned_pair import AlignedPair
 from src.alignment.alignment_results import AlignmentResultRow
-from src.correlation.alignment import Alignment
+from src.correlation.bionano_alignment import BionanoAlignment
 
 
 @dataclass
@@ -19,7 +19,7 @@ class AlignmentComparisonResult:
 
 
 class AlignmentComparer:
-    def compare(self, referenceAlignment: Alignment, actualAlignment: AlignmentResultRow):
+    def compare(self, referenceAlignment: BionanoAlignment, actualAlignment: AlignmentResultRow):
         pairs1 = self.__getPairTuples(referenceAlignment)
         pairs2 = self.__getPairTuples(actualAlignment)
         query1Coverage = self.__getCoverage(pairs1, pairs2)
@@ -28,7 +28,7 @@ class AlignmentComparer:
                                          referenceAlignment.referenceId)
 
     @staticmethod
-    def __getPairTuples(alignment: Alignment | AlignmentResultRow):
+    def __getPairTuples(alignment: BionanoAlignment | AlignmentResultRow):
         queryPositionSelector: Callable[[AlignedPair], Tuple[int, int]] = lambda pair: (
             int(pair.referencePositionIndex), int(pair.queryPositionIndex))
         return list(map(queryPositionSelector, alignment.alignedPairs))

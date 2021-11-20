@@ -1,13 +1,11 @@
 from typing import List
 
-from src.correlation.optical_map import VectorisedOpticalMap
-from src.correlation.sequence_generator import SequenceGenerator
+from src.correlation.optical_map import OpticalMap
 from src.parsers.bionano_file_reader import BionanoFileReader
 
 
 class CmapReader:
-    def __init__(self, sequenceGenerator: SequenceGenerator) -> None:
-        self.sequenceGenerator = sequenceGenerator
+    def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
     def readQueries(self, filePath: str, moleculeIds: List[int] = []):
@@ -22,20 +20,19 @@ class CmapReader:
     def readReferences(self, filePath: str, chromosomes: List[int] = []):
         return self.__read(filePath, chromosomes)
 
-    def __read(self, filePath, moleculeIds=None) -> List[VectorisedOpticalMap]:
+    def __read(self, filePath, moleculeIds=None) -> List[OpticalMap]:
         maps = self.reader.readFile(filePath, ["CMapId", "Position", "ContigLength", "LabelChannel"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]
 
-        opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup, self.sequenceGenerator)
+        opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup)
         return opticalMaps.tolist()
 
     @staticmethod
-    def __parseCmapRowsGroup(group, sequenceGenerator: SequenceGenerator):
+    def __parseCmapRowsGroup(group):
         group = group[group["LabelChannel"] != 0]
         moleculeId = group["CMapId"].iloc[0]
         length = int(group["ContigLength"].iloc[0])
         positions = group["Position"].sort_values().tolist()
-        sequence = sequenceGenerator.positionsToSequence(positions)
-        return VectorisedOpticalMap(moleculeId, length, positions, sequence, sequenceGenerator.resolution)
+        return OpticalMap(moleculeId, length, positions)

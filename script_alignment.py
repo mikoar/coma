@@ -1,6 +1,6 @@
 import os
 from random import Random
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -12,25 +12,25 @@ from tqdm import tqdm
 from src.alignment.aligner import Aligner
 from src.alignment.alignment_comparer import AlignmentComparer, AlignmentComparisonResult
 from src.alignment.alignment_results import AlignmentResults
-from src.correlation.alignment import Alignment
-from src.correlation.optical_map import VectorisedOpticalMap, Peaks
+from src.correlation.bionano_alignment import BionanoAlignment
+from src.correlation.optical_map import OpticalMap, Peaks
 from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 
-
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[VectorisedOpticalMap],
-                    resolution: int):
+def getWorkerInputs(alignments: List[BionanoAlignment], reference: np.ndarray, queries: List[OpticalMap],
+                    resolution: int, generator: SequenceGenerator):
     for alignment in alignments:
         yield (alignment,
                reference,
                next(q for q in queries if q.moleculeId == alignment.queryId),
-               resolution)
+               resolution,
+               generator)
 
 
 def initFile(file):
@@ -50,16 +50,22 @@ def appendToFile(items: List[AlignmentComparisonResult], file):
     } for i in items if i]).to_csv(file, mode='a', header=False)
 
 
-def alignWithReference(params: Tuple[Alignment, VectorisedOpticalMap, VectorisedOpticalMap, int]):
-    refAlignment, reference, query, resolution = params
-    result = query.correlate(reference.sequence, reverseStrand=refAlignment.reverseStrand)
+def alignWithReference(params):
+    refAlignment: BionanoAlignment
+    reference: OpticalMap
+    query: OpticalMap
+    resolution: int
+    generator: SequenceGenerator
+    refAlignment, reference, query, resolution, generator = params
+    result = query.correlate(reference, generator, refAlignment.reverseStrand)
     validator = Validator(resolution)
     peaks = Peaks(result)
     isMaxPeakValid = validator.validate(peaks.max, refAlignment)
     if not isMaxPeakValid:
         return
 
-    alignmentResultRow = Aligner(3000).align(reference, query, peaks.max.positionInReference, refAlignment.reverseStrand)
+    alignmentResultRow = Aligner(3000).align(reference, query, peaks.max.positionInReference,
+                                             refAlignment.reverseStrand)
     return AlignmentComparer().compare(refAlignment, alignmentResultRow), alignmentResultRow
 
 
@@ -86,8 +92,7 @@ if __name__ == '__main__':
     initFile(alignmentComparisonResultFile)
 
     with tqdm(total=alignmentsCount) as progressBar:
-        sequenceGenerator = SequenceGenerator(resolution, blur)
-        reader = CmapReader(sequenceGenerator)
+        reader = CmapReader()
         alignmentResultRows = []
         sampledAlignments = [a for a in Random(123).sample([a for a in alignments], alignmentsCount)]
         referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
@@ -100,7 +105,8 @@ if __name__ == '__main__':
                 f"Resolution: {resolution}, blur: {blur}, {len(queries)} queries for reference {referenceId}")
 
             poolResults = p_map(alignWithReference, list(
-                getWorkerInputs(alignmentsForReference, reference, queries, resolution)), num_cpus=8)
+                getWorkerInputs(alignmentsForReference, reference, queries, resolution,
+                                SequenceGenerator(resolution, blur))), num_cpus=8)
             alignmentComparisonResults, alignmentResultRowsForReference = zip(*[r for r in poolResults if r])
             alignmentResultRows += alignmentResultRowsForReference
             appendToFile(alignmentComparisonResults, alignmentComparisonResultFile)

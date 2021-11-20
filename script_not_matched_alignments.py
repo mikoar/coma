@@ -20,14 +20,13 @@ def plot(alignmentIds, resolution=128, blur=4):
     alignments = alignmentReader.readAlignments(alignmentsFile, alignmentIds)
     queryIds = [a.queryId for a in alignments]
     referenceIds = [a.referenceId for a in alignments]
-    sequenceGenerator = SequenceGenerator(resolution, blur)
-    sequenceReader = CmapReader(sequenceGenerator)
+    sequenceReader = CmapReader()
     queries = sequenceReader.readQueries(queryFile, queryIds)
     references = sequenceReader.readReferences(referenceFile, referenceIds)
     for alignment in alignments:
         query = next(q for q in queries if q.moleculeId == alignment.queryId)
         reference = next(r for r in references if r.moleculeId == alignment.referenceId)
-        result = query.correlate(reference.sequence, reverseStrand=alignment.reverseStrand)
+        result = query.correlate(reference, SequenceGenerator(resolution, blur), alignment.reverseStrand)
         fig = plotCorrelation(result, resolution,
                               (alignment.expectedQueryMoleculeStart, alignment.expectedQueryMoleculeEnd))
         fig.suptitle(f'Alignment {alignment.alignmentId}')

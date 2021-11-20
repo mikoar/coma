@@ -6,7 +6,7 @@ class RefAlignedPair(NamedTuple):
     queryPositionIndex: int
 
 
-class Alignment:
+class BionanoAlignment:
     def __init__(self, alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, reverseStrand, confidence,
                  queryLength, alignedPairs: List[RefAlignedPair]) -> None:
         self.alignmentId = alignmentId
@@ -24,7 +24,7 @@ class Alignment:
     @staticmethod
     def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence,
               queryLength, alignment: str):
-        return Alignment(
+        return BionanoAlignment(
             alignmentId,
             int(queryId),
             int(refId),

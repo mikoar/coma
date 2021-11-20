@@ -1,6 +1,6 @@
-
 import pytest
-from src.correlation.alignment import Alignment
+
+from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.validator import Validator
 
 
@@ -8,8 +8,10 @@ from src.correlation.validator import Validator
 def test_validator_simple():
     qryStart = refStart = 0
     qryEnd = refEnd = 100
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+
     def peaks(): return None
+
     peaks.max = 50
     validator = Validator(1)
 
@@ -22,8 +24,10 @@ def test_validator_simple():
 def test_validator_invalid():
     qryStart = refStart = 0
     qryEnd = refEnd = 100
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+
     def peaks(): return None
+
     peaks.max = 101
     validator = Validator(1)
 
@@ -36,8 +40,10 @@ def test_validator_invalid():
 def test_validator_short_alignment_without_querys_middle():
     qryStart = refStart = 0
     qryEnd = refEnd = 20
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+
     def peaks(): return None
+
     peaks.max = 50
     validator = Validator(1)
 
@@ -50,8 +56,10 @@ def test_validator_short_alignment_without_querys_middle():
 def test_validator_short_alignment_without_querys_middle_query_at_query_end():
     qryStart = refStart = 80
     qryEnd = refEnd = 100
-    alignment = Alignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+
     def peaks(): return None
+
     peaks.max = 50
     validator = Validator(1)
 

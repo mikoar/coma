@@ -9,8 +9,8 @@ from matplotlib import rcParams
 from p_tqdm import p_map
 from tqdm import tqdm
 
-from src.correlation.alignment import Alignment
-from src.correlation.optical_map import VectorisedOpticalMap, Peaks
+from src.correlation.bionano_alignment import BionanoAlignment
+from src.correlation.optical_map import OpticalMap, Peaks
 from src.correlation.plot import plotHeatMap
 from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
@@ -21,16 +21,17 @@ rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def getWorkerInputs(alignments: List[Alignment], reference: np.ndarray, queries: List[VectorisedOpticalMap],
-                    resolution: int):
+def getWorkerInputs(alignments: List[BionanoAlignment], reference: np.ndarray, queries: List[OpticalMap],
+                    resolution: int, generator: SequenceGenerator):
     for alignment in alignments:
         yield (alignment,
                reference,
                next(q for q in queries if q.moleculeId == alignment.queryId),
-               resolution)
+               resolution,
+               generator)
 
 
-def alignmentsToDict(a: Alignment, score: float, resolution: int, blur: int, isValid: bool):
+def alignmentsToDict(a: BionanoAlignment, score: float, resolution: int, blur: int, isValid: bool):
     return {
         'resolution': resolution,
         'blur': blur,
@@ -66,13 +67,18 @@ def appendAlignmentsToFile(alignments: List[Dict], file):
 
 
 def alignWithReference(input):
-    (alignment, reference, query, resolution) = input
-    result = query.correlate(reference, reverseStrand=alignment.reverseStrand)
+    alignment: BionanoAlignment
+    reference: OpticalMap
+    query: OpticalMap
+    resolution: int
+    generator: SequenceGenerator
+    alignment, reference, query, resolution, generator = input
+    result = query.correlate(reference, generator, alignment.reverseStrand)
     validator = Validator(resolution)
     peaks = Peaks(result)
     isMaxPeakValid = validator.validate(peaks.max, alignment)
 
-    return (1 if isMaxPeakValid else 0, peaks.getRelativeScore(alignment, validator))
+    return 1 if isMaxPeakValid else 0, peaks.getRelativeScore(alignment, validator)
 
 
 # %%
@@ -106,11 +112,8 @@ if __name__ == '__main__':
         for resolution in resolutions:
             isoBlurResults = []
             for blur in blurs:
-                sequenceGenerator = SequenceGenerator(resolution, blur)
-                reader = CmapReader(sequenceGenerator)
-
+                reader = CmapReader()
                 validAlignments = []
-
                 validCount = 0
                 sampledAlignments = [a for a in Random(123).sample([a for a in alignments], alignmentsCount)]
                 referenceIds = set(map(lambda a: a.referenceId, sampledAlignments))
@@ -123,7 +126,8 @@ if __name__ == '__main__':
                         f"Resolution: {resolution}, blur: {blur}, {len(queries)} queries for reference {referenceId}")
 
                     poolResults = p_map(alignWithReference, list(
-                        getWorkerInputs(alignmentsForReference, reference.sequence, queries, resolution)), num_cpus=8)
+                        getWorkerInputs(alignmentsForReference, reference, queries, resolution,
+                                        SequenceGenerator(resolution, blur))), num_cpus=8)
                     validationResults, scores = zip(*poolResults)
 
                     alignmentDataToStore = [alignmentsToDict(a, score, resolution, blur, validationResult)

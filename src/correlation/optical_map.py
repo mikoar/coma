@@ -6,8 +6,9 @@ from typing import List, NamedTuple
 import numpy as np
 from scipy.signal import correlate, find_peaks
 
-from src.correlation.alignment import Alignment
+from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.peak import Peak
+from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
 
 
@@ -35,32 +36,36 @@ class OpticalMap:
                 yield PositionWithSiteId(i, position)
                 i += 1
 
-
-@dataclass(frozen=True)
-class VectorisedOpticalMap(OpticalMap):
-    sequence: np.ndarray
-    resolution: int
-
-    def correlate(self, reference: np.ndarray, reverseStrand=False, flatten=True):
-        sequence = self.sequence[::-1] if reverseStrand else self.sequence
-        correlation = self.__getCorrelation(reference, sequence)
+    def correlate(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False,
+                  flatten=True):
+        sequence = self.__getSequence(sequenceGenerator, reverseStrand)
+        referenceSequence = reference.__getSequence(sequenceGenerator)
+        correlation = self.__getCorrelation(referenceSequence, sequence)
         if flatten:
-            normalizingFactor = self.__getCorrelation(reference, np.ones(len(sequence))) + np.sum(sequence)
+            normalizingFactor = self.__getCorrelation(referenceSequence, np.ones(len(sequence))) + np.sum(sequence)
             correlation = correlation / normalizingFactor
 
         correlation /= np.max(correlation)
 
-        return CorrelationResult(correlation, self, reference)
+        return CorrelationResult(correlation, self, reference, sequenceGenerator.resolution,
+                                 sequenceGenerator.blurRadius)  # TODO
 
-    def __getCorrelation(self, reference: np.ndarray, query: np.ndarray) -> np.ndarray:
+    def __getSequence(self, sequenceGenerator: SequenceGenerator, reverseStrand=False):
+        sequence = sequenceGenerator.positionsToSequence(self.positions)
+        return sequence[::-1] if reverseStrand else sequence
+
+    @staticmethod
+    def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
         return correlate(reference, query, mode='same', method='fft')
 
 
 @dataclass(frozen=True)
 class CorrelationResult:
     correlation: np.ndarray
-    query: VectorisedOpticalMap
-    reference: np.ndarray
+    query: OpticalMap
+    reference: OpticalMap
+    resolution: int
+    blur: int
 
 
 class Peaks:
@@ -69,9 +74,9 @@ class Peaks:
         self.peakPositions, self.peakProperties = find_peaks(
             correlationResult.correlation,
             height=0.01,
-            distance=((5 * 10 ** 6) / correlationResult.query.resolution))
+            distance=((5 * 10 ** 6) / correlationResult.resolution))
 
-    def getRelativeScore(self, reference: Alignment, validator: Validator):
+    def getRelativeScore(self, reference: BionanoAlignment, validator: Validator):
         maxPeak = self.max
         isMaxValid = validator.validate(maxPeak, reference)
         if maxPeak and isMaxValid:
@@ -88,25 +93,25 @@ class Peaks:
             return
 
         maxIndex = np.argmax(self.__peakHeights)
-        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.correlationResult.query.resolution)
+        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.correlationResult.resolution)
 
     @property
     def peaks(self):
         for position, height in zip(self.peakPositions, self.__peakHeights):
-            yield Peak(position, height, self.correlationResult.query.resolution)
+            yield Peak(position, height, self.correlationResult.resolution)
 
     @property
     def __peakHeights(self) -> List[float]:
         return self.peakProperties["peak_heights"]
 
-    def __getMaxValidPeakHeight(self, reference: Alignment, validator: Validator):
+    def __getMaxValidPeakHeight(self, reference: BionanoAlignment, validator: Validator):
         validPeaks = [peak for peak in self.peaks if validator.validate(peak, reference)]
         maxValidPeakHeight = max(validPeaks, key=lambda peak: peak.height).height if validPeaks else None
         return maxValidPeakHeight
 
-    def __getMaxCorrelationValueInAlignmentRange(self, reference: Alignment) -> float:
-        expectedQueryStartPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.query.resolution)
-        expectedQueryEndPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.query.resolution)
+    def __getMaxCorrelationValueInAlignmentRange(self, reference: BionanoAlignment) -> float:
+        expectedQueryStartPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.resolution)
+        expectedQueryEndPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.resolution)
         expectedQueryRange: np.ndarray = self.correlationResult.correlation[
                                          expectedQueryStartPosition: expectedQueryEndPosition]
         return np.max(expectedQueryRange) if expectedQueryRange.any() else 0.

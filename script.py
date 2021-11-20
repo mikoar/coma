@@ -6,7 +6,7 @@ from matplotlib import cycler  # type: ignore
 from matplotlib import rcParams  # type: ignore
 from scipy.optimize import minimize_scalar
 
-from src.correlation.optical_map import VectorisedOpticalMap
+from src.correlation.optical_map import OpticalMap
 from src.correlation.plot import plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
@@ -27,8 +27,7 @@ def print1To0Ratio(sequence):
 def pipeline(resolution=43, blurRadius=2, plot=False):
     resolution = round(resolution)
     blurRadius = round(blurRadius)
-    sequenceGenerator = SequenceGenerator(resolution, blurRadius)
-    reader = CmapReader(sequenceGenerator)
+    reader = CmapReader()
     referenceFile = "../data/hg19_NT.BSPQI_0kb_0labels.cmap"
     reference = reader.readReference(referenceFile, 1)
 
@@ -36,9 +35,9 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
     moleculeIds = [171, ]  # [11, 12, 21, 22, 31, 32]
 
     queries = reader.readQueries(queryFile, moleculeIds)
-    query: VectorisedOpticalMap = queries[0]
+    query: OpticalMap = queries[0]
     query.__reverse()
-    result = query.correlate(reference)
+    result = query.correlate(reference, SequenceGenerator(resolution, blurRadius))
 
     if plot:
         fig = plotCorrelation(result, resolution, False, (51753149, 60405486))
