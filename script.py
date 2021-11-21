@@ -37,7 +37,7 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
     queries = reader.readQueries(queryFile, moleculeIds)
     query: OpticalMap = queries[0]
     query.__reverse()
-    result = query.correlate(reference, SequenceGenerator(resolution, blurRadius))
+    result = query.getInitialAlignment(reference, SequenceGenerator(resolution, blurRadius))
 
     if plot:
         fig = plotCorrelation(result, resolution, False, (51753149, 60405486))

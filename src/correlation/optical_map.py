@@ -36,8 +36,8 @@ class OpticalMap:
                 yield PositionWithSiteId(i, position)
                 i += 1
 
-    def correlate(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False,
-                  flatten=True):
+    def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False,
+                            flatten=True):
         sequence = self.__getSequence(sequenceGenerator, reverseStrand)
         referenceSequence = reference.__getSequence(sequenceGenerator)
         correlation = self.__getCorrelation(referenceSequence, sequence)
@@ -47,8 +47,13 @@ class OpticalMap:
 
         correlation /= np.max(correlation)
 
-        return CorrelationResult(correlation, self, reference, sequenceGenerator.resolution,
-                                 sequenceGenerator.blurRadius)  # TODO
+        peakPositions, peakProperties = find_peaks(
+            correlation,
+            height=0.01,
+            distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
+
+        return InitialAlignment(correlation, self, reference, sequenceGenerator.resolution,
+                                sequenceGenerator.blurRadius, peakPositions, peakProperties)
 
     def __getSequence(self, sequenceGenerator: SequenceGenerator, reverseStrand=False):
         sequence = sequenceGenerator.positionsToSequence(self.positions)
@@ -59,25 +64,18 @@ class OpticalMap:
         return correlate(reference, query, mode='same', method='fft')
 
 
-@dataclass(frozen=True)
-class CorrelationResult:
+@dataclass()
+class InitialAlignment:
     correlation: np.ndarray
     query: OpticalMap
     reference: OpticalMap
     resolution: int
     blur: int
-
-
-class Peaks:
-    def __init__(self, correlationResult: CorrelationResult) -> None:
-        self.correlationResult = correlationResult
-        self.peakPositions, self.peakProperties = find_peaks(
-            correlationResult.correlation,
-            height=0.01,
-            distance=((5 * 10 ** 6) / correlationResult.resolution))
+    peakPositions: np.ndarray
+    peakProperties: dict
 
     def getRelativeScore(self, reference: BionanoAlignment, validator: Validator):
-        maxPeak = self.max
+        maxPeak = self.maxPeak
         isMaxValid = validator.validate(maxPeak, reference)
         if maxPeak and isMaxValid:
             peakHeight = maxPeak.height
@@ -88,17 +86,17 @@ class Peaks:
         return self.__score(peakHeight)
 
     @property
-    def max(self):
+    def maxPeak(self):
         if not self.peakPositions.any():
             return
 
         maxIndex = np.argmax(self.__peakHeights)
-        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.correlationResult.resolution)
+        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.resolution)
 
     @property
     def peaks(self):
         for position, height in zip(self.peakPositions, self.__peakHeights):
-            yield Peak(position, height, self.correlationResult.resolution)
+            yield Peak(position, height, self.resolution)
 
     @property
     def __peakHeights(self) -> List[float]:
@@ -110,9 +108,9 @@ class Peaks:
         return maxValidPeakHeight
 
     def __getMaxCorrelationValueInAlignmentRange(self, reference: BionanoAlignment) -> float:
-        expectedQueryStartPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.resolution)
-        expectedQueryEndPosition = int(reference.expectedQueryMoleculeStart / self.correlationResult.resolution)
-        expectedQueryRange: np.ndarray = self.correlationResult.correlation[
+        expectedQueryStartPosition = int(reference.expectedQueryMoleculeStart / self.resolution)
+        expectedQueryEndPosition = int(reference.expectedQueryMoleculeStart / self.resolution)
+        expectedQueryRange: np.ndarray = self.correlation[
                                          expectedQueryStartPosition: expectedQueryEndPosition]
         return np.max(expectedQueryRange) if expectedQueryRange.any() else 0.
 

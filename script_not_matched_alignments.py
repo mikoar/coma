@@ -26,7 +26,7 @@ def plot(alignmentIds, resolution=128, blur=4):
     for alignment in alignments:
         query = next(q for q in queries if q.moleculeId == alignment.queryId)
         reference = next(r for r in references if r.moleculeId == alignment.referenceId)
-        result = query.correlate(reference, SequenceGenerator(resolution, blur), alignment.reverseStrand)
+        result = query.getInitialAlignment(reference, SequenceGenerator(resolution, blur), alignment.reverseStrand)
         fig = plotCorrelation(result, resolution,
                               (alignment.expectedQueryMoleculeStart, alignment.expectedQueryMoleculeEnd))
         fig.suptitle(f'Alignment {alignment.alignmentId}')

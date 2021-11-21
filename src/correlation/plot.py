@@ -6,16 +6,16 @@ import seaborn as sns
 from matplotlib import cycler, pyplot, rcParams  # type: ignore
 from matplotlib.ticker import FuncFormatter
 
-from src.correlation.optical_map import CorrelationResult, Peaks
+from src.correlation.optical_map import InitialAlignment
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], result: CorrelationResult):
+def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], peaks: InitialAlignment):
     start = (expectedReferenceRange[0], 0)
     width = expectedReferenceRange[1] - expectedReferenceRange[0]
-    height = result.correlation.max()
+    height = peaks.correlation.max()
 
     rect = patches.Rectangle(start, width, height, edgecolor="none", facecolor="black", alpha=0.2)  # type: ignore
     ax.add_patch(rect)
@@ -27,7 +27,7 @@ def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], resu
             verticalalignment='top')
 
 
-def plotCorrelation(result: CorrelationResult, resolution: int,
+def plotCorrelation(peaks: InitialAlignment, resolution: int,
                     expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
     fig = pyplot.figure(figsize=(40, 5))
     ax = fig.add_axes([0, 0, 1, 1])
@@ -35,32 +35,31 @@ def plotCorrelation(result: CorrelationResult, resolution: int,
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10 ** 7))
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
 
-    ax.set_xlim(0, len(result.correlation) * resolution)
+    ax.set_xlim(0, len(peaks.correlation) * resolution)
 
     if expectedReferenceRanges:
         if isinstance(expectedReferenceRanges, tuple):
             expectedReferenceRanges = [expectedReferenceRanges]
         for expectedRange in expectedReferenceRanges:
-            __addExpectedStartStopRect(ax, expectedRange, result)
+            __addExpectedStartStopRect(ax, expectedRange, peaks)
 
-    lenght = len(result.correlation) * resolution
+    lenght = len(peaks.correlation) * resolution
     x = range(0, lenght, resolution)
-    ax.plot(x, result.correlation)
+    ax.plot(x, peaks.correlation)
 
-    __plotPeaks(result, resolution, ax)
+    __plotPeaks(peaks, resolution, ax)
 
     return fig
 
 
-def __plotPeaks(result: CorrelationResult, resolution, ax):
-    peaks = Peaks(result)
-    maxPeak = peaks.max
+def __plotPeaks(peaks: InitialAlignment, resolution, ax):
+    maxPeak = peaks.maxPeak
     if not maxPeak:
         return
 
     peaksExceptMax = [peak for peak in peaks.peaks if peak != maxPeak.position]
     ax.plot(maxPeak.positionInReference, 1, "x", markersize=24, markeredgewidth=4)
-    ax.plot([p.positionInReference for p in peaksExceptMax], result.correlation[[
+    ax.plot([p.positionInReference for p in peaksExceptMax], peaks.correlation[[
         p.position for p in peaksExceptMax]], "x", markersize=16, markeredgewidth=4, alpha=0.5)
 
 

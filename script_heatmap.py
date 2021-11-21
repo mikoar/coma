@@ -10,7 +10,7 @@ from p_tqdm import p_map
 from tqdm import tqdm
 
 from src.correlation.bionano_alignment import BionanoAlignment
-from src.correlation.optical_map import OpticalMap, Peaks
+from src.correlation.optical_map import OpticalMap
 from src.correlation.plot import plotHeatMap
 from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
@@ -73,10 +73,9 @@ def alignWithReference(input):
     resolution: int
     generator: SequenceGenerator
     alignment, reference, query, resolution, generator = input
-    result = query.correlate(reference, generator, alignment.reverseStrand)
+    peaks = query.getInitialAlignment(reference, generator, alignment.reverseStrand)
     validator = Validator(resolution)
-    peaks = Peaks(result)
-    isMaxPeakValid = validator.validate(peaks.max, alignment)
+    isMaxPeakValid = validator.validate(peaks.maxPeak, alignment)
 
     return 1 if isMaxPeakValid else 0, peaks.getRelativeScore(alignment, validator)
 

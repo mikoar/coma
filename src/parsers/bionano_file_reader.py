@@ -5,8 +5,6 @@ from typing import List
 import pandas
 from pandas import DataFrame
 
-from src.alignment.alignment_results import AlignmentResults
-
 
 class BionanoFileReader:
     def readFile(self, filePath, columns: List[str]) -> DataFrame:
@@ -16,15 +14,6 @@ class BionanoFileReader:
             delimiter="\t",
             names=self.__getColumnNames(filePath),
             usecols=columns)
-
-    # def writeFile(self, filePath, alignmentResults: AlignmentResults):
-    #     dataFrame = DataFrame.
-    #     pandas.to_csv(
-    #         filePath,
-    #         comment="#",
-    #         delimiter="\t",
-    #         names=self.__getColumnNames(filePath),
-    #         usecols=columns)
 
     def __getColumnNames(self, filePath):
         with open(filePath) as file:

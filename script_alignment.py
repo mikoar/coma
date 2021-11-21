@@ -13,7 +13,7 @@ from src.alignment.aligner import Aligner
 from src.alignment.alignment_comparer import AlignmentComparer, AlignmentComparisonResult
 from src.alignment.alignment_results import AlignmentResults
 from src.correlation.bionano_alignment import BionanoAlignment
-from src.correlation.optical_map import OpticalMap, Peaks
+from src.correlation.optical_map import OpticalMap
 from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
 from src.parsers.cmap_reader import CmapReader
@@ -57,14 +57,13 @@ def alignWithReference(params):
     resolution: int
     generator: SequenceGenerator
     refAlignment, reference, query, resolution, generator = params
-    result = query.correlate(reference, generator, refAlignment.reverseStrand)
+    peaks = query.getInitialAlignment(reference, generator, refAlignment.reverseStrand)
     validator = Validator(resolution)
-    peaks = Peaks(result)
-    isMaxPeakValid = validator.validate(peaks.max, refAlignment)
+    isMaxPeakValid = validator.validate(peaks.maxPeak, refAlignment)
     if not isMaxPeakValid:
         return
 
-    alignmentResultRow = Aligner(3000).align(reference, query, peaks.max.positionInReference,
+    alignmentResultRow = Aligner(3000).align(reference, query, peaks.maxPeak.positionInReference,
                                              refAlignment.reverseStrand)
     return AlignmentComparer().compare(refAlignment, alignmentResultRow), alignmentResultRow
 
