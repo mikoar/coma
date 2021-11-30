@@ -1,7 +1,6 @@
-
 import pytest
 
-from src.correlation.vectorise import blur, vectorisePositions, vectoriseSegments
+from src.correlation.vectorise import blur, vectorisePositions
 
 
 def test_vectorise_simple():
@@ -19,17 +18,24 @@ def test_vectorise_in_the_middle_of_window():
 
 
 def test_vectorise_clustered():
-    seq = [10, 11, 12, 13, 14, 21]
+    seq = [10, 11, 12, 13, 14, 20, 21, 22, 23, 24]
     result = list(vectorisePositions(seq, 5))
 
     assert result == [0, 0, 1, 0, 1]
 
 
-def test_vectoriseSegments():
-    segments = [0, 3, 3, 2, 1]
-    result = list(vectoriseSegments(segments, 1))
+def test_vectorise_slice_start():
+    seq = [2, 5, 8]
+    result = list(vectorisePositions(seq, 1, 1))
 
-    assert result == [1, 0, 0, 1, 0, 0, 1, 0, 1, 1]
+    assert result == [0, 1, 0, 0, 1, 0, 0, 1]
+
+
+def test_vectorise_slice_end():
+    seq = [2, 5, 8, 12]
+    result = list(vectorisePositions(seq, 1, 0, 6))
+
+    assert result == [0, 0, 1, 0, 0, 1, 0]
 
 
 def test_blur_radius_0():

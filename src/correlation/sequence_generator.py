@@ -1,4 +1,4 @@
-from src.correlation.vectorise import vectorisePositions, vectoriseSegments, blur
+from src.correlation.vectorise import vectorisePositions, blur
 
 
 class SequenceGenerator:
@@ -6,10 +6,6 @@ class SequenceGenerator:
         self.resolution = resolution
         self.blurRadius = blurRadius
 
-    def segmentsToSequence(self, segments):
-        vector = list(vectoriseSegments(segments, self.resolution))
-        return blur(vector, self.blurRadius)
-
-    def positionsToSequence(self, positions):
-        vector = list(vectorisePositions(positions, self.resolution))
+    def positionsToSequence(self, positions, start: int = 0, end: int = None):
+        vector = list(vectorisePositions(positions, self.resolution, start, end))
         return blur(vector, self.blurRadius)
