@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import floor
 from typing import List, NamedTuple
 
 import numpy as np
-from scipy.signal import correlate, find_peaks
+from scipy.signal import find_peaks, correlate
 
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.peak import Peak
@@ -38,8 +39,8 @@ class OpticalMap:
 
     def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False,
                             flatten=True):
-        sequence = self.__getSequence(sequenceGenerator, reverseStrand)
-        referenceSequence = reference.__getSequence(sequenceGenerator)
+        sequence = self.getSequence(sequenceGenerator, reverseStrand)
+        referenceSequence = reference.getSequence(sequenceGenerator)
         correlation = self.__getCorrelation(referenceSequence, sequence)
         if flatten:
             normalizingFactor = self.__getCorrelation(referenceSequence, np.ones(len(sequence))) + np.sum(sequence)
@@ -47,16 +48,15 @@ class OpticalMap:
 
         correlation /= np.max(correlation)
 
-        peakPositions, peakProperties = find_peaks(
-            correlation,
-            height=0.01,
-            distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
+        peakPositions, peakProperties = find_peaks(correlation, height=0.01,
+                                                   distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
 
-        return InitialAlignment(correlation, self, reference, sequenceGenerator.resolution,
-                                sequenceGenerator.blurRadius, peakPositions, peakProperties)
+        return InitialAlignment(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
+                                sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
+                                len(correlation) * sequenceGenerator.resolution)
 
-    def __getSequence(self, sequenceGenerator: SequenceGenerator, reverseStrand=False):
-        sequence = sequenceGenerator.positionsToSequence(self.positions)
+    def getSequence(self, sequenceGenerator: SequenceGenerator, reverseStrand=False, start: int = 0, end: int = None):
+        sequence = sequenceGenerator.positionsToSequence(self.positions, start, end)
         return sequence[::-1] if reverseStrand else sequence
 
     @staticmethod
@@ -65,14 +65,21 @@ class OpticalMap:
 
 
 @dataclass()
-class InitialAlignment:
+class CorrelationResult:
     correlation: np.ndarray
     query: OpticalMap
     reference: OpticalMap
-    resolution: int
-    blur: int
     peakPositions: np.ndarray
     peakProperties: dict
+    reverseStrand: bool
+    resolution: int = 1
+    blur: int = 1
+    correlationStart: int = 0
+    correlationEnd: int = None
+
+    def __post_init__(self):
+        if self.correlationEnd is None:
+            self.correlationEnd = len(self.correlation) - 1
 
     def getRelativeScore(self, reference: BionanoAlignment, validator: Validator):
         maxPeak = self.maxPeak
@@ -124,3 +131,35 @@ class InitialAlignment:
         firstPeakHeight, nthPeakHeight = sorted(heights, reverse=True)[:order:order - 1]
         peakHeightToScore = peakHeight if peakHeight else firstPeakHeight
         return peakHeightToScore - nthPeakHeight
+
+
+class InitialAlignment(CorrelationResult):
+    def refine(self, sequenceGenerator: SequenceGenerator, maxAdjustment: int):
+        querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
+        peakPosition = self.maxPeak.positionInReference
+        referenceStart = peakPosition - floor(self.query.length / 2) - maxAdjustment
+        referenceEnd = peakPosition + floor(self.query.length / 2) + maxAdjustment
+        referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
+                                                       referenceEnd)
+        correlation = self.__getCorrelation(referenceSequence, querySequence)
+        peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius)
+
+        querySequenceLength = len(querySequence)
+        adjustedPeakPositions = self.__adjustPeakPositionsToFullReference(peakPositions, referenceStart,
+                                                                          querySequenceLength,
+                                                                          sequenceGenerator.resolution)
+        correlationLength = len(correlation) * sequenceGenerator.resolution
+
+        return CorrelationResult(correlation, self.query, self.reference, adjustedPeakPositions, peakProperties,
+                                 self.reverseStrand, sequenceGenerator.resolution, sequenceGenerator.blurRadius,
+                                 peakPosition - floor(correlationLength / 2),
+                                 peakPosition + floor(correlationLength / 2))
+
+    @staticmethod
+    def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
+        return correlate(reference, query, mode='valid', method='fft')
+
+    @staticmethod
+    def __adjustPeakPositionsToFullReference(peakPositions: np.ndarray, referenceStart: int, queryLength: int,
+                                             resolution: int):
+        return peakPositions + referenceStart / resolution + floor(queryLength / 2)

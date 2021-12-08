@@ -30,3 +30,5 @@ class RegionScores:
                 currentScore = 0
 
         return segmentWithMaxScore
+
+# TODO choose multiple segments

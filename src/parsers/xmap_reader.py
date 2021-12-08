@@ -13,13 +13,16 @@ class XmapReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
-    def readAlignments(self, filePath: str, alignmentIds=None) -> List[BionanoAlignment]:
+    def readAlignments(self, filePath: str, alignmentIds=None, queryIds=None) -> List[BionanoAlignment]:
         alignments = self.reader.readFile(filePath,
                                           ["XmapEntryID", "QryContigID", "RefContigID", "QryStartPos",
                                            "QryEndPos", "RefStartPos", "RefEndPos", "Orientation",
-                                           "Confidence", "QryLen", "Alignment"])
+                                           "Confidence", "HitEnum", "QryLen", "RefLen", "Alignment"])
         if alignmentIds:
             alignments = alignments[alignments["XmapEntryID"].isin(alignmentIds)]
+
+        if queryIds:
+            alignments = alignments[alignments["QryContigID"].isin(queryIds)]
 
         return alignments.apply(self.__parseRow, axis=1).tolist()
 
@@ -57,7 +60,7 @@ class XmapReader:
                 "RefStartPos": "{:.1f}".format(row.referenceStartPosition),
                 "RefEndPos": "{:.1f}".format(row.referenceEndPosition),
                 "Orientation": "-" if row.reverseStrand else "+",
-                "Confidence": "{:.2f}".format(row.score),
+                "Confidence": "{:.2f}".format(row.confidence),
                 "HitEnum": row.cigarString,
                 "QryLen": "{:.1f}".format(row.queryLength),
                 "RefLen": "{:.1f}".format(row.referenceLength),
@@ -72,4 +75,4 @@ class XmapReader:
     def __parseRow(row: Series):
         return BionanoAlignment.parse(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
                                       row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
-                                      row["Confidence"], row["QryLen"], row["Alignment"])
+                                      row["Confidence"], row["HitEnum"], row["QryLen"], row["RefLen"], row["Alignment"])

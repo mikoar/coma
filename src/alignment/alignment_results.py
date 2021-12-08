@@ -30,7 +30,7 @@ class AlignmentResultRow:
     reverseStrand: bool = False
 
     @property
-    def score(self):
+    def confidence(self):
         return 6.66
 
     @property
@@ -68,6 +68,7 @@ class AlignmentResultRow:
 
     @staticmethod
     def __aggregateHitEnums(hits: List[HitEnum]):
+        hit = None
         count = 1
         previousHit: HitEnum = hits[0]
         for hit in hits[1:]:
