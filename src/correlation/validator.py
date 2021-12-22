@@ -16,15 +16,15 @@ class Validator:
 
     def __peakWithinAlignmentSizeFromCenter(self, peak: Peak, reference: BionanoAlignment):
         margin = max(reference.queryAlignmentLength(), reference.referenceAlignmentLength()) / 2 + self.resolution
-        return reference.expectedPeakPosition - margin <= peak.positionInReference <= reference.expectedPeakPosition + margin
+        return reference.expectedPeakPosition - margin <= peak.position <= reference.expectedPeakPosition + margin
 
     def __peakWithinAlignmentSizeUncertaintyFromCenter(self, peak: Peak, reference: BionanoAlignment):
         margin = abs(reference.queryReferenceAlignmentLengthDifference) / 2 + self.resolution
-        return reference.expectedPeakPosition - margin <= peak.positionInReference <= reference.expectedPeakPosition + margin
+        return reference.expectedPeakPosition - margin <= peak.position <= reference.expectedPeakPosition + margin
 
     def __peakWithinAlignmentSizeUncertaintyFromCenterWithFixedMargin(self, peak: Peak, reference: BionanoAlignment):
         margin = abs(reference.queryReferenceAlignmentLengthDifference) / 2 + 1024
-        return reference.expectedPeakPosition - margin <= peak.positionInReference <= reference.expectedPeakPosition + margin
+        return reference.expectedPeakPosition - margin <= peak.position <= reference.expectedPeakPosition + margin
 
     def __peakAnywhereInMolecule(self, peak: Peak, reference: BionanoAlignment):
-        return reference.expectedQueryMoleculeStart - self.resolution <= peak.positionInReference <= reference.expectedQueryMoleculeEnd + self.resolution
+        return reference.expectedQueryMoleculeStart - self.resolution <= peak.position <= reference.expectedQueryMoleculeEnd + self.resolution

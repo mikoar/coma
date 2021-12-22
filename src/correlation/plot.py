@@ -49,23 +49,24 @@ def plotCorrelation(peaks: CorrelationResult, resolution: int,
     x = range(peaks.correlationStart, peaks.correlationEnd, resolution)
     ax.plot(x, peaks.correlation)
 
-    __plotPeaks(peaks, resolution, ax)
+    __plotPeaks(peaks, ax)
 
     return fig
 
 
-def __plotPeaks(peaks: CorrelationResult, resolution, ax: matplotlib.axes.Axes):
+def __plotPeaks(peaks: CorrelationResult, ax: matplotlib.axes.Axes):
     maxPeak = peaks.maxPeak
     if not maxPeak:
         return
 
     peaksExceptMax = [peak for peak in peaks.peaks if peak.position != maxPeak.position]
-    ax.plot(maxPeak.positionInReference, maxPeak.height, "x", markersize=24, markeredgewidth=4)
+    ax.plot(maxPeak.position, maxPeak.height, "x", markersize=24, markeredgewidth=4)
     if peaksExceptMax:
-        ax.plot([p.positionInReference for p in peaksExceptMax], peaks.correlation[[
-            floor(p.position - peaks.correlationStart / peaks.resolution) for p in peaksExceptMax]], "x", markersize=16, markeredgewidth=4, alpha=0.5)
+        ax.plot([p.position for p in peaksExceptMax], peaks.correlation[[
+            floor((p.position - peaks.correlationStart) / peaks.resolution) for p in peaksExceptMax]], "x",
+                markersize=16, markeredgewidth=4, alpha=0.5)
     for peak in peaks.peaks:
-        ax.annotate(f"({int(peak.positionInReference)}, {peak.height})", (peak.positionInReference, 0))
+        ax.annotate(f"({int(peak.position)}, {peak.height})", (peak.position, 0))
 
 
 def plotHeatMap(arr, fileName, x, y):

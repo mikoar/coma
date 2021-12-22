@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import floor
+from math import floor, ceil
 from typing import List, NamedTuple
 
 import numpy as np
@@ -16,6 +16,11 @@ from src.correlation.validator import Validator
 class PositionWithSiteId(NamedTuple):
     siteId: int
     position: int
+
+
+def adjustPeakPositions(peakPositions: np.ndarray, resolution: int, start: int = 0) -> np.ndarray:
+    resolutionAdjustment = ceil(resolution / 2) - 1
+    return peakPositions * resolution + (resolutionAdjustment + start)
 
 
 @dataclass(frozen=True)
@@ -50,8 +55,8 @@ class OpticalMap:
 
         peakPositions, peakProperties = find_peaks(correlation, height=0.01,
                                                    distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
-
-        return InitialAlignment(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
+        adjustedPeakPositions = adjustPeakPositions(peakPositions, sequenceGenerator.resolution)
+        return InitialAlignment(correlation, self, reference, adjustedPeakPositions, peakProperties, reverseStrand,
                                 sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
                                 len(correlation) * sequenceGenerator.resolution)
 
@@ -73,7 +78,7 @@ class CorrelationResult:
     peakProperties: dict
     reverseStrand: bool
     resolution: int = 1
-    blur: int = 1
+    blur: int = 0
     correlationStart: int = 0
     correlationEnd: int = None
 
@@ -98,12 +103,12 @@ class CorrelationResult:
             return
 
         maxIndex = np.argmax(self.__peakHeights)
-        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.resolution)
+        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex])
 
     @property
     def peaks(self):
         for position, height in zip(self.peakPositions, self.__peakHeights):
-            yield Peak(position, height, self.resolution)
+            yield Peak(position, height)
 
     @property
     def __peakHeights(self) -> List[float]:
@@ -136,7 +141,7 @@ class CorrelationResult:
 class InitialAlignment(CorrelationResult):
     def refine(self, sequenceGenerator: SequenceGenerator, maxAdjustment: int):
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
-        peakPosition = self.maxPeak.positionInReference
+        peakPosition = self.maxPeak.position
         referenceStart = peakPosition - floor(self.query.length / 2) - maxAdjustment
         referenceEnd = peakPosition + floor(self.query.length / 2) + maxAdjustment
         referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
@@ -144,10 +149,8 @@ class InitialAlignment(CorrelationResult):
         correlation = self.__getCorrelation(referenceSequence, querySequence)
         peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius)
 
-        querySequenceLength = len(querySequence)
-        adjustedPeakPositions = self.__adjustPeakPositionsToFullReference(peakPositions, referenceStart,
-                                                                          querySequenceLength,
-                                                                          sequenceGenerator.resolution)
+        peakShift = referenceStart + sequenceGenerator.resolution * floor(len(querySequence) / 2)
+        adjustedPeakPositions = adjustPeakPositions(peakPositions, sequenceGenerator.resolution, peakShift)
         correlationLength = len(correlation) * sequenceGenerator.resolution
 
         return CorrelationResult(correlation, self.query, self.reference, adjustedPeakPositions, peakProperties,
@@ -158,8 +161,3 @@ class InitialAlignment(CorrelationResult):
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
         return correlate(reference, query, mode='valid', method='fft')
-
-    @staticmethod
-    def __adjustPeakPositionsToFullReference(peakPositions: np.ndarray, referenceStart: int, queryLength: int,
-                                             resolution: int):
-        return peakPositions + referenceStart / resolution + floor(queryLength / 2)

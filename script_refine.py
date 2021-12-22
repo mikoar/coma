@@ -1,4 +1,5 @@
 import os
+from statistics import mean
 
 from matplotlib import cycler
 from matplotlib import rcParams
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     initialGenerator = SequenceGenerator(initialResolution, initialBlur)
     initialCorrelation = query.getInitialAlignment(reference, initialGenerator)
     initialAligner = Aligner(2 * initialResolution * initialBlur)
-    nonRefinedAlignmentResult = initialAligner.align(reference, query, initialCorrelation.maxPeak.positionInReference)
+    nonRefinedAlignmentResult = initialAligner.align(reference, query, initialCorrelation.maxPeak.position)
     plot(initialCorrelation, initialResolution, "initial", title)
 
     refineGenerator = SequenceGenerator(refinedResolution, refineBlur)
@@ -58,10 +59,15 @@ if __name__ == '__main__':
 
     refinedAligner = Aligner(2 * initialResolution * initialBlur)
     plot(refinedCorrelation, refinedResolution, "refined", title)
-    refinedAlignmentResults = [refinedAligner.align(reference, query, peak.positionInReference) for peak in
+    refinedAlignmentResults = [refinedAligner.align(reference, query, peak.position) for peak in
                                refinedCorrelation.peaks]
 
     refAlignment = xmapReader.readAlignments(alignmentsFile, queryIds=[queryId])[0]
     alignmentResults = AlignmentResults(referenceFile, queryFile,
                                         [refAlignment, nonRefinedAlignmentResult] + refinedAlignmentResults)
     xmapReader.writeAlignments(alignmentResultFile, alignmentResults)
+
+    for result in refinedAlignmentResults:
+        shifts = list(map(lambda pair: pair.queryShift, result.alignedPairs))
+        print(shifts)
+        print(mean(shifts))
