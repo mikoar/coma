@@ -18,8 +18,10 @@ def test_refineAlignment_correctPeakPosition():
     initialAlignment = query.getInitialAlignment(reference, initialGenerator)
     refinedAlignment = initialAlignment.refine(refineGenerator, 10)
 
-    assert initialAlignment.maxPeak.position == 350
-    assert refinedAlignment.maxPeak.position == 350
+    assert initialAlignment.maxPeak.position == 300
+    assert refinedAlignment.maxPeak.position == 300
+    assert refinedAlignment.correlationStart == 290
+    assert refinedAlignment.correlationEnd == 311
 
 
 @pytest.mark.skip()

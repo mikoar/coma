@@ -28,8 +28,8 @@ class Aligner:
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
               isReverse: bool = False) -> AlignmentResultRow:
-        referenceWindowStartPosition = round(peakPosition - query.length / 2)
-        referenceWindowEndPosition = round(peakPosition + query.length / 2)
+        referenceWindowStartPosition = peakPosition
+        referenceWindowEndPosition = peakPosition + query.length
 
         referencePositions = self.__getReferencePositionsWithinRange(reference, referenceWindowStartPosition,
                                                                      referenceWindowEndPosition)

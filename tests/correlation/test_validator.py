@@ -1,71 +1,41 @@
 import pytest
 
 from src.correlation.bionano_alignment import BionanoAlignment
+from src.correlation.peak import Peak
 from src.correlation.validator import Validator
 
 
-@pytest.mark.skip
-def test_validator_simple():
+@pytest.mark.parametrize('peakPosition,expected',
+                         [(0, True), (10, True), (-10, True), (11, False), (-11, False)])
+def test_validator_simple(peakPosition: int, expected: bool):
     qryStart = refStart = 0
     qryEnd = refEnd = 100
-    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+    alignment = getBionanoAlignment(qryStart, qryEnd, refStart, refEnd)
+    peak = Peak(peakPosition, 1.)
+    validator = Validator(1, 10)
 
-    def peaks(): return None
+    valid = validator.validate(peak, alignment)
 
-    peaks.max = 50
-    validator = Validator(1)
-
-    valid = validator.validate(peaks, alignment)  # type: ignore
-
-    assert valid
+    assert valid == expected
 
 
-@pytest.mark.skip
-def test_validator_invalid():
+@pytest.mark.parametrize('peakPosition,expected',
+                         [(0, True), (20, True), (-20, True), (21, False), (-21, False)])
+def test_validator_lengthDifference(peakPosition: int, expected: bool):
     qryStart = refStart = 0
-    qryEnd = refEnd = 100
-    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
+    qryEnd = 80
+    refEnd = 100
+    alignment = getBionanoAlignment(qryStart, qryEnd, refStart, refEnd)
+    peak = Peak(peakPosition, 1.)
+    validator = Validator(1, 10)
 
-    def peaks(): return None
+    valid = validator.validate(peak, alignment)
 
-    peaks.max = 101
-    validator = Validator(1)
-
-    valid = validator.validate(peaks, alignment)  # type: ignore
-
-    assert not valid
+    assert valid == expected
 
 
-@pytest.mark.skip
-def test_validator_short_alignment_without_querys_middle():
-    qryStart = refStart = 0
-    qryEnd = refEnd = 20
-    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
-
-    def peaks(): return None
-
-    peaks.max = 50
-    validator = Validator(1)
-
-    valid = validator.validate(peaks, alignment)  # type: ignore
-
-    assert valid
-
-
-@pytest.mark.skip
-def test_validator_short_alignment_without_querys_middle_query_at_query_end():
-    qryStart = refStart = 80
-    qryEnd = refEnd = 100
-    alignment = BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 1, 100)
-
-    def peaks(): return None
-
-    peaks.max = 50
-    validator = Validator(1)
-
-    valid = validator.validate(peaks, alignment)  # type: ignore
-
-    assert valid
+def getBionanoAlignment(qryStart, qryEnd, refStart, refEnd):
+    return BionanoAlignment(1, 1, 1, qryStart, qryEnd, refStart, refEnd, '+', 0, '', 0, 0, [])
 
 
 if __name__ == '__main__':

@@ -42,12 +42,6 @@ class BionanoAlignment:
             list(map(lambda pair: RefAlignedPair(*pair.split(',')), alignment[:-1].replace('(', '').split(')'))))
 
     @property
-    def expectedPeakPosition(self):
-        expectedQueryMoleculeStart = self.expectedQueryMoleculeStart
-        moleculeLength = self.expectedQueryMoleculeEnd - expectedQueryMoleculeStart
-        return expectedQueryMoleculeStart + moleculeLength / 2
-
-    @property
     def queryStartPosition(self):
         return self.queryLength - self.__queryStartPositionRelativeToStrand if self.reverseStrand else self.__queryStartPositionRelativeToStrand
 
@@ -57,15 +51,15 @@ class BionanoAlignment:
 
     @property
     def expectedQueryMoleculeStart(self):
-        return self.referenceStartPosition - self.queryStartPosition - self.queryReferenceAlignmentLengthDifference
+        return self.referenceStartPosition - self.queryStartPosition
 
     @property
     def expectedQueryMoleculeEnd(self):
-        return self.referenceEndPosition + self.queryLength - self.queryEndPosition + self.queryReferenceAlignmentLengthDifference
+        return self.referenceEndPosition + self.queryLength - self.queryEndPosition
 
     @property
     def queryReferenceAlignmentLengthDifference(self):
-        """Alignment length on reference and query sequences may differ due to insertions and deletions"""
+        """Alignment length on reference and query sequences may differ due to indels and molecule stretch"""
         return (self.queryAlignmentLength()) - (self.referenceAlignmentLength())
 
     def referenceAlignmentLength(self):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import floor, ceil
+from math import ceil
 from typing import List, NamedTuple
 
 import numpy as np
@@ -66,7 +66,7 @@ class OpticalMap:
 
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
-        return correlate(reference, query, mode='same', method='fft')
+        return correlate(reference, query, mode='valid', method='fft')
 
 
 @dataclass()
@@ -142,21 +142,21 @@ class InitialAlignment(CorrelationResult):
     def refine(self, sequenceGenerator: SequenceGenerator, maxAdjustment: int):
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
         peakPosition = self.maxPeak.position
-        referenceStart = peakPosition - floor(self.query.length / 2) - maxAdjustment
-        referenceEnd = peakPosition + floor(self.query.length / 2) + maxAdjustment
+        resolution = sequenceGenerator.resolution
+        referenceStart = peakPosition - maxAdjustment
+        referenceEnd = peakPosition + self.query.length + maxAdjustment
         referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
                                                        referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
         peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius)
 
-        peakShift = referenceStart + sequenceGenerator.resolution * floor(len(querySequence) / 2)
-        adjustedPeakPositions = adjustPeakPositions(peakPositions, sequenceGenerator.resolution, peakShift)
-        correlationLength = len(correlation) * sequenceGenerator.resolution
+        adjustedPeakPositions = adjustPeakPositions(peakPositions, resolution, referenceStart)
+        correlationLength = len(correlation) * resolution
 
         return CorrelationResult(correlation, self.query, self.reference, adjustedPeakPositions, peakProperties,
-                                 self.reverseStrand, sequenceGenerator.resolution, sequenceGenerator.blurRadius,
-                                 peakPosition - floor(correlationLength / 2),
-                                 peakPosition + floor(correlationLength / 2))
+                                 self.reverseStrand, resolution, sequenceGenerator.blurRadius,
+                                 referenceStart,
+                                 referenceStart + correlationLength)
 
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:

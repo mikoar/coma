@@ -11,17 +11,17 @@ from src.correlation.optical_map import OpticalMap
     (
             OpticalMap(1, length=9, positions=[0, 4, 8]),
             OpticalMap(1, length=9, positions=[0, 4, 8]),
-            4
+            0
     ),
     (
             OpticalMap(1, length=10, positions=[0, 5, 9]),
             OpticalMap(1, length=10, positions=[0, 5, 9]),
-            5
+            0
     ),
     (
             OpticalMap(1, length=30, positions=[10, 15, 19]),
             OpticalMap(1, length=10, positions=[0, 5, 9]),
-            15
+            10
     )
 ])
 def test_perfectMatch(reference, query, peakPosition):
@@ -34,7 +34,7 @@ def test_perfectMatch_reverseStrand():
     reference = OpticalMap(1, length=9, positions=[0, 4, 8])
     query = OpticalMap(1, length=9, positions=[0, 4, 8])
 
-    result = Aligner(0).align(reference, query, 4, True)
+    result = Aligner(0).align(reference, query, 0, True)
 
     assert result.alignedPairs == [(1, 3), (2, 2), (3, 1)]
 
@@ -43,7 +43,7 @@ def test_ignoresExtraPositionsOnReferenceBeforeAndAfterAlignment():
     reference = OpticalMap(1, length=30, positions=[9, 10, 15, 19, 20])
     query = OpticalMap(1, length=10, positions=[0, 5, 9])
 
-    result = Aligner(0).align(reference, query, 15)
+    result = Aligner(0).align(reference, query, 10)
 
     assert result.referenceStartPosition == 10
     assert result.alignedPairs == [(2, 1), (3, 2), (4, 3)]
@@ -54,7 +54,7 @@ def test_alignsPositionsWithinMaxDistanceOnly():
     reference = OpticalMap(1, length=300, positions=[89, 115, 150, 185, 210])
     query = OpticalMap(1, length=100, positions=[0, 25, 50, 75, 99])
 
-    result = Aligner(maxDistance).align(reference, query, 150)
+    result = Aligner(maxDistance).align(reference, query, 100)
 
     assert result.alignedPairs == [(2, 2), (3, 3), (4, 4)]
 
@@ -64,7 +64,7 @@ def test_returnsCorrectQueryShifts():
     reference = OpticalMap(1, length=300, positions=[105, 115, 150, 185, 194])
     query = OpticalMap(1, length=100, positions=[0, 25, 50, 75, 99])
 
-    result = Aligner(maxDistance).align(reference, query, 150)
+    result = Aligner(maxDistance).align(reference, query, 100)
 
     distanceSelector: Callable[[AlignedPair], int] = lambda pair: pair.queryShift
     assert list(map(distanceSelector, result.alignedPairs)) == [-5, 10, 0, -10, 5]
@@ -75,7 +75,7 @@ def test_ignoresPositionBeyondMaxDistance():
     query = OpticalMap(1, length=100, positions=[0, 49, 89])
     maxDistance = 10
 
-    result = Aligner(maxDistance).align(reference, query, 149)
+    result = Aligner(maxDistance).align(reference, query, 99)
 
     assert result.referenceEndPosition == 149
     assert result.alignedPairs == [(1, 1), (2, 2)]
@@ -88,7 +88,7 @@ def test_ignoresPositionBeyondMaxDistance():
     )
 ])
 def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, query):
-    result = Aligner(10).align(reference, query, 150)
+    result = Aligner(10).align(reference, query, 100)
 
     assert result.referenceEndPosition == 189
     assert result.alignedPairs == [(1, 1), (2, 2), (4, 3)]
@@ -106,7 +106,7 @@ def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, que
     )
 ])
 def test_handlesDeletions_referencePosition3InRange_Aligns2ReferencesTo1Query(reference, query, expected):
-    result = Aligner(10).align(reference, query, 150)
+    result = Aligner(10).align(reference, query, 100)
 
     assert result.referenceEndPosition == 189
     assert result.alignedPairs == expected
@@ -125,7 +125,7 @@ def test_handlesDeletions_referencePosition3InRange_Aligns2ReferencesTo1Query(re
     )
 ])
 def test_handlesInsertions_noAlignmentForQueryPosition3(reference, query):
-    result = Aligner(10).align(reference, query, 150)
+    result = Aligner(10).align(reference, query, 100)
 
     assert result.referenceEndPosition == 189
     assert result.alignedPairs == [(1, 1), (2, 2), (3, 4)]
@@ -147,7 +147,7 @@ def test_handlesInsertions_noAlignmentForQueryPosition3(reference, query):
     )
 ])
 def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd, queryStart, queryEnd):
-    result = Aligner(10).align(reference, query, 50)
+    result = Aligner(10).align(reference, query, 0)
 
     assert result.referenceStartPosition == refStart
     assert result.referenceEndPosition == refEnd
