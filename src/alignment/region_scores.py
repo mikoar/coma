@@ -13,22 +13,26 @@ class RegionScores:
     def __init__(self, scores: List[float]):
         self.scores = scores
 
-    def getSegmentWithMaxScore(self):
+    def getSegments(self, minScore, breakSegmentThreshold) -> List[AlignmentSegment]:
         start = end = 0
         currentScore = 0
+        resultSegments = []
         segmentWithMaxScore = AlignmentSegment(0, 0, 0)
 
         alignmentEnd = len(self.scores) - 1
         while end <= alignmentEnd:
-            if currentScore + self.scores[end] > 0:
-                currentScore += self.scores[end]
+            currentScore += self.scores[end]
+            if currentScore > max(0, segmentWithMaxScore.score - breakSegmentThreshold):
                 if currentScore > segmentWithMaxScore.score:
                     segmentWithMaxScore = AlignmentSegment(start, end, currentScore)
                 end += 1
             else:
+                if segmentWithMaxScore.score >= minScore:
+                    resultSegments.append(segmentWithMaxScore)
+                    segmentWithMaxScore = AlignmentSegment(0, 0, 0)
                 start = end = end + 1
                 currentScore = 0
+        if segmentWithMaxScore.score >= minScore:
+            resultSegments.append(segmentWithMaxScore)
 
-        return segmentWithMaxScore
-
-# TODO choose multiple segments
+        return resultSegments

@@ -53,10 +53,9 @@ class OpticalMap:
 
         correlation /= np.max(correlation)
 
-        peakPositions, peakProperties = find_peaks(correlation, height=0.01,
+        peakPositions, peakProperties = find_peaks(correlation, height=0.01, width=(None, None),rel_height=1,
                                                    distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
-        adjustedPeakPositions = adjustPeakPositions(peakPositions, sequenceGenerator.resolution)
-        return InitialAlignment(correlation, self, reference, adjustedPeakPositions, peakProperties, reverseStrand,
+        return InitialAlignment(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
                                 sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
                                 len(correlation) * sequenceGenerator.resolution)
 
@@ -83,6 +82,12 @@ class CorrelationResult:
     correlationEnd: int = None
 
     def __post_init__(self):
+        self.peakPositions = adjustPeakPositions(self.peakPositions, self.resolution, self.correlationStart)
+        self.peakProperties["left_ips"] = adjustPeakPositions(self.peakProperties["left_ips"], self.resolution,
+                                                              self.correlationStart)
+        self.peakProperties["right_ips"] = adjustPeakPositions(self.peakProperties["right_ips"], self.resolution,
+                                                               self.correlationStart)
+
         if self.correlationEnd is None:
             self.correlationEnd = len(self.correlation) - 1
 
@@ -103,16 +108,26 @@ class CorrelationResult:
             return
 
         maxIndex = np.argmax(self.__peakHeights)
-        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex])
+        return Peak(self.peakPositions[maxIndex], self.__peakHeights[maxIndex], self.__leftBases[maxIndex],
+                    self.__rightBases[maxIndex])
 
     @property
     def peaks(self):
-        for position, height in zip(self.peakPositions, self.__peakHeights):
-            yield Peak(position, height)
+        for position, height, leftBase, rightBase in zip(self.peakPositions, self.__peakHeights, self.__leftBases,
+                                                         self.__rightBases):
+            yield Peak(position, height, leftBase, rightBase)
 
     @property
     def __peakHeights(self) -> List[float]:
         return self.peakProperties["peak_heights"]
+
+    @property
+    def __leftBases(self) -> List[int]:
+        return self.peakProperties["left_ips"]
+
+    @property
+    def __rightBases(self) -> List[int]:
+        return self.peakProperties["right_ips"]
 
     def __getMaxValidPeakHeight(self, reference: BionanoAlignment, validator: Validator):
         validPeaks = [peak for peak in self.peaks if validator.validate(peak, reference)]
@@ -139,24 +154,31 @@ class CorrelationResult:
 
 
 class InitialAlignment(CorrelationResult):
-    def refine(self, sequenceGenerator: SequenceGenerator, maxAdjustment: int):
+    def refine(self, sequenceGenerator: SequenceGenerator, minAdjustment: int = 1024):
+        leftAdjustment = self.__getAdjustment(minAdjustment, self.maxPeak.leftProminenceBasePosition)
+        rightAdjustment = self.__getAdjustment(minAdjustment, self.maxPeak.rightProminenceBasePosition)
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
         peakPosition = self.maxPeak.position
         resolution = sequenceGenerator.resolution
-        referenceStart = peakPosition - maxAdjustment
-        referenceEnd = peakPosition + self.query.length + maxAdjustment
+        referenceStart = peakPosition - leftAdjustment
+        referenceEnd = peakPosition + self.query.length + rightAdjustment
         referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
                                                        referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
-        peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius)
+        peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius,
+                                                   width=(None, None))
 
-        adjustedPeakPositions = adjustPeakPositions(peakPositions, resolution, referenceStart)
         correlationLength = len(correlation) * resolution
 
-        return CorrelationResult(correlation, self.query, self.reference, adjustedPeakPositions, peakProperties,
+        return CorrelationResult(correlation, self.query, self.reference, peakPositions, peakProperties,
                                  self.reverseStrand, resolution, sequenceGenerator.blurRadius,
                                  referenceStart,
                                  referenceStart + correlationLength)
+
+    def __getAdjustment(self, minAdjustment: int, peakProminenceBasePosition: int):
+        maxAdjustment = round(self.query.length / 2)
+        adjustment = abs(self.maxPeak.position - peakProminenceBasePosition)
+        return round(min(max(adjustment, minAdjustment), maxAdjustment))
 
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:

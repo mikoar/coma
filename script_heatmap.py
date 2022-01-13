@@ -150,5 +150,3 @@ if __name__ == '__main__':
 # wynik: ile % wyników się pokrywa z ref aligner, druga heatmapa z czasami obliczeń
 # potem przefiltrować cząsteczki i parametry, tak żeby zawsze mieć 100%, heat mapa parametry -> średnia/mediana score + odchylenie
 # kolejny wykres x - jakość,  y - liczba cząsteczek o tej wartości jakości, kernel density
-
-# TODO: contigi 21 w mniejszym zakresie blur, podesłać scatter ploty

@@ -53,8 +53,7 @@ if __name__ == '__main__':
     plot(initialCorrelation, initialResolution, "initial", title)
 
     refineGenerator = SequenceGenerator(refinedResolution, refineBlur)
-    maxAdjustment = 15000
-    refinedCorrelation = initialCorrelation.refine(refineGenerator, maxAdjustment)
+    refinedCorrelation = initialCorrelation.refine(refineGenerator)
     print(len(list(refinedCorrelation.peaks)))
 
     refinedAligner = Aligner(2 * initialResolution * initialBlur)
