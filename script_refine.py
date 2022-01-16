@@ -3,11 +3,11 @@ from statistics import mean
 
 from matplotlib import cycler
 from matplotlib import rcParams
+from matplotlib.figure import Figure
 
 from src.alignment.aligner import Aligner
 from src.alignment.alignment_results import AlignmentResults
-from src.correlation.optical_map import CorrelationResult
-from src.correlation.plot import plotCorrelation
+from src.correlation.plot import plotRefinedCorrelation, plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
@@ -16,10 +16,9 @@ rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def plot(correlation: CorrelationResult, resolution: int, stage: str, title: str):
-    fig = plotCorrelation(correlation, resolution)
-    fig.suptitle(f'{stage} correlation {queryId}')
-    fig.savefig(f"output_alignments/alignment_refinement_{stage}_{title}.svg", bbox_inches='tight', pad_inches=0)
+def savePlot(fig: Figure, suptitle: str, title: str):
+    fig.suptitle(f'{suptitle} correlation {queryId}')
+    fig.savefig(f"output_alignments/alignment_refinement_{suptitle}_{title}.svg", bbox_inches='tight', pad_inches=0)
 
 
 if __name__ == '__main__':
@@ -50,14 +49,14 @@ if __name__ == '__main__':
     initialCorrelation = query.getInitialAlignment(reference, initialGenerator)
     initialAligner = Aligner(2 * initialResolution * initialBlur)
     nonRefinedAlignmentResult = initialAligner.align(reference, query, initialCorrelation.maxPeak.position)
-    plot(initialCorrelation, initialResolution, "initial", title)
+    savePlot(plotCorrelation(initialCorrelation, initialResolution), "initial", title)
 
     refineGenerator = SequenceGenerator(refinedResolution, refineBlur)
     refinedCorrelation = initialCorrelation.refine(refineGenerator)
     print(len(list(refinedCorrelation.peaks)))
 
     refinedAligner = Aligner(2 * initialResolution * initialBlur)
-    plot(refinedCorrelation, refinedResolution, "refined", title)
+    savePlot(plotRefinedCorrelation(initialCorrelation, refinedCorrelation, refinedResolution), "refined", title)
     refinedAlignmentResults = [refinedAligner.align(reference, query, peak.position) for peak in
                                refinedCorrelation.peaks]
 
