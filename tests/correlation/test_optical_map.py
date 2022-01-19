@@ -20,8 +20,8 @@ def test_refineAlignment_correctPeakPosition():
 
     assert initialAlignment.maxPeak.position == 300
     assert refinedAlignment.maxPeak.position == 300
-    assert refinedAlignment.correlationStart == 290
-    assert refinedAlignment.correlationEnd == 311
+    # assert refinedAlignment.correlationStart == 290 #TODO: no longer valid when it's based on peak width
+    # assert refinedAlignment.correlationEnd == 311
 
 
 @pytest.mark.skip()

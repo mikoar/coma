@@ -1,5 +1,3 @@
-from typing import Callable
-
 import pytest
 
 from src.alignment.aligned_pair import AlignedPair
@@ -66,8 +64,7 @@ def test_returnsCorrectQueryShifts():
 
     result = Aligner(maxDistance).align(reference, query, 100)
 
-    distanceSelector: Callable[[AlignedPair], int] = lambda pair: pair.queryShift
-    assert list(map(distanceSelector, result.alignedPairs)) == [-5, 10, 0, -10, 5]
+    assert list(map(AlignedPair.queryShiftSelector, result.alignedPairs)) == [-5, 10, 0, -10, 5]
 
 
 def test_ignoresPositionBeyondMaxDistance():

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import dropwhile, takewhile, groupby
-from typing import Callable, Iterator, List, NamedTuple
+from typing import Iterator, List, NamedTuple
 
 from src.alignment.aligned_pair import AlignedPair
 from src.alignment.alignment_results import AlignmentResultRow
@@ -38,11 +38,14 @@ class Aligner:
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceWindowStartPosition)
         deduplicatedAlignedPairs = list(self.__removeDuplicatedReferenceAlignments(alignedPairs))
 
+        queryStart = query.positions[deduplicatedAlignedPairs[0].queryPositionIndex - 1]
+        queryEnd = query.positions[deduplicatedAlignedPairs[-1].queryPositionIndex - 1]
+
         return AlignmentResultRow(deduplicatedAlignedPairs,
                                   query.moleculeId,
                                   reference.moleculeId,
-                                  *((query.positions[-1], query.positions[0]) if isReverse else (
-                                      query.positions[0], query.positions[-1])),
+                                  *((queryEnd, queryStart) if isReverse else (
+                                      queryStart, queryEnd)),
                                   reference.positions[deduplicatedAlignedPairs[0].referencePositionIndex - 1],
                                   reference.positions[deduplicatedAlignedPairs[-1].referencePositionIndex - 1],
                                   query.length,
@@ -69,7 +72,5 @@ class Aligner:
 
     @staticmethod
     def __removeDuplicatedReferenceAlignments(pairs: Iterator[AlignedPair]):
-        referenceSelector: Callable[[AlignedPair], int] = lambda pair: pair.referencePositionIndex
-        distanceSelector: Callable[[AlignedPair], int] = lambda pair: pair.distance
-        for _, ambiguousPairs in groupby(pairs, referenceSelector):
-            yield min(ambiguousPairs, key=distanceSelector)
+        for _, ambiguousPairs in groupby(pairs, AlignedPair.referenceSelector):
+            yield min(ambiguousPairs, key=AlignedPair.distanceSelector)

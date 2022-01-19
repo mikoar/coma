@@ -1,5 +1,5 @@
 import os
-from statistics import mean
+from functools import reduce
 
 from matplotlib import cycler
 from matplotlib import rcParams
@@ -59,13 +59,14 @@ if __name__ == '__main__':
     savePlot(plotRefinedCorrelation(initialCorrelation, refinedCorrelation, refinedResolution), "refined", title)
     refinedAlignmentResults = [refinedAligner.align(reference, query, peak.position) for peak in
                                refinedCorrelation.peaks]
+    mergedResult = reduce(lambda row1, row2: row1.merge(row2), refinedAlignmentResults)
 
     refAlignment = xmapReader.readAlignments(alignmentsFile, queryIds=[queryId])[0]
     alignmentResults = AlignmentResults(referenceFile, queryFile,
-                                        [refAlignment, nonRefinedAlignmentResult] + refinedAlignmentResults)
+                                        [refAlignment, nonRefinedAlignmentResult, mergedResult])
     xmapReader.writeAlignments(alignmentResultFile, alignmentResults)
 
-    for result in refinedAlignmentResults:
-        shifts = list(map(lambda pair: pair.queryShift, result.alignedPairs))
+    for result in refinedAlignmentResults + [mergedResult]:
+        shifts = list(map(lambda pair: f"{pair.queryShift:.0f}", result.alignedPairs))
         print(shifts)
-        print(mean(shifts))
+        print(result.alignedPairs)
