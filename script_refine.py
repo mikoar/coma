@@ -17,7 +17,7 @@ rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
 def savePlot(fig: Figure, suptitle: str, title: str):
-    fig.suptitle(f'{suptitle} correlation {queryId}')
+    fig.suptitle(f'{suptitle} correlation, chromosome {referenceId}, molecule {queryId}')
     fig.savefig(f"output_alignments/alignment_refinement_{suptitle}_{title}.svg", bbox_inches='tight', pad_inches=0)
 
 

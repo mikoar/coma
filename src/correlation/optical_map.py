@@ -53,7 +53,7 @@ class OpticalMap:
 
         correlation /= np.max(correlation)
 
-        peakPositions, peakProperties = find_peaks(correlation, height=0.01, width=(None, None), rel_height=0.75,
+        peakPositions, peakProperties = find_peaks(correlation, height=0.75, width=(None, None), rel_height=0.75,
                                                    distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
         return InitialAlignment(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
                                 sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
@@ -165,7 +165,7 @@ class InitialAlignment(CorrelationResult):
         referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
                                                        referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
-        peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius,
+        peakPositions, peakProperties = find_peaks(correlation, height=11 * sequenceGenerator.blurRadius,
                                                    width=(None, None))
 
         correlationLength = len(correlation) * resolution

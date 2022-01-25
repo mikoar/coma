@@ -37,7 +37,7 @@ def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult, refinedC
 
 def __plotCorrelation(correlationResult: CorrelationResult, resolution: int,
                       expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
-    fig = pyplot.figure(figsize=(40, 5))
+    fig = pyplot.figure(figsize=(20, 4))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, p: format(int(value), ',')))
@@ -68,8 +68,11 @@ def __plotPeaks(peaks: CorrelationResult, ax: matplotlib.axes.Axes):
         ax.plot([p.position for p in peaksExceptMax], peaks.correlation[[
             floor((p.position - peaks.correlationStart) / peaks.resolution) for p in peaksExceptMax]], "x",
                 markersize=16, markeredgewidth=4, alpha=0.5)
-    for peak in peaks.peaks:
-        ax.annotate(f"({int(peak.position)}, {peak.height})", (peak.position, 0))
+
+    labelVerticalPositionIncrement = maxPeak.height / 16
+    for i, peak in enumerate(peaks.peaks):
+        ax.annotate(f"({int(peak.position / 1000):,}K, {peak.height:.2f})",
+                    (peak.position, labelVerticalPositionIncrement * (i % 2)))
 
 
 def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], peaks: CorrelationResult):
