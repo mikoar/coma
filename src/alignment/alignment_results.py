@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import List, Callable, Iterable
 
 from src.alignment.aligned_pair import AlignedPair, HitEnum
-from src.alignment.region_score_penalties import RegionScorePenalties
+from src.alignment.region_score_penalties import RegionScorePenalty
 from src.alignment.region_scores import RegionScores
 
 
@@ -51,7 +51,7 @@ class AlignmentResultRow:
         for _, ambiguousPairs in itertools.groupby(sortedPairs, key):
             yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
 
-    def getRegionScores(self, penalties: RegionScorePenalties, perfectMatchScore: int = 10000):
+    def getRegionScores(self, penalties: List[RegionScorePenalty], perfectMatchScore: int = 10000):
         return RegionScores(list(self.__getRegionScoresGenerator(penalties, perfectMatchScore)))
 
     def __getHitEnums(self):
@@ -99,10 +99,8 @@ class AlignmentResultRow:
         x = f"{count}{hit.value}"
         return x
 
-    def __getRegionScoresGenerator(self, penalties: RegionScorePenalties, perfectMatchScore: int):
+    def __getRegionScoresGenerator(self, penalties: List[RegionScorePenalty], perfectMatchScore: int):
         previousPair: AlignedPair | None = None
         for pair in self.alignedPairs:
-            yield (perfectMatchScore
-                   - penalties.getUnmatchedLabelPenalty(previousPair, pair)
-                   - penalties.getDistancePenalty(previousPair, pair))
+            yield perfectMatchScore - sum([p.getPenalty(previousPair, pair) for p in penalties])
             previousPair = pair

@@ -7,40 +7,33 @@ from mock import Mock, call
 
 from src.alignment.aligned_pair import AlignedPair
 from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.region_score_penalties import RegionScorePenalties
+from src.alignment.region_score_penalties import RegionScorePenalty, DistancePenalty, UnmatchedLabelPenalty
 
 
 def test_getRegionScores_appliesPenalties_1pair():
     pairs = [AlignedPair(1, 1)]
     alignmentResult = AlignmentResultRow(pairs)
-    penalties = __getPenaltiesMock()
-    penalties.getDistancePenalty = Mock(return_value=2)
-    penalties.getUnmatchedLabelPenalty = Mock(return_value=5)
-
+    penalties = [RegionScorePenaltyMock(2), RegionScorePenaltyMock(5)]
     perfectMatchScore = 100
+
     regionScores = alignmentResult.getRegionScores(penalties, perfectMatchScore)
 
+    [p.mock.assert_called_once_with(None, pairs[0]) for p in penalties]
     assert len(regionScores.scores) == 1
     assert regionScores.scores == [100 - 2 - 5]
-    penalties.getDistancePenalty.assert_called_once_with(None, pairs[0])
-    penalties.getUnmatchedLabelPenalty.assert_called_once_with(None, pairs[0])
 
 
 def test_getRegionScores_appliesPenalties_2pairs():
     pairs = [AlignedPair(1, 1), AlignedPair(1, 1)]
     alignmentResult = AlignmentResultRow(pairs)
-    penalties = __getPenaltiesMock()
-    penalties.getDistancePenalty = Mock(return_value=2)
-    penalties.getUnmatchedLabelPenalty = Mock(return_value=5)
-
+    penalties = [RegionScorePenaltyMock(2), RegionScorePenaltyMock(5)]
     perfectMatchScore = 100
+
     regionScores = alignmentResult.getRegionScores(penalties, perfectMatchScore)
 
+    [p.mock.assert_has_calls([call(None, pairs[0]), call(pairs[0], pairs[1])]) for p in penalties]
     assert len(regionScores.scores) == 2
     assert regionScores.scores == [100 - 2 - 5] * 2
-    calls = [call(None, pairs[0]), call(pairs[0], pairs[1])]
-    penalties.getDistancePenalty.assert_has_calls(calls)
-    penalties.getUnmatchedLabelPenalty.assert_has_calls(calls)
 
 
 @pytest.mark.parametrize("pairs, expected", [
@@ -177,12 +170,18 @@ def test_merge_solvesConflict2():
                                    (1638, 22, 150.00), (1640, 23, 488.80), (1642, 24, 45.90), (1643, 25, 317.00)]
 
 
-def __getPenaltiesMock() -> RegionScorePenalties | Mock:
-    return Mock(spec=RegionScorePenalties)
-
-
 def __toAlignedPairs(pairs: List[Tuple[int, int] | Tuple[int, int, int]]):
     return list(map(lambda p: AlignedPair(p[0], p[1], p[2] if 2 < len(p) else 0), pairs))
+
+
+class RegionScorePenaltyMock(RegionScorePenalty):
+    def __init__(self, value: int):
+        self.value = value
+        self.mock = Mock()
+
+    def getPenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair):
+        self.mock(previousPair, currentPair)
+        return self.value
 
 
 if __name__ == '__main__':

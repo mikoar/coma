@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.alignment.aligned_pair import AlignedPair
-from src.alignment.region_score_penalties import RegionScorePenalties
+from src.alignment.region_score_penalties import UnmatchedLabelPenalty, DistancePenalty
 
 
 @pytest.mark.parametrize("previousPair, pair, unmatchedCount", [
@@ -20,8 +20,8 @@ from src.alignment.region_score_penalties import RegionScorePenalties
 def test_regionScorePenalties_unmatchedLabelPenalty(previousPair: AlignedPair | None, pair: AlignedPair,
                                                     unmatchedCount: int):
     unmatchedLabelPenalty = 100
-    penalties = RegionScorePenalties(unmatchedLabelPenalty)
-    assert penalties.getUnmatchedLabelPenalty(previousPair, pair) == unmatchedCount * unmatchedLabelPenalty
+    penalties = UnmatchedLabelPenalty(unmatchedLabelPenalty)
+    assert penalties.getPenalty(previousPair, pair) == unmatchedCount * unmatchedLabelPenalty
 
 
 @pytest.mark.parametrize("previousPair, pair, distance", [
@@ -30,20 +30,13 @@ def test_regionScorePenalties_unmatchedLabelPenalty(previousPair: AlignedPair | 
     (None, AlignedPair(1, 1, -5), 0),
     (AlignedPair(1, 1, 5), AlignedPair(1, 1, 5), 0),
     (AlignedPair(1, 1, -5), AlignedPair(1, 1, 5), 10),
+    (AlignedPair(1, 1, 5), AlignedPair(1, 1, -5), 10),
+    (AlignedPair(1, 1, 5), AlignedPair(1, 1, 10), 5),
 ])
 def test_regionScorePenalties_distancePenalty(previousPair: AlignedPair | None, pair: AlignedPair,
                                               distance: int):
-    penalties = RegionScorePenalties(distancePenaltyExponent=1)
-    assert penalties.getDistancePenalty(previousPair, pair) == distance
-
-
-@pytest.mark.parametrize("distancePenaltyExponent,penalty", [
-    (2., 4.),
-    (4., 16.),
-])
-def test_regionScorePenalties_distancePenalty_exponentialScaling(distancePenaltyExponent: float, penalty: float):
-    penalties = RegionScorePenalties(distancePenaltyExponent=distancePenaltyExponent)
-    assert penalties.getDistancePenalty(AlignedPair(1, 1, 0), AlignedPair(1, 1, 2)) == penalty
+    penalties = DistancePenalty(1)
+    assert penalties.getPenalty(previousPair, pair) == distance
 
 
 if __name__ == '__main__':

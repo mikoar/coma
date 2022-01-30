@@ -1,21 +1,33 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 from src.alignment.aligned_pair import AlignedPair
 
 
-class RegionScorePenalties:
-    def __init__(self, unmatchedLabelPenalty: int = 5000, distancePenaltyExponent: float = 1.2) -> None:
-        self.unmatchedLabelPenalty = unmatchedLabelPenalty
-        self.distancePenaltyExponent = distancePenaltyExponent
+class RegionScorePenalty(ABC):
+    @abstractmethod
+    def getPenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair) -> float:
+        pass
 
-    def getUnmatchedLabelPenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair):
+
+class UnmatchedLabelPenalty(RegionScorePenalty):
+    def __init__(self, penalty: int):
+        self.penalty = penalty
+
+    def getPenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair) -> float:
         if not previousPair:
             return 0
         else:
-            return self.unmatchedLabelPenalty * (currentPair.getFalseNegativesCount(previousPair)
-                                                 + currentPair.getFalsePositivesCount(previousPair))
+            return self.penalty * (currentPair.getFalseNegativesCount(previousPair) +
+                                   currentPair.getFalsePositivesCount(previousPair))
 
-    def getDistancePenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair):
+
+class DistancePenalty(RegionScorePenalty):
+    def __init__(self, multiplier: int = 2):
+        self.multiplier = multiplier
+
+    def getPenalty(self, previousPair: AlignedPair | None, currentPair: AlignedPair) -> float:
         if not previousPair:
             return 0
-        return abs(previousPair.queryShift - currentPair.queryShift) ** self.distancePenaltyExponent
+        return abs(previousPair.queryShift - currentPair.queryShift) * self.multiplier
