@@ -5,7 +5,7 @@ import itertools
 from dataclasses import dataclass
 from typing import List, Callable, Iterable
 
-from src.alignment.aligned_pair import AlignedPair, HitEnum
+from src.alignment.aligned_pair import AlignedPair, HitEnum, NotAlignedPosition
 from src.alignment.region_score_penalties import RegionScorePenalty
 from src.alignment.region_scores import RegionScores
 
@@ -19,7 +19,7 @@ class AlignmentResults:
 
 @dataclass
 class AlignmentResultRow:
-    alignedPairs: List[AlignedPair]
+    positions: List[AlignedPair | NotAlignedPosition]
     queryId: int = 1
     referenceId: int = 1
     queryStartPosition: int = 1
@@ -29,6 +29,14 @@ class AlignmentResultRow:
     queryLength: int = 1
     referenceLength: int = 1
     reverseStrand: bool = False
+
+    @property
+    def alignedPairs(self) -> List[AlignedPair]:
+        return [p for p in self.positions if isinstance(p, AlignedPair)]
+
+    @property
+    def notAlignedPositions(self) -> List[NotAlignedPosition]:
+        return [p for p in self.positions if isinstance(p, NotAlignedPosition)]
 
     @property
     def confidence(self):
@@ -43,7 +51,7 @@ class AlignmentResultRow:
         pairs = self.alignedPairs + other.alignedPairs
         deduplicatedPairs = self.__deduplicatePairs(self.__deduplicatePairs(pairs, AlignedPair.querySelector),
                                                     AlignedPair.referenceSelector)
-        return dataclasses.replace(self, alignedPairs=list(deduplicatedPairs))
+        return dataclasses.replace(self, positions=list(deduplicatedPairs))
 
     @staticmethod
     def __deduplicatePairs(pairs: Iterable[AlignedPair], key: Callable[[AlignedPair], int]):

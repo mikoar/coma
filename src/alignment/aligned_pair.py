@@ -10,6 +10,18 @@ class HitEnum(Enum):
     INSERTION = "I"
 
 
+class NotAlignedPosition:
+    def __init__(self, queryPositionIndex: int):
+        self.queryPositionIndex = queryPositionIndex
+
+    def __repr__(self) -> str:
+        return str(self.queryPositionIndex)
+
+    def __eq__(self, other: NotAlignedPosition | int) -> bool:
+        return self.queryPositionIndex == other if isinstance(other, int) \
+            else self.queryPositionIndex == other.queryPositionIndex
+
+
 class AlignedPair(NamedTuple):
     referencePositionIndex: int
     queryPositionIndex: int
@@ -50,3 +62,6 @@ class AlignedPair(NamedTuple):
     def __eq__(self, other: Tuple[int, int] | Tuple[int, int, int]) -> bool:
         return self.referencePositionIndex == other[0] and self.queryPositionIndex == other[1] and (
                 len(other) == 2 or self.queryShift == other[2])
+
+
+nullAlignedPair = AlignedPair(0, 0, 0)

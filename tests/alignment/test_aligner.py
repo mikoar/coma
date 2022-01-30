@@ -152,5 +152,21 @@ def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd
     assert result.queryEndPosition == queryEnd
 
 
+@pytest.mark.parametrize("query,notAlignedPositions", [
+    (
+        OpticalMap(1, length=19, positions=[2, 6, 10, 14, 18]),
+        [1, 2, 3, 4, 5]
+    ), (
+        OpticalMap(1, length=17, positions=[2, 4, 10, 12, 14, 16]),
+        [1, 3, 5]
+    ),
+])
+def test_returnsUnmatchedPositions(query, notAlignedPositions):
+    reference = OpticalMap(1, length=21, positions=[0, 4, 8, 12, 16, 20])
+    result = Aligner(0).align(reference, query, 0)
+
+    assert result.notAlignedPositions == notAlignedPositions
+
+
 if __name__ == '__main__':
     pytest.main(args=[__file__])

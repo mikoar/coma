@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import dropwhile, takewhile, groupby
 from typing import Iterator, List, NamedTuple
 
-from src.alignment.aligned_pair import AlignedPair
+from src.alignment.aligned_pair import AlignedPair, nullAlignedPair, NotAlignedPosition
 from src.alignment.alignment_results import AlignmentResultRow
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
@@ -38,16 +38,19 @@ class Aligner:
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceWindowStartPosition)
         deduplicatedAlignedPairs = list(self.__removeDuplicatedReferenceAlignments(alignedPairs))
 
-        queryStart = query.positions[deduplicatedAlignedPairs[0].queryPositionIndex - 1]
-        queryEnd = query.positions[deduplicatedAlignedPairs[-1].queryPositionIndex - 1]
+        firstPair = deduplicatedAlignedPairs[0] if deduplicatedAlignedPairs else nullAlignedPair
+        lastPair = deduplicatedAlignedPairs[-1] if deduplicatedAlignedPairs else nullAlignedPair
+        queryStart = query.positions[firstPair.queryPositionIndex - 1]
+        queryEnd = query.positions[lastPair.queryPositionIndex - 1]
 
-        return AlignmentResultRow(deduplicatedAlignedPairs,
+        notAlignedPositions = self.__getNotAlignedPositions(queryPositions, deduplicatedAlignedPairs)
+        return AlignmentResultRow(self.__concatAndSort(deduplicatedAlignedPairs, notAlignedPositions, isReverse),
                                   query.moleculeId,
                                   reference.moleculeId,
                                   *((queryEnd, queryStart) if isReverse else (
                                       queryStart, queryEnd)),
-                                  reference.positions[deduplicatedAlignedPairs[0].referencePositionIndex - 1],
-                                  reference.positions[deduplicatedAlignedPairs[-1].referencePositionIndex - 1],
+                                  reference.positions[firstPair.referencePositionIndex - 1],
+                                  reference.positions[lastPair.referencePositionIndex - 1],
                                   query.length,
                                   reference.length,
                                   isReverse)
@@ -74,3 +77,14 @@ class Aligner:
     def __removeDuplicatedReferenceAlignments(pairs: Iterator[AlignedPair]):
         for _, ambiguousPairs in groupby(pairs, AlignedPair.referenceSelector):
             yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
+
+    @staticmethod
+    def __getNotAlignedPositions(queryPositions: List[PositionWithSiteId],
+                                 alignedPairs: List[AlignedPair]):
+        alignedSiteIds = [p.queryPositionIndex for p in alignedPairs]
+        return [NotAlignedPosition(q.siteId) for q in queryPositions if q.siteId not in alignedSiteIds]
+
+    @staticmethod
+    def __concatAndSort(l1: List[NotAlignedPosition | AlignedPair], l2: List[NotAlignedPosition | AlignedPair],
+                        isReverse: bool):
+        return sorted(l1 + l2, key=lambda x: x.queryPositionIndex, reverse=isReverse)
