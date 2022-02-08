@@ -5,9 +5,7 @@ import itertools
 from dataclasses import dataclass
 from typing import List, Callable, Iterable
 
-from src.alignment.aligned_pair import AlignedPair, HitEnum, NotAlignedPosition
-from src.alignment.region_score_penalties import RegionScorePenalty
-from src.alignment.region_scores import RegionScores
+from src.alignment.aligned_pair import AlignedPair, HitEnum, NotAlignedPosition, AlignmentPosition
 
 
 @dataclass
@@ -19,7 +17,7 @@ class AlignmentResults:
 
 @dataclass
 class AlignmentResultRow:
-    positions: List[AlignedPair | NotAlignedPosition]
+    positions: List[AlignmentPosition]
     queryId: int = 1
     referenceId: int = 1
     queryStartPosition: int = 1
@@ -59,8 +57,8 @@ class AlignmentResultRow:
         for _, ambiguousPairs in itertools.groupby(sortedPairs, key):
             yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
 
-    def getRegionScores(self, penalties: List[RegionScorePenalty], perfectMatchScore: int = 10000):
-        return RegionScores(list(self.__getRegionScoresGenerator(penalties, perfectMatchScore)))
+    def getScores(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int):
+        return [p.getScore(perfectMatchScore, scoreMultiplier, unmatchedPenalty) for p in self.positions]
 
     def __getHitEnums(self):
         pairs = list(self.__removeDuplicateQueryPositionsPreservingLastOne(self.alignedPairs))
@@ -106,9 +104,3 @@ class AlignmentResultRow:
     def __hitToString(count, hit):
         x = f"{count}{hit.value}"
         return x
-
-    def __getRegionScoresGenerator(self, penalties: List[RegionScorePenalty], perfectMatchScore: int):
-        previousPair: AlignedPair | None = None
-        for pair in self.alignedPairs:
-            yield perfectMatchScore - sum([p.getPenalty(previousPair, pair) for p in penalties])
-            previousPair = pair

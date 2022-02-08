@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import dropwhile, takewhile, groupby
 from typing import Iterator, List, NamedTuple
 
-from src.alignment.aligned_pair import AlignedPair, nullAlignedPair, NotAlignedPosition
+from src.alignment.aligned_pair import AlignedPair, nullAlignedPair, NotAlignedQueryPosition
 from src.alignment.alignment_results import AlignmentResultRow
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
@@ -82,9 +82,10 @@ class Aligner:
     def __getNotAlignedPositions(queryPositions: List[PositionWithSiteId],
                                  alignedPairs: List[AlignedPair]):
         alignedSiteIds = [p.queryPositionIndex for p in alignedPairs]
-        return [NotAlignedPosition(q.siteId) for q in queryPositions if q.siteId not in alignedSiteIds]
+        return [NotAlignedQueryPosition(q.siteId) for q in queryPositions if q.siteId not in alignedSiteIds]
 
     @staticmethod
-    def __concatAndSort(l1: List[NotAlignedPosition | AlignedPair], l2: List[NotAlignedPosition | AlignedPair],
+    def __concatAndSort(l1: List[NotAlignedQueryPosition | AlignedPair],
+                        l2: List[NotAlignedQueryPosition | AlignedPair],
                         isReverse: bool):
-        return sorted(l1 + l2, key=lambda x: x.queryPositionIndex, reverse=isReverse)
+        return sorted(l1 + l2, key=AlignedPair.querySelector, reverse=isReverse)

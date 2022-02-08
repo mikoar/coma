@@ -1,6 +1,8 @@
+from typing import List
+
 import pytest
 
-from src.alignment.aligned_pair import AlignedPair
+from src.alignment.aligned_pair import AlignedPair, NotAlignedPosition
 from src.alignment.aligner import Aligner
 from src.correlation.optical_map import OpticalMap
 
@@ -154,14 +156,14 @@ def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd
 
 @pytest.mark.parametrize("query,notAlignedPositions", [
     (
-        OpticalMap(1, length=19, positions=[2, 6, 10, 14, 18]),
-        [1, 2, 3, 4, 5]
+            OpticalMap(1, length=19, positions=[2, 6, 10, 14, 18]),
+            [(None, 1), (None, 2), (None, 3), (None, 4), (None, 5)]
     ), (
-        OpticalMap(1, length=17, positions=[2, 4, 10, 12, 14, 16]),
-        [1, 3, 5]
+            OpticalMap(1, length=17, positions=[2, 4, 10, 12, 14, 16]),
+            [(None, 1), (None, 3), (None, 5)]
     ),
 ])
-def test_returnsUnmatchedPositions(query, notAlignedPositions):
+def test_returnsUnmatchedPositions(query, notAlignedPositions: List[NotAlignedPosition]):
     reference = OpticalMap(1, length=21, positions=[0, 4, 8, 12, 16, 20])
     result = Aligner(0).align(reference, query, 0)
 

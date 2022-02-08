@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import NamedTuple, Tuple
+from typing import Tuple
 
 
 class HitEnum(Enum):
@@ -10,22 +11,48 @@ class HitEnum(Enum):
     INSERTION = "I"
 
 
-class NotAlignedPosition:
+class AlignmentPosition(ABC):
+    @abstractmethod
+    def getScore(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
+        pass
+
+
+class NotAlignedPosition(AlignmentPosition, ABC):
+    def getScore(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
+        return unmatchedPenalty
+
+
+class NotAlignedQueryPosition(NotAlignedPosition):
     def __init__(self, queryPositionIndex: int):
         self.queryPositionIndex = queryPositionIndex
 
     def __repr__(self) -> str:
-        return str(self.queryPositionIndex)
+        return f"(-, {self.queryPositionIndex})"
 
-    def __eq__(self, other: NotAlignedPosition | int) -> bool:
-        return self.queryPositionIndex == other if isinstance(other, int) \
-            else self.queryPositionIndex == other.queryPositionIndex
+    def __eq__(self, other: NotAlignedQueryPosition | Tuple[None, int]) -> bool:
+        return other[0] is None and self.queryPositionIndex == other[1] if len(other) == 2 \
+            else isinstance(other, NotAlignedQueryPosition) \
+                 and self.queryPositionIndex == other.queryPositionIndex
 
 
-class AlignedPair(NamedTuple):
-    referencePositionIndex: int
-    queryPositionIndex: int
-    queryShift: int = 0
+class NotAlignedReferencePosition(NotAlignedPosition):
+    def __init__(self, referencePositionIndex: int):
+        self.referencePositionIndex = referencePositionIndex
+
+    def __repr__(self) -> str:
+        return f"({self.referencePositionIndex}, -)"
+
+    def __eq__(self, other: NotAlignedReferencePosition | Tuple[int, None]) -> bool:
+        return self.referencePositionIndex == other[0] and other[1] is None if len(other) == 2 \
+            else isinstance(other, NotAlignedReferencePosition) \
+                 and self.referencePositionIndex == other.referencePositionIndex
+
+
+class AlignedPair(AlignmentPosition):
+    def __init__(self, referencePositionIndex: int, queryPositionIndex: int, queryShift: int = 0):
+        self.referencePositionIndex = referencePositionIndex
+        self.queryPositionIndex = queryPositionIndex
+        self.queryShift = queryShift
 
     @staticmethod
     def distanceSelector(pair: AlignedPair):
@@ -47,11 +74,8 @@ class AlignedPair(NamedTuple):
     def distance(self):
         return abs(self.queryShift)
 
-    def getFalseNegativesCount(self, previousPair: AlignedPair | None):
-        return 0 if not previousPair else self.referencePositionIndex - previousPair.referencePositionIndex - 1
-
-    def getFalsePositivesCount(self, previousPair: AlignedPair | None):
-        return 0 if not previousPair else abs(self.queryPositionIndex - previousPair.queryPositionIndex) - 1
+    def getScore(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
+        return scoreMultiplier * (perfectMatchScore - self.distance)
 
     def __str__(self) -> str:
         return f"({self.referencePositionIndex}, {self.queryPositionIndex})"
@@ -64,4 +88,4 @@ class AlignedPair(NamedTuple):
                 len(other) == 2 or self.queryShift == other[2])
 
 
-nullAlignedPair = AlignedPair(0, 0, 0)
+nullAlignedPair = AlignedPair(0, 0)
