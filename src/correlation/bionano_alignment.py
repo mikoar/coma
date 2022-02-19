@@ -2,8 +2,8 @@ from typing import NamedTuple, List
 
 
 class RefAlignedPair(NamedTuple):
-    referencePositionIndex: int
-    queryPositionIndex: int
+    referenceSiteId: int
+    querySiteId: int
 
 
 class BionanoAlignment:

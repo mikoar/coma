@@ -4,8 +4,8 @@ from typing import List, Tuple
 
 import pytest
 
-from src.alignment.aligned_pair import AlignedPair
 from src.alignment.alignment_results import AlignmentResultRow
+from tests.alignment.test_alignment_position import TestAlignedPair
 
 
 @pytest.mark.parametrize("pairs, expected", [
@@ -111,8 +111,10 @@ def test_merge_noConflicts():
 
 
 def test_merge_solvesConflict():
-    row1 = AlignmentResultRow([AlignedPair(1, 1, 0), AlignedPair(2, 2, 50)])
-    row2 = AlignmentResultRow([AlignedPair(3, 2, 51), AlignedPair(4, 3, 0)])
+    row1 = AlignmentResultRow(
+        [TestAlignedPair(1, 1, 0), TestAlignedPair(2, 2, 50)])
+    row2 = AlignmentResultRow(
+        [TestAlignedPair(3, 2, 51), TestAlignedPair(4, 3, 0)])
 
     merged = row1.merge(row2)
 
@@ -143,7 +145,7 @@ def test_merge_solvesConflict2():
 
 
 def __toAlignedPairs(pairs: List[Tuple[int, int] | Tuple[int, int, int]]):
-    return list(map(lambda p: AlignedPair(p[0], p[1], p[2] if 2 < len(p) else 0), pairs))
+    return list(map(lambda p: TestAlignedPair(p[0], p[1], p[2] if 2 < len(p) else 0), pairs))
 
 
 if __name__ == '__main__':

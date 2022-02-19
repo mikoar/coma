@@ -1,10 +1,10 @@
 from itertools import zip_longest
-from typing import Iterable, List
+from typing import List
 
 import numpy as np
 
 
-def vectorisePositions(positions: Iterable[int], resolution: int = 100, start: int = 0, end: int = None):
+def vectorisePositions(positions: List[int], resolution: int = 100, start: int = 0, end: int = None):
     if not isinstance(resolution, int) or resolution < 1:
         raise ValueError(resolution)
     end = end or positions[-1]

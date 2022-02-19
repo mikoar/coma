@@ -8,8 +8,8 @@ class CmapReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
-    def readQueries(self, filePath: str, moleculeIds: List[int] = []):
-        return self.__read(filePath, moleculeIds)
+    def readQueries(self, filePath: str, moleculeIds: List[int] = None):
+        return self.__read(filePath, moleculeIds or [])
 
     def readQuery(self, filePath: str, moleculeId: int):
         return self.__read(filePath, [moleculeId])[0]
@@ -17,8 +17,8 @@ class CmapReader:
     def readReference(self, filePath: str, chromosome: int = 1):
         return self.__read(filePath, [chromosome])[0]
 
-    def readReferences(self, filePath: str, chromosomes: List[int] = []):
-        return self.__read(filePath, chromosomes)
+    def readReferences(self, filePath: str, chromosomes: List[int] = None):
+        return self.__read(filePath, chromosomes or [])
 
     def __read(self, filePath, moleculeIds=None) -> List[OpticalMap]:
         maps = self.reader.readFile(filePath, ["CMapId", "Position", "ContigLength", "LabelChannel"])

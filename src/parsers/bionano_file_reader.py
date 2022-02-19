@@ -15,7 +15,8 @@ class BionanoFileReader:
             names=self.__getColumnNames(filePath),
             usecols=columns)
 
-    def __getColumnNames(self, filePath):
+    @staticmethod
+    def __getColumnNames(filePath):
         with open(filePath) as file:
             gen = itertools.dropwhile(lambda line: not line.startswith('#h'), file)
             header_line = list(itertools.islice(gen, 1))[0].strip()

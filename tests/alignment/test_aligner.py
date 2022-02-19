@@ -2,9 +2,25 @@ from typing import List
 
 import pytest
 
-from src.alignment.aligned_pair import AlignedPair, NotAlignedPosition
 from src.alignment.aligner import Aligner
+from src.alignment.alignment_position import AlignedPair, AlignmentPosition
 from src.correlation.optical_map import OpticalMap
+
+
+@pytest.mark.parametrize("reference,query", [
+    (
+            OpticalMap(1, length=0, positions=[]),
+            OpticalMap(1, length=0, positions=[])
+    ),
+    (
+            OpticalMap(1, length=10, positions=[0, 5, 9]),
+            OpticalMap(1, length=10, positions=[1, 6, 10])
+    )
+])
+def test_empty(reference, query):
+    result = Aligner(0).align(reference, query, 0)
+
+    assert len(result.alignedPairs) == 0
 
 
 @pytest.mark.parametrize("reference,query,peakPosition", [
@@ -154,20 +170,26 @@ def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd
     assert result.queryEndPosition == queryEnd
 
 
-@pytest.mark.parametrize("query,notAlignedPositions", [
+@pytest.mark.parametrize("query,positions", [
     (
-            OpticalMap(1, length=19, positions=[2, 6, 10, 14, 18]),
-            [(None, 1), (None, 2), (None, 3), (None, 4), (None, 5)]
+            OpticalMap(1, length=12, positions=[3, 5, 11]),
+            [(1, None), (None, 1), (2, 2), (3, None), (None, 3)]
     ), (
-            OpticalMap(1, length=17, positions=[2, 4, 10, 12, 14, 16]),
-            [(None, 1), (None, 3), (None, 5)]
-    ),
+            OpticalMap(1, length=12, positions=[1, 3, 5]),
+            [(1, 1), (None, 2), (2, 3), (3, None)]
+    ), (
+            OpticalMap(1, length=12, positions=[1, 9, 10]),
+            [(1, 1), (2, None), (3, 2), (None, 3)]
+    ), (
+            OpticalMap(1, length=12, positions=[1, 4, 6, 10]),
+            [(1, 1), (None, 2), (2, None), (None, 3), (3, None), (None, 4)]
+    )
 ])
-def test_returnsUnmatchedPositions(query, notAlignedPositions: List[NotAlignedPosition]):
-    reference = OpticalMap(1, length=21, positions=[0, 4, 8, 12, 16, 20])
+def test_returnsUnmatchedPositions(query, positions: List[AlignmentPosition]):
+    reference = OpticalMap(1, length=10, positions=[1, 5, 9])
     result = Aligner(0).align(reference, query, 0)
 
-    assert result.notAlignedPositions == notAlignedPositions
+    assert result.positions == positions
 
 
 if __name__ == '__main__':

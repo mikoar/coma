@@ -5,7 +5,7 @@ import itertools
 from dataclasses import dataclass
 from typing import List, Callable, Iterable
 
-from src.alignment.aligned_pair import AlignedPair, HitEnum, NotAlignedPosition, AlignmentPosition
+from src.alignment.alignment_position import AlignedPair, HitEnum, NotAlignedPosition, AlignmentPosition
 
 
 @dataclass
@@ -47,8 +47,8 @@ class AlignmentResultRow:
 
     def merge(self, other: AlignmentResultRow):
         pairs = self.alignedPairs + other.alignedPairs
-        deduplicatedPairs = self.__deduplicatePairs(self.__deduplicatePairs(pairs, AlignedPair.querySelector),
-                                                    AlignedPair.referenceSelector)
+        deduplicatedPairs = self.__deduplicatePairs(self.__deduplicatePairs(pairs, AlignedPair.querySiteIdSelector),
+                                                    AlignedPair.referenceSiteIdSelector)
         return dataclasses.replace(self, positions=list(deduplicatedPairs))
 
     @staticmethod
@@ -64,24 +64,24 @@ class AlignmentResultRow:
         pairs = list(self.__removeDuplicateQueryPositionsPreservingLastOne(self.alignedPairs))
         pairsIterator = iter(pairs)
         currentPair: AlignedPair = next(pairsIterator)
-        previousQuery = currentPair.queryPositionIndex
-        for referenceIndex in range(pairs[0].referencePositionIndex,
-                                    pairs[-1].referencePositionIndex + 1):
-            queryIncrement = abs(currentPair.queryPositionIndex - previousQuery)
+        previousQuery = currentPair.query.siteId
+        for referenceIndex in range(pairs[0].reference.siteId,
+                                    pairs[-1].reference.siteId + 1):
+            queryIncrement = abs(currentPair.query.siteId - previousQuery)
             if queryIncrement > 1:
                 for _ in range(1, queryIncrement):
                     yield HitEnum.INSERTION
-                previousQuery = currentPair.queryPositionIndex
-            if currentPair.referencePositionIndex == referenceIndex:
-                previousQuery = currentPair.queryPositionIndex
+                previousQuery = currentPair.query.siteId
+            if currentPair.reference.siteId == referenceIndex:
+                previousQuery = currentPair.query.siteId
                 currentPair = next(pairsIterator, None)
                 yield HitEnum.MATCH
-            elif currentPair.referencePositionIndex > referenceIndex:
+            elif currentPair.reference.siteId > referenceIndex:
                 yield HitEnum.DELETION
 
     @staticmethod
     def __removeDuplicateQueryPositionsPreservingLastOne(pairs: List[AlignedPair]):
-        for _, ambiguousPairs in itertools.groupby(pairs, lambda pair: pair.queryPositionIndex):
+        for _, ambiguousPairs in itertools.groupby(pairs, lambda pair: pair.query.siteId):
             *_, lastPair = ambiguousPairs
             yield lastPair
 

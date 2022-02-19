@@ -66,7 +66,7 @@ class XmapReader:
                 "RefLen": "{:.1f}".format(row.referenceLength),
                 "LabelChannel": 1,
                 "Alignment": "".join(
-                    [f"({pair.referencePositionIndex},{pair.queryPositionIndex})" for pair in row.alignedPairs]),
+                    [f"({pair.reference.siteId},{pair.query.siteId})" for pair in row.alignedPairs]),
             } for row in alignmentResults.rows], index=pd.RangeIndex(start=1, stop=len(alignmentResults.rows) + 1))
 
             dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator="\n")

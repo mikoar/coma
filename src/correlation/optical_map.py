@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil
-from typing import List, NamedTuple
+from typing import List
 
 import numpy as np
 from scipy.signal import find_peaks, correlate
@@ -13,9 +13,10 @@ from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
 
 
-class PositionWithSiteId(NamedTuple):
-    siteId: int
-    position: int
+class PositionWithSiteId:
+    def __init__(self, siteId: int, position: int):
+        self.siteId = siteId
+        self.position = position
 
 
 def adjustPeakPositions(peakPositions: np.ndarray, resolution: int, start: int = 0) -> np.ndarray:

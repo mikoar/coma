@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Tuple, List
+from typing import Tuple, List
 
-from src.alignment.aligned_pair import AlignedPair
 from src.alignment.alignment_results import AlignmentResultRow
 from src.correlation.bionano_alignment import BionanoAlignment
 
@@ -20,18 +19,14 @@ class AlignmentComparisonResult:
 
 class AlignmentComparer:
     def compare(self, referenceAlignment: BionanoAlignment, actualAlignment: AlignmentResultRow):
-        pairs1 = self.__getPairTuples(referenceAlignment)
-        pairs2 = self.__getPairTuples(actualAlignment)
+        pairs1 = list(
+            map(lambda pair: (int(pair.referenceSiteId), int(pair.querySiteId)), referenceAlignment.alignedPairs))
+        pairs2 = list(
+            map(lambda pair: (int(pair.reference.siteId), int(pair.query.siteId)), actualAlignment.alignedPairs))
         query1Coverage = self.__getCoverage(pairs1, pairs2)
         query2Coverage = self.__getCoverage(pairs2, pairs1)
         return AlignmentComparisonResult(pairs1, query1Coverage, pairs2, query2Coverage, referenceAlignment.queryId,
                                          referenceAlignment.referenceId)
-
-    @staticmethod
-    def __getPairTuples(alignment: BionanoAlignment | AlignmentResultRow):
-        queryPositionSelector: Callable[[AlignedPair], Tuple[int, int]] = lambda pair: (
-            int(pair.referencePositionIndex), int(pair.queryPositionIndex))
-        return list(map(queryPositionSelector, alignment.alignedPairs))
 
     @staticmethod
     def __getCoverage(pairs: List[Tuple[int, int]], otherPairs: List[Tuple[int, int]]):
