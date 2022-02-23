@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import itertools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Tuple, Final
+from typing import Tuple, Final, Iterable, Callable
 
 from src.correlation.optical_map import PositionWithSiteId
 
@@ -90,6 +91,18 @@ class AlignedPair(AlignmentPosition):
     @staticmethod
     def querySiteIdSelector(pair: AlignedPair):
         return pair.query.siteId
+
+    @staticmethod
+    def deduplicate(pairs: Iterable[AlignedPair]):
+        return AlignedPair.__deduplicateByKey(
+            AlignedPair.__deduplicateByKey(pairs, AlignedPair.querySiteIdSelector),
+            AlignedPair.referenceSiteIdSelector)
+
+    @staticmethod
+    def __deduplicateByKey(pairs: Iterable[AlignedPair], key: Callable[[AlignedPair], int]):
+        sortedPairs = sorted(pairs, key=key)
+        for _, ambiguousPairs in itertools.groupby(sortedPairs, key):
+            yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
 
     @property
     def distance(self):

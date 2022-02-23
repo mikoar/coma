@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from itertools import dropwhile, takewhile, groupby, chain
-from typing import Iterator, List, NamedTuple
+from itertools import dropwhile, takewhile, chain
+from typing import List, NamedTuple
 
 from src.alignment.alignment_position import AlignedPair, nullAlignedPair, NotAlignedQueryPosition, \
     NotAlignedReferencePosition, NotAlignedPosition
@@ -37,7 +37,7 @@ class Aligner:
 
         queryPositions = list(query.getPositionsWithSiteIds(isReverse))
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceStartPosition)
-        deduplicatedAlignedPairs = list(self.__removeDuplicatedReferenceAlignments(alignedPairs))
+        deduplicatedAlignedPairs = list(AlignedPair.deduplicate(alignedPairs))
 
         firstPair = deduplicatedAlignedPairs[0] if deduplicatedAlignedPairs else nullAlignedPair
         lastPair = deduplicatedAlignedPairs[-1] if deduplicatedAlignedPairs else nullAlignedPair
@@ -77,11 +77,6 @@ class Aligner:
             for queryPosition in queryPositionsWithinDistance:
                 yield AlignedPair(referencePosition, queryPosition,
                                   queryPosition.position - referencePositionAdjustedToQuery)
-
-    @staticmethod
-    def __removeDuplicatedReferenceAlignments(pairs: Iterator[AlignedPair]):
-        for _, ambiguousPairs in groupby(pairs, AlignedPair.referenceSiteIdSelector):
-            yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
 
     @staticmethod
     def __getNotAlignedPositions(queryPositions: List[PositionWithSiteId],

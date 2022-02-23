@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import itertools
 from dataclasses import dataclass
-from typing import List, Callable, Iterable
+from typing import List
 
 from src.alignment.alignment_position import AlignedPair, HitEnum, NotAlignedPosition, AlignmentPosition
 
@@ -44,15 +44,8 @@ class AlignmentResultRow:
 
     def merge(self, other: AlignmentResultRow):
         pairs = self.alignedPairs + other.alignedPairs
-        deduplicatedPairs = self.__deduplicatePairs(self.__deduplicatePairs(pairs, AlignedPair.querySiteIdSelector),
-                                                    AlignedPair.referenceSiteIdSelector)
+        deduplicatedPairs = AlignedPair.deduplicate(pairs)
         return dataclasses.replace(self, positions=list(deduplicatedPairs))
-
-    @staticmethod
-    def __deduplicatePairs(pairs: Iterable[AlignedPair], key: Callable[[AlignedPair], int]):
-        sortedPairs = sorted(pairs, key=key)
-        for _, ambiguousPairs in itertools.groupby(sortedPairs, key):
-            yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
 
     def getScoredPositions(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int):
         return [p.getScoredPosition(perfectMatchScore, scoreMultiplier, unmatchedPenalty) for p in

@@ -113,18 +113,18 @@ def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, que
     (
             OpticalMap(1, length=300, positions=[100, 149, 150, 189]),
             OpticalMap(1, length=100, positions=[0, 49, 89]),
-            [(1, 1), (2, 2), (3, 2), (4, 3)]
+            [(1, 1), (2, 2), (3, None), (4, 3)]
     ), (
             OpticalMap(1, length=300, positions=[100, 149, 188, 189]),
             OpticalMap(1, length=100, positions=[0, 49, 89]),
-            [(1, 1), (2, 2), (3, 3), (4, 3)]
+            [(1, 1), (2, 2), (3, None), (4, 3)]
     )
 ])
-def test_handlesDeletions_referencePosition3InRange_Aligns2ReferencesTo1Query(reference, query, expected):
+def test_handlesDeletions_atReferencePosition3(reference, query, expected):
     result = Aligner(10).align(reference, query, 100)
 
     assert result.referenceEndPosition == 189
-    assert result.alignedPairs == expected
+    assert result.positions == expected
 
 
 @pytest.mark.parametrize("reference,query", [
