@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, Final
 
 from src.correlation.optical_map import PositionWithSiteId
 
@@ -15,7 +15,8 @@ class HitEnum(Enum):
 
 class AlignmentPosition(ABC):
     @abstractmethod
-    def getScore(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
+    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
+                          unmatchedPenalty: int) -> ScoredAlignmentPosition:
         pass
 
     @property
@@ -28,8 +29,9 @@ class AlignmentPosition(ABC):
 
 
 class NotAlignedPosition(AlignmentPosition, ABC):
-    def getScore(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
-        return unmatchedPenalty
+    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
+                          unmatchedPenalty: int) -> ScoredAlignmentPosition:
+        return ScoredNotAlignedPosition(self, unmatchedPenalty)
 
 
 class NotAlignedQueryPosition(NotAlignedPosition):
@@ -97,18 +99,43 @@ class AlignedPair(AlignmentPosition):
     def absolutePosition(self) -> int:
         return self.reference.position
 
-    def getScore(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
-        return scoreMultiplier * (perfectMatchScore - self.distance)
-
-    def __str__(self) -> str:
-        return f"({self.reference.siteId}, {self.query.siteId})"
+    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
+                          unmatchedPenalty: int) -> ScoredAlignmentPosition:
+        score = scoreMultiplier * (perfectMatchScore - self.distance)
+        return ScoredAlignedPair(self, score)
 
     def __repr__(self) -> str:
-        return f"({self.reference.siteId}, {self.query.siteId}, {self.queryShift:.2f})"
+        return f"({self.reference.siteId}, {self.query.siteId}), d:{self.queryShift:.2f}"
 
     def __eq__(self, other: Tuple[int, int] | Tuple[int, int, int]) -> bool:
         return self.reference.siteId == other[0] and self.query.siteId == other[1] and (
                 len(other) == 2 or self.queryShift == other[2])
 
 
-nullAlignedPair = AlignedPair(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
+nullAlignedPair: Final[AlignedPair] = AlignedPair(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
+
+
+class ScoredAlignmentPosition(AlignmentPosition, ABC):
+    score: float
+
+
+class ScoredAlignedPair(AlignedPair, ScoredAlignmentPosition):
+    def __init__(self, pair: AlignedPair, score: float):
+        super().__init__(pair.reference, pair.query, pair.queryShift)
+        self.score = score
+
+    def __repr__(self) -> str:
+        return f"{AlignedPair.__repr__(self)}, s:{self.score:.2f}"
+
+
+class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
+    @property
+    def absolutePosition(self) -> int:
+        return self.__position.absolutePosition
+
+    def __init__(self, position: NotAlignedPosition, score: float):
+        self.__position = position
+        self.score = score
+
+    def __repr__(self) -> str:
+        return f"{self.__position}, s:{self.score:.2f}"

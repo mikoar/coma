@@ -27,6 +27,7 @@ class AlignmentResultRow:
     queryLength: int = 1
     referenceLength: int = 1
     reverseStrand: bool = False
+    confidence: float = 0.
 
     @property
     def alignedPairs(self) -> List[AlignedPair]:
@@ -35,10 +36,6 @@ class AlignmentResultRow:
     @property
     def notAlignedPositions(self) -> List[NotAlignedPosition]:
         return [p for p in self.positions if isinstance(p, NotAlignedPosition)]
-
-    @property
-    def confidence(self):
-        return 6.66
 
     @property
     def cigarString(self):
@@ -57,8 +54,9 @@ class AlignmentResultRow:
         for _, ambiguousPairs in itertools.groupby(sortedPairs, key):
             yield min(ambiguousPairs, key=AlignedPair.distanceSelector)
 
-    def getScores(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int):
-        return [p.getScore(perfectMatchScore, scoreMultiplier, unmatchedPenalty) for p in self.positions]
+    def getScoredPositions(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int):
+        return [p.getScoredPosition(perfectMatchScore, scoreMultiplier, unmatchedPenalty) for p in
+                self.positions]
 
     def __getHitEnums(self):
         pairs = list(self.__removeDuplicateQueryPositionsPreservingLastOne(self.alignedPairs))

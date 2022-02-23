@@ -3,6 +3,7 @@ from functools import reduce
 
 from src.alignment.aligner import Aligner
 from src.alignment.alignment_results import AlignmentResults
+from src.alignment.segments import AlignmentSegments
 from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
@@ -43,15 +44,23 @@ if __name__ == '__main__':
     refinedAligner = Aligner(2 * initialResolution * initialBlur)
     refinedAlignmentResults = [refinedAligner.align(reference, query, peak.position) for peak in
                                refinedCorrelation.peaks]
+    perfectMatchScore = 200
+    minScore = 500
+    breakSegmentThreshold = 600
+    filteredAlignmentResults = [
+        AlignmentSegments.filterSegments(row, perfectMatchScore, 2, -perfectMatchScore, minScore, breakSegmentThreshold)
+        for row in refinedAlignmentResults]
 
-    mergedResult = reduce(lambda row1, row2: row1.merge(row2), refinedAlignmentResults)
+    mergedResult = reduce(lambda row1, row2: row1.merge(row2), filteredAlignmentResults)
 
     refAlignment = xmapReader.readAlignments(alignmentsFile, queryIds=[queryId])[0]
     alignmentResults = AlignmentResults(referenceFile, queryFile,
-                                        [refAlignment, nonRefinedAlignmentResult, mergedResult])
+                                        [
+                                            # refAlignment, nonRefinedAlignmentResult,
+                                            mergedResult])
     xmapReader.writeAlignments(alignmentResultFile, alignmentResults)
 
-    for result in refinedAlignmentResults + [mergedResult]:
-        shifts = list(map(lambda pair: f"{pair.queryShift:.0f}", result.alignedPairs))
-        print(shifts)
-        print(result.alignedPairs)
+    for result in filteredAlignmentResults + [mergedResult]:
+        # shifts = list(map(lambda pair: f"{pair.queryShift:.0f}", result.alignedPairs))
+        # print(shifts)
+        print(result.positions)
