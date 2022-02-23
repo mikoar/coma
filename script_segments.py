@@ -44,11 +44,12 @@ if __name__ == '__main__':
     refinedAligner = Aligner(2 * initialResolution * initialBlur)
     refinedAlignmentResults = [refinedAligner.align(reference, query, peak.position) for peak in
                                refinedCorrelation.peaks]
-    perfectMatchScore = 200
+    perfectMatchScore = 400
+    unmatchedPenalty = -100
     minScore = 500
     breakSegmentThreshold = 600
     filteredAlignmentResults = [
-        AlignmentSegments.filterSegments(row, perfectMatchScore, 2, -perfectMatchScore, minScore, breakSegmentThreshold)
+        AlignmentSegments.filterSegments(row, perfectMatchScore, 1, unmatchedPenalty, minScore, breakSegmentThreshold)
         for row in refinedAlignmentResults]
 
     mergedResult = reduce(lambda row1, row2: row1.merge(row2), filteredAlignmentResults)

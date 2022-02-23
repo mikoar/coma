@@ -32,6 +32,8 @@ class AlignmentPosition(ABC):
 class NotAlignedPosition(AlignmentPosition, ABC):
     def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
                           unmatchedPenalty: int) -> ScoredAlignmentPosition:
+        if unmatchedPenalty > 0:
+            raise ValueError("penalty should be negative")
         return ScoredNotAlignedPosition(self, unmatchedPenalty)
 
 
