@@ -73,10 +73,11 @@ class NotAlignedReferencePosition(NotAlignedPosition):
 
 
 class AlignedPair(AlignmentPosition):
-    def __init__(self, reference: PositionWithSiteId, query: PositionWithSiteId, queryShift: int = 0):
+    def __init__(self, reference: PositionWithSiteId, query: PositionWithSiteId, queryShift: int = 0, source: int = 0):
         self.reference = reference
         self.query = query
         self.queryShift = queryShift
+        self.source = source
 
     @staticmethod
     def distanceSelector(pair: AlignedPair):
@@ -120,7 +121,7 @@ class AlignedPair(AlignmentPosition):
         return ScoredAlignedPair(self, score)
 
     def __repr__(self) -> str:
-        return f"({self.reference.siteId}, {self.query.siteId}), d:{self.queryShift:.2f}"
+        return f"({self.reference.siteId}, {self.query.siteId}), distance:{self.queryShift:.2f}, source:{self.source}"
 
     def __eq__(self, other: Tuple[int, int] | Tuple[int, int, int]) -> bool:
         return self.reference.siteId == other[0] and self.query.siteId == other[1] and (
@@ -136,11 +137,11 @@ class ScoredAlignmentPosition(AlignmentPosition, ABC):
 
 class ScoredAlignedPair(AlignedPair, ScoredAlignmentPosition):
     def __init__(self, pair: AlignedPair, score: float):
-        super().__init__(pair.reference, pair.query, pair.queryShift)
+        super().__init__(pair.reference, pair.query, pair.queryShift, pair.source)
         self.score = score
 
     def __repr__(self) -> str:
-        return f"{AlignedPair.__repr__(self)}, s:{self.score:.2f}"
+        return f"{AlignedPair.__repr__(self)}, score:{self.score:.2f}"
 
 
 class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
@@ -153,4 +154,4 @@ class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
         self.score = score
 
     def __repr__(self) -> str:
-        return f"{self.__position}, s:{self.score:.2f}"
+        return f"{self.__position}, score:{self.score:.2f}"

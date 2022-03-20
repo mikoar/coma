@@ -45,12 +45,13 @@ if __name__ == '__main__':
     refinedAlignmentResults = [refinedAligner.align(reference, query, peak.position) for peak in
                                refinedCorrelation.peaks]
     perfectMatchScore = 400
+    scoreMultiplier = 1
     unmatchedPenalty = -100
-    minScore = 500
+    minScore = 4 * perfectMatchScore
     breakSegmentThreshold = 600
     filteredAlignmentResults = [
-        AlignmentSegments.filterSegments(row, perfectMatchScore, 1, unmatchedPenalty, minScore, breakSegmentThreshold)
-        for row in refinedAlignmentResults]
+        AlignmentSegments.filterSegments(row, perfectMatchScore, scoreMultiplier, unmatchedPenalty, minScore,
+                                         breakSegmentThreshold) for row in refinedAlignmentResults]
 
     mergedResult = reduce(lambda row1, row2: row1.merge(row2), filteredAlignmentResults)
 
@@ -61,7 +62,7 @@ if __name__ == '__main__':
                                             mergedResult])
     xmapReader.writeAlignments(alignmentResultFile, alignmentResults)
 
-    for result in filteredAlignmentResults + [mergedResult]:
+    for result in refinedAlignmentResults + filteredAlignmentResults + [mergedResult]:
         # shifts = list(map(lambda pair: f"{pair.queryShift:.0f}", result.alignedPairs))
         # print(shifts)
         print(result.positions)

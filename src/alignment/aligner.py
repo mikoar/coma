@@ -26,6 +26,7 @@ class _ReferenceIndexWithDistance(NamedTuple):
 class Aligner:
     def __init__(self, maxDistance: int) -> None:
         self.maxDistance = maxDistance
+        self.iteration = 1
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
               isReverse: bool = False) -> AlignmentResultRow:
@@ -76,7 +77,8 @@ class Aligner:
                     queryPositions))
             for queryPosition in queryPositionsWithinDistance:
                 yield AlignedPair(referencePosition, queryPosition,
-                                  queryPosition.position - referencePositionAdjustedToQuery)
+                                  queryPosition.position - referencePositionAdjustedToQuery, self.iteration)
+        self.iteration += 1
 
     @staticmethod
     def __getNotAlignedPositions(queryPositions: List[PositionWithSiteId],
