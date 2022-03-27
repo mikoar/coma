@@ -6,6 +6,7 @@ from typing import List, NamedTuple
 from src.alignment.alignment_position import AlignedPair, nullAlignedPair, NotAlignedQueryPosition, \
     NotAlignedReferencePosition, NotAlignedPosition
 from src.alignment.alignment_results import AlignmentResultRow
+from src.alignment.segments import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
 
@@ -24,9 +25,10 @@ class _ReferenceIndexWithDistance(NamedTuple):
 
 
 class Aligner:
-    def __init__(self, maxDistance: int) -> None:
+    def __init__(self, maxDistance: int, segmentsFactory: AlignmentSegmentsFactory) -> None:
         self.maxDistance = maxDistance
         self.iteration = 1
+        self.segmentsFactory = segmentsFactory
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
               isReverse: bool = False) -> AlignmentResultRow:
@@ -40,6 +42,7 @@ class Aligner:
         alignedPairs = self.__getAlignedPairs(referencePositions, queryPositions, referenceStartPosition)
         deduplicatedAlignedPairs = list(AlignedPair.deduplicate(alignedPairs))
 
+        # TODO: take first and last pair from filtered segments
         firstPair = deduplicatedAlignedPairs[0] if deduplicatedAlignedPairs else nullAlignedPair
         lastPair = deduplicatedAlignedPairs[-1] if deduplicatedAlignedPairs else nullAlignedPair
         queryStart = query.positions[firstPair.query.siteId - 1] if query.positions else 0
@@ -47,8 +50,10 @@ class Aligner:
 
         notAlignedPositions = self.__getNotAlignedPositions(queryPositions, referencePositions,
                                                             deduplicatedAlignedPairs, referenceStartPosition)
+        allPositions = sorted(chain(deduplicatedAlignedPairs, notAlignedPositions))
+        segments = self.segmentsFactory.getSegments(allPositions)
 
-        return AlignmentResultRow(sorted(chain(deduplicatedAlignedPairs, notAlignedPositions)),
+        return AlignmentResultRow(segments,
                                   query.moleculeId,
                                   reference.moleculeId,
                                   *((queryEnd, queryStart) if isReverse else (

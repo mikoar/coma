@@ -6,7 +6,7 @@ import pytest
 
 from src.alignment.alignment_position import AlignmentPosition
 from src.alignment.alignment_results import AlignmentResultRow
-from tests.alignment.test_alignment_position import TestAlignedPair
+from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
 
 
 @pytest.mark.parametrize("pairs, expected", [
@@ -54,7 +54,7 @@ from tests.alignment.test_alignment_position import TestAlignedPair
      "14M2D2M1D7M1D14M1D6M1D2M1D6M1D2M1D2M1D3M1D1M1D1M1D2M1D11M1D2M1D30M2D5M1D1M1D3M1D3M1D1M1I12M1D1M2D15M2D30M1D1M1D3M23I12D2M14I19D20M1D1M1D6M"),
 ])
 def test_cigarString(pairs: List[Tuple[int, int]], expected: str):
-    row = AlignmentResultRow(TestAlignedPair.createAlignedPairs(pairs))
+    row = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(pairs))
 
     assert row.cigarString == expected
 
@@ -103,8 +103,8 @@ def test_merge_preserveOtherMetadata():
 
 
 def test_merge_noConflicts():
-    row1 = AlignmentResultRow(TestAlignedPair.createAlignedPairs([(1, 1), (2, 2)]))
-    row2 = AlignmentResultRow(TestAlignedPair.createAlignedPairs([(3, 3), (4, 5)]))
+    row1 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(1, 1), (2, 2)]))
+    row2 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(3, 3), (4, 5)]))
 
     merged = row1.merge(row2)
 
@@ -112,10 +112,8 @@ def test_merge_noConflicts():
 
 
 def test_merge_solvesConflict():
-    row1 = AlignmentResultRow(
-        [TestAlignedPair(1, 1, 0), TestAlignedPair(2, 2, 50)])
-    row2 = AlignmentResultRow(
-        [TestAlignedPair(3, 2, 51), TestAlignedPair(4, 3, 0)])
+    row1 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(1, 1, 0), (2, 2, 50)]))
+    row2 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(3, 2, 51), (4, 3, 0)]))
 
     merged = row1.merge(row2)
 
@@ -123,13 +121,13 @@ def test_merge_solvesConflict():
 
 
 def test_merge_solvesConflict2():
-    row1 = AlignmentResultRow(TestAlignedPair.createAlignedPairs(
+    row1 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(
         [(1616, 2, -235.10), (1622, 7, 1772.40), (1623, 9, 702.90), (1625, 10, 1898.60), (1626, 11, 1772.00),
          (1627, 12, 555.20), (1628, 13, -42.00), (1629, 14, 1.90), (1630, 15, -112.80), (1631, 16, -89.20),
          (1632, 17, -49.00), (1633, 18, 8.70), (1634, 19, 121.90), (1635, 20, 176.00), (1636, 21, 146.20),
          (1637, 22, 1868.00), (1638, 22, 150.00), (1640, 23, 488.80), (1641, 24, 818.90), (1642, 24, 45.90),
          (1643, 25, 317.00)]))
-    row2 = AlignmentResultRow(TestAlignedPair.createAlignedPairs(
+    row2 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(
         [(1616, 1, -77.30), (1617, 2, -174.10), (1618, 3, -102.30), (1619, 4, -2.30), (1620, 4, -583.30),
          (1621, 5, 34.00), (1622, 6, -44.70), (1623, 7, -40.60), (1624, 8, 105.10), (1625, 9, 34.90),
          (1626, 10, 177.60), (1627, 11, 166.00), (1630, 14, 762.90), (1632, 16, -1733.20), (1633, 17, 1599.00),

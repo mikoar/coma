@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import dataclasses
 import itertools
 from dataclasses import dataclass
 from typing import List
 
-from src.alignment.alignment_position import AlignedPair, HitEnum, NotAlignedPosition, AlignmentPosition
+from src.alignment.alignment_position import AlignedPair, HitEnum, NotAlignedPosition
+from src.alignment.segments import AlignmentSegment
 
 
 @dataclass
@@ -17,7 +17,7 @@ class AlignmentResults:
 
 @dataclass
 class AlignmentResultRow:
-    positions: List[AlignmentPosition]
+    segments: List[AlignmentSegment]
     queryId: int = 1
     referenceId: int = 1
     queryStartPosition: int = 1
@@ -28,6 +28,10 @@ class AlignmentResultRow:
     referenceLength: int = 1
     reverseStrand: bool = False
     confidence: float = 0.
+
+    @property
+    def positions(self):
+        return [position for segment in self.segments for position in segment.positions]
 
     @property
     def alignedPairs(self) -> List[AlignedPair]:
@@ -43,13 +47,10 @@ class AlignmentResultRow:
         return "".join(self.__aggregateHitEnums(hitEnums))
 
     def merge(self, other: AlignmentResultRow):
-        pairs = self.alignedPairs + other.alignedPairs
-        deduplicatedPairs = AlignedPair.deduplicate(pairs)
-        return dataclasses.replace(self, positions=list(deduplicatedPairs))
-
-    def getScoredPositions(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int):
-        return [p.getScoredPosition(perfectMatchScore, scoreMultiplier, unmatchedPenalty) for p in
-                self.positions]
+        # pairs = self.alignedPairs + other.alignedPairs
+        # deduplicatedPairs = AlignedPair.deduplicate(pairs)
+        # return dataclasses.replace(self, positions=list(deduplicatedPairs))
+        return self
 
     def __getHitEnums(self):
         pairs = list(self.__removeDuplicateQueryPositionsPreservingLastOne(self.alignedPairs))
