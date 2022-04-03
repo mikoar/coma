@@ -4,15 +4,14 @@ from typing import List
 
 import pytest
 
-from src.alignment.alignment_position import nullAlignedPair, ScoredAlignedPair
-from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segments import AlignmentSegments
-from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
+from src.alignment.alignment_position import ScoredAlignedPair
+from src.alignment.segments import AlignmentSegmentsFactory
+from tests.test_doubles.alignment_segment_stub import AlignedPairStub, ScoredAlignedPairStub
 
 
 def test_fullAlignment():
     positions = __scoredPositions([5., 6., 7., 4., 3.])
-    segments = AlignmentSegments.getSegments(positions, 5, 10)
+    segments = AlignmentSegmentsFactory(5, 10).getSegments(positions)
     assert len(segments) == 1
     segment = segments[0]
     assert segment.segmentScore == 25.
@@ -23,7 +22,7 @@ def test_fullAlignment():
 
 def test_partialAlignment():
     positions = __scoredPositions([-1., 5., 6., 7., 4., 3., -1])
-    segment = AlignmentSegments.getSegments(positions, 5, 10)[0]
+    segment = AlignmentSegmentsFactory(5, 10).getSegments(positions)[0]
     assert segment.segmentScore == 25.
     assert segment.start == 1
     assert segment.end == 6
@@ -31,7 +30,7 @@ def test_partialAlignment():
 
 def test_alignmentWithGap():
     positions = __scoredPositions([1., 1., -3., 2., 1., -3., 2.])
-    segment = AlignmentSegments.getSegments(positions, 3, 1)[0]
+    segment = AlignmentSegmentsFactory(3, 1).getSegments(positions)[0]
     assert segment.segmentScore == 3.
     assert segment.start == 3
     assert segment.end == 5
@@ -41,7 +40,7 @@ def test_multipleSegments():
     positions = __scoredPositions([1., 1., 1., 1., 1., -1., -1., -1., 1., 1.])
     minScore = 2
     threshold = 3
-    segments = AlignmentSegments.getSegments(positions, minScore, threshold)
+    segments = AlignmentSegmentsFactory(minScore, threshold).getSegments(positions)
 
     assert len(segments) == 2
     assert segments[0].segmentScore == 5.
@@ -52,22 +51,23 @@ def test_multipleSegments():
     assert segments[1].end == 10
 
 
-def test_filterSegments():
-    row = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(
-        [(1616, 1, -77.30), (1617, 2, -174.10), (1618, 3, -102.30), (1619, 4, -2.30), (1621, 5, 34.00),
-         (1622, 6, -44.70), (1623, 7, -40.60), (1624, 8, 105.10), (1625, 9, 34.90), (1626, 10, 177.60),
-         (1627, 11, 166.00), (1630, 14, 762.90), (1632, 16, -1733.20), (1633, 17, 1599.00), (1636, 20, 1600.00),
-         (1637, 21, -1072.80), (1639, 22, 2020.00)]))
+def test_filterSegment():
+    pairs = list(map(lambda pair: ScoredAlignedPairStub(pair[0], pair[1], 0, pair[2]),
+                     [(1616, 1, 122.7), (1617, 2, 25.9), (1618, 3, 97.7), (1619, 4, 197.7), (1621, 5, 166.0),
+                      (1622, 6, 155.3), (1623, 7, 159.4), (1624, 8, 94.9), (1625, 9, 165.1), (1626, 10, 22.4),
+                      (1627, 11, 34.0), (1630, 14, -562.9), (1632, 16, -1533.2), (1633, 17, -1399.0),
+                      (1636, 20, -1400.0), (1637, 21, -872.8), (1639, 22, -1820.0)]))
 
-    filteredRow = AlignmentSegments.filterSegments(row, 200, 2, -200, 1, 0)
+    segments = AlignmentSegmentsFactory(200, 0).getSegments(pairs)
 
-    assert filteredRow.alignedPairs == [(1616, 1, -77.30), (1617, 2, -174.10), (1618, 3, -102.30), (1619, 4, -2.30),
-                                        (1621, 5, 34.00), (1622, 6, -44.70), (1623, 7, -40.60), (1624, 8, 105.10),
-                                        (1625, 9, 34.90), (1626, 10, 177.60), (1627, 11, 166.00)]
+    assert len(segments) == 1
+    assert segments[0].positions == [(1616, 1), (1617, 2), (1618, 3), (1619, 4),
+                                     (1621, 5), (1622, 6), (1623, 7), (1624, 8),
+                                     (1625, 9), (1626, 10), (1627, 11)]
 
 
 def __scoredPositions(scores: List[float]):
-    return list(map(lambda score: ScoredAlignedPair(nullAlignedPair, score), scores))
+    return list(map(lambda score: ScoredAlignedPair(AlignedPairStub(0, 0), score), scores))
 
 
 if __name__ == '__main__':

@@ -3,7 +3,6 @@ from functools import reduce
 
 from src.alignment.aligner import Aligner
 from src.alignment.alignment_results import AlignmentResults
-from src.alignment.segments import AlignmentSegments
 from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader

@@ -2,16 +2,9 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Tuple, Final, Iterable, Callable
 
 from src.correlation.optical_map import PositionWithSiteId
-
-
-class HitEnum(Enum):
-    MATCH = "M"
-    DELETION = "D"
-    INSERTION = "I"
 
 
 class AlignmentPosition(ABC):
@@ -155,3 +148,6 @@ class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
 
     def __repr__(self) -> str:
         return f"{self.__position}, score:{self.score:.2f}"
+
+    def __eq__(self, other: NotAlignedPosition):
+        return self.__position == other

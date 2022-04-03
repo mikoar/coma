@@ -5,6 +5,7 @@ from typing import List, NamedTuple
 
 from src.alignment.alignment_position import AlignedPair, nullAlignedPair, NotAlignedQueryPosition, \
     NotAlignedReferencePosition, NotAlignedPosition
+from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segments import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
@@ -25,9 +26,11 @@ class _ReferenceIndexWithDistance(NamedTuple):
 
 
 class Aligner:
-    def __init__(self, maxDistance: int, segmentsFactory: AlignmentSegmentsFactory) -> None:
+    def __init__(self, maxDistance: int, scorer: AlignmentPositionScorer,
+                 segmentsFactory: AlignmentSegmentsFactory) -> None:
         self.maxDistance = maxDistance
         self.iteration = 1
+        self.scorer = scorer
         self.segmentsFactory = segmentsFactory
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
@@ -51,7 +54,8 @@ class Aligner:
         notAlignedPositions = self.__getNotAlignedPositions(queryPositions, referencePositions,
                                                             deduplicatedAlignedPairs, referenceStartPosition)
         allPositions = sorted(chain(deduplicatedAlignedPairs, notAlignedPositions))
-        segments = self.segmentsFactory.getSegments(allPositions)
+        scoredPositions = self.scorer.getScoredPositions(allPositions)
+        segments = self.segmentsFactory.getSegments(scoredPositions)
 
         return AlignmentResultRow(segments,
                                   query.moleculeId,

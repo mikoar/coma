@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
 
-from src.alignment.alignment_position import AlignedPair, HitEnum, NotAlignedPosition
+from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segments import AlignmentSegment
+
+
+class HitEnum(Enum):
+    MATCH = "M"
+    DELETION = "D"
+    INSERTION = "I"
 
 
 @dataclass

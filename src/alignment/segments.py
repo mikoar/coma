@@ -20,47 +20,14 @@ class AlignmentSegment:
 
 class AlignmentSegmentsFactory:
     def __init__(self,
-                 perfectMatchScore: int,
-                 scoreMultiplier: int,
-                 unmatchedPenalty: int,
                  minScore: float,
                  breakSegmentThreshold: float):
-        self.perfectMatchScore = perfectMatchScore
-        self.scoreMultiplier = scoreMultiplier
-        self.unmatchedPenalty = unmatchedPenalty
+        if minScore <= 0:
+            raise ValueError("minScore has to be bigger than 0")
         self.minScore = minScore
         self.breakSegmentThreshold = breakSegmentThreshold
 
     def getSegments(self, positions: List[ScoredAlignmentPosition]) -> List[AlignmentSegment]:
-        return [AlignmentSegment(positions, 0, len(positions), 0)]
-
-
-class AlignmentSegments:
-    @staticmethod
-    def filterSegments(positions,
-                       perfectMatchScore: int,
-                       scoreMultiplier: int,
-                       unmatchedPenalty: int,
-                       minScore: float,
-                       breakSegmentThreshold: float):
-
-        scores = AlignmentSegments.getScoredPositions(positions, perfectMatchScore, scoreMultiplier, unmatchedPenalty)
-        segments = AlignmentSegments.getSegments(scores, minScore, breakSegmentThreshold)
-        # filteredPositions = [position for segment in segments for position in segment.positions]
-        # totalScore = sum(segment.segmentScore for segment in segments)
-        # return dataclasses.replace(alignment, positions=filteredPositions, confidence=totalScore)
-        return segments
-
-    @staticmethod
-    def getScoredPositions(positions, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int):
-        return [p.getScoredPosition(perfectMatchScore, scoreMultiplier, unmatchedPenalty) for p in
-                positions]
-
-    @staticmethod
-    def getSegments(positions: List[ScoredAlignmentPosition], minScore: float, breakSegmentThreshold: float) \
-            -> List[AlignmentSegment]:
-        if minScore <= 0:
-            raise ValueError("minScore has to be bigger than 0")
         start = end = 0
         currentScore = 0
         resultSegments = []
@@ -69,17 +36,17 @@ class AlignmentSegments:
         alignmentEnd = len(positions) - 1
         while end <= alignmentEnd:
             currentScore += positions[end].score
-            if currentScore > max(0., segmentWithMaxScore.segmentScore - breakSegmentThreshold):
+            if currentScore > max(0., segmentWithMaxScore.segmentScore - self.breakSegmentThreshold):
                 end += 1
                 if currentScore > segmentWithMaxScore.segmentScore:
                     segmentWithMaxScore = AlignmentSegment.create(positions, start, end, currentScore)
             else:
-                if segmentWithMaxScore.segmentScore >= minScore:
+                if segmentWithMaxScore.segmentScore >= self.minScore:
                     resultSegments.append(segmentWithMaxScore)
                     segmentWithMaxScore = AlignmentSegment.create(positions, 0, 0, 0)
                 start = end = end + 1
                 currentScore = 0
-        if segmentWithMaxScore.segmentScore >= minScore:
+        if segmentWithMaxScore.segmentScore >= self.minScore:
             resultSegments.append(segmentWithMaxScore)
 
         return resultSegments

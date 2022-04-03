@@ -18,8 +18,8 @@ class AlignmentSegmentStub(AlignmentSegment):
 
 
 class ScoredAlignedPairStub(ScoredAlignedPair):
-    def __init__(self, reference: int, query: int, queryShift: int = 0):
-        super().__init__(AlignedPairStub(reference, query, queryShift), 0.)
+    def __init__(self, reference: int, query: int, queryShift: int = 0, score: float = 0.):
+        super().__init__(AlignedPairStub(reference, query, queryShift), score)
 
 
 class AlignedPairStub(AlignedPair):
