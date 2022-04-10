@@ -201,5 +201,16 @@ def test_returnsUnmatchedPositions(query, positions: List[AlignmentPosition]):
     assert result.positions == positions
 
 
+def test_multiplePeaks():
+    reference = OpticalMap(1, length=13, positions=[0, 4, 8, 12])
+    query = OpticalMap(1, length=5, positions=[0, 4])
+    peakPositions = [0, 8]
+    result = getSut().align(reference, query, peakPositions)
+
+    assert len(result.segments) == 2
+    assert result.segments[0].positions == [(1, 1), (2, 2)]
+    assert result.segments[1].positions == [(3, 1), (4, 2)]
+
+
 if __name__ == '__main__':
     pytest.main(args=[__file__])

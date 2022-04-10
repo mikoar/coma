@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from itertools import dropwhile, takewhile, chain
 from typing import List, NamedTuple
 
@@ -82,17 +83,24 @@ class Aligner:
         self.segmentsFactory = segmentsFactory
         self.alignmentEngine = alignmentEngine
 
-    def align(self, reference: OpticalMap, query: OpticalMap, peakPosition: int,
+    def align(self, reference: OpticalMap, query: OpticalMap, peakPositions: int | List[int],
               isReverse: bool = False) -> AlignmentResultRow:
-        referenceStartPosition = peakPosition
-        referenceEndPosition = peakPosition + query.length
-        alignmentPositions = self.alignmentEngine.align(reference, query, referenceStartPosition, referenceEndPosition,
-                                                        isReverse)
-        scoredPositions = self.scorer.getScoredPositions(alignmentPositions)
-        segments = self.segmentsFactory.getSegments(scoredPositions)
+        if isinstance(peakPositions, int):
+            peakPositions = [peakPositions]
+        segments = list(itertools.chain.from_iterable(
+            [self.getSegments(isReverse, p, query, reference) for p in peakPositions]))
+
         return AlignmentResultRow.create(segments,
                                          query.moleculeId,
                                          reference.moleculeId,
                                          query.length,
                                          reference.length,
                                          isReverse)
+
+    def getSegments(self, isReverse, peakPosition, query, reference):
+        referenceStartPosition = peakPosition
+        referenceEndPosition = peakPosition + query.length
+        alignmentPositions = self.alignmentEngine.align(reference, query, referenceStartPosition,
+                                                        referenceEndPosition, isReverse)
+        scoredPositions = self.scorer.getScoredPositions(alignmentPositions)
+        return self.segmentsFactory.getSegments(scoredPositions)
