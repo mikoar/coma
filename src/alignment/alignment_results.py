@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List
 
-from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
+from src.alignment.alignment_position import AlignedPair, NotAlignedPosition, nullAlignedPair
 from src.alignment.segments import AlignmentSegment
 
 
@@ -22,19 +22,51 @@ class AlignmentResults:
     rows: List[AlignmentResultRow]
 
 
-@dataclass
 class AlignmentResultRow:
-    segments: List[AlignmentSegment]
-    queryId: int = 1
-    referenceId: int = 1
-    queryStartPosition: int = 1
-    queryEndPosition: int = 1
-    referenceStartPosition: int = 1
-    referenceEndPosition: int = 1
-    queryLength: int = 1
-    referenceLength: int = 1
-    reverseStrand: bool = False
-    confidence: float = 0.
+    @staticmethod
+    def create(segments: List[AlignmentSegment],
+               queryId: int,
+               referenceId: int,
+               queryLength: int,
+               referenceLength: int,
+               reverseStrand: bool):
+        alignedPairs = sorted(p for s in segments for p in s.positions if isinstance(p, AlignedPair))
+        firstPair = alignedPairs[0] if alignedPairs else nullAlignedPair
+        lastPair = alignedPairs[-1] if alignedPairs else nullAlignedPair
+        queryStartPosition = (firstPair if not reverseStrand else lastPair).query.position
+        queryEndPosition = (lastPair if not reverseStrand else firstPair).query.position
+        referenceStartPosition = firstPair.reference.position
+        referenceEndPosition = lastPair.reference.position
+        confidence = sum(s.segmentScore for s in segments)
+        return AlignmentResultRow(segments, queryId, referenceId, queryLength, referenceLength, queryStartPosition,
+                                  queryEndPosition, referenceStartPosition, referenceEndPosition, reverseStrand,
+                                  confidence)
+
+    def __init__(self,
+                 segments: List[AlignmentSegment],
+                 queryId: int = 1,
+                 referenceId: int = 1,
+                 queryLength: int = 1,
+                 referenceLength: int = 1,
+                 queryStartPosition: int = 0,
+                 queryEndPosition: int = 0,
+                 referenceStartPosition: int = 0,
+                 referenceEndPosition: int = 0,
+                 reverseStrand: bool = False,
+                 confidence: float = 0.):
+
+        self.segments = segments
+        self.queryId = queryId
+        self.referenceId = referenceId
+        self.queryLength = queryLength
+        self.referenceLength = referenceLength
+        self.reverseStrand = reverseStrand
+        self.queryStartPosition = queryStartPosition
+        self.queryEndPosition = queryEndPosition
+        self.referenceStartPosition = referenceStartPosition
+        self.referenceEndPosition = referenceEndPosition
+        self.reverseStrand = reverseStrand
+        self.confidence = confidence
 
     @property
     def positions(self):

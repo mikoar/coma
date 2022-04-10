@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import dropwhile, takewhile, chain
 from typing import List, NamedTuple
 
-from src.alignment.alignment_position import AlignedPair, nullAlignedPair, NotAlignedQueryPosition, \
+from src.alignment.alignment_position import AlignedPair, NotAlignedQueryPosition, \
     NotAlignedReferencePosition, NotAlignedPosition, AlignmentPosition
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
@@ -88,27 +88,11 @@ class Aligner:
         referenceEndPosition = peakPosition + query.length
         alignmentPositions = self.alignmentEngine.align(reference, query, referenceStartPosition, referenceEndPosition,
                                                         isReverse)
-
         scoredPositions = self.scorer.getScoredPositions(alignmentPositions)
         segments = self.segmentsFactory.getSegments(scoredPositions)
-
-        # TODO: refactor AlignmentResultRow logic
-        filteredPositions = sorted(p for s in segments for p in s.positions if isinstance(p, AlignedPair))
-
-        firstPair = filteredPositions[0] if filteredPositions else nullAlignedPair
-        lastPair = filteredPositions[-1] if filteredPositions else nullAlignedPair
-        queryStart = query.positions[firstPair.query.siteId - 1] if query.positions else 0
-        queryEnd = query.positions[lastPair.query.siteId - 1] if query.positions else 0
-
-        return AlignmentResultRow(segments,
-                                  query.moleculeId,
-                                  reference.moleculeId,
-                                  *((queryEnd, queryStart) if isReverse else (
-                                      queryStart, queryEnd)),
-                                  reference.positions[
-                                      firstPair.reference.siteId - 1] if reference.positions else 0,
-                                  reference.positions[
-                                      lastPair.reference.siteId - 1] if reference.positions else 0,
-                                  query.length,
-                                  reference.length,
-                                  isReverse)
+        return AlignmentResultRow.create(segments,
+                                         query.moleculeId,
+                                         reference.moleculeId,
+                                         query.length,
+                                         reference.length,
+                                         isReverse)

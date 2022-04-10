@@ -61,10 +61,14 @@ def test_cigarString(pairs: List[Tuple[int, int]], expected: str):
 
 @pytest.mark.skip("not implemented")
 def test_merge_unionsQueryAndReferenceStartAndEndPositions():
-    row1 = AlignmentResultRow([], queryStartPosition=5, queryEndPosition=8, referenceStartPosition=40,
-                              referenceEndPosition=50)
-    row2 = AlignmentResultRow([], queryStartPosition=7, queryEndPosition=10, referenceStartPosition=35,
-                              referenceEndPosition=45)
+    row1 = AlignmentResultRow([],
+                              # queryStartPosition=5, queryEndPosition=8, referenceStartPosition=40,
+                              # referenceEndPosition=50
+                              )
+    row2 = AlignmentResultRow([],
+                              # queryStartPosition=7, queryEndPosition=10, referenceStartPosition=35,
+                              # referenceEndPosition=45
+                              )
 
     merged = row1.merge(row2)
 
@@ -76,10 +80,14 @@ def test_merge_unionsQueryAndReferenceStartAndEndPositions():
 
 @pytest.mark.skip("not implemented")
 def test_merge_unionsQueryAndReferenceStartAndEndPositions_reverse():
-    row1 = AlignmentResultRow([], queryStartPosition=8, queryEndPosition=5, referenceStartPosition=40,
-                              referenceEndPosition=50, reverseStrand=True)
-    row2 = AlignmentResultRow([], queryStartPosition=10, queryEndPosition=7, referenceStartPosition=35,
-                              referenceEndPosition=45, reverseStrand=True)
+    row1 = AlignmentResultRow([],
+                              # queryStartPosition=8, queryEndPosition=5, referenceStartPosition=40,
+                              # referenceEndPosition=50,
+                              reverseStrand=True)
+    row2 = AlignmentResultRow([],
+                              # queryStartPosition=10, queryEndPosition=7, referenceStartPosition=35,
+                              # referenceEndPosition=45,
+                              reverseStrand=True)
 
     merged = row1.merge(row2)
 
@@ -90,7 +98,7 @@ def test_merge_unionsQueryAndReferenceStartAndEndPositions_reverse():
 
 
 def test_merge_preserveOtherMetadata():
-    row1 = AlignmentResultRow([], 2, 2, 2, 2, 2, 2, 2, 2, True)
+    row1 = AlignmentResultRow([], 2, 2, 2, 2, True)
     row2 = AlignmentResultRow([])
 
     merged = row1.merge(row2)
