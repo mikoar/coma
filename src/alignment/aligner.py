@@ -8,7 +8,7 @@ from src.alignment.alignment_position import AlignedPair, NotAlignedQueryPositio
     NotAlignedReferencePosition, NotAlignedPosition, AlignmentPosition
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segments import AlignmentSegmentsFactory
+from src.alignment.segments import AlignmentSegmentsFactory, AlignmentSegmentsWithoutConflicts
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
 
@@ -90,7 +90,7 @@ class Aligner:
         segments = list(itertools.chain.from_iterable(
             [self.getSegments(isReverse, p, query, reference) for p in peakPositions]))
 
-        return AlignmentResultRow.create(segments,
+        return AlignmentResultRow.create(AlignmentSegmentsWithoutConflicts.create(segments),
                                          query.moleculeId,
                                          reference.moleculeId,
                                          query.length,

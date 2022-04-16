@@ -6,7 +6,7 @@ from enum import Enum
 from typing import List
 
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition, nullAlignedPair
-from src.alignment.segments import AlignmentSegment
+from src.alignment.segments import AlignmentSegment, AlignmentSegmentsWithoutConflicts
 
 
 class HitEnum(Enum):
@@ -24,12 +24,13 @@ class AlignmentResults:
 
 class AlignmentResultRow:
     @staticmethod
-    def create(segments: List[AlignmentSegment],
+    def create(segmentsWithoutConflicts: AlignmentSegmentsWithoutConflicts,
                queryId: int,
                referenceId: int,
                queryLength: int,
                referenceLength: int,
                reverseStrand: bool):
+        segments = segmentsWithoutConflicts.segments
         alignedPairs = sorted(p for s in segments for p in s.positions if isinstance(p, AlignedPair))
         firstPair = alignedPairs[0] if alignedPairs else nullAlignedPair
         lastPair = alignedPairs[-1] if alignedPairs else nullAlignedPair
@@ -84,12 +85,6 @@ class AlignmentResultRow:
     def cigarString(self):
         hitEnums = list(self.__getHitEnums())
         return "".join(self.__aggregateHitEnums(hitEnums))
-
-    def merge(self, other: AlignmentResultRow):
-        # pairs = self.alignedPairs + other.alignedPairs
-        # deduplicatedPairs = AlignedPair.deduplicate(pairs)
-        # return dataclasses.replace(self, positions=list(deduplicatedPairs))
-        return self
 
     def __getHitEnums(self):
         pairs = list(self.__removeDuplicateQueryPositionsPreservingLastOne(self.alignedPairs))

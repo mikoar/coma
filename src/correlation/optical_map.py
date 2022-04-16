@@ -13,10 +13,10 @@ from src.correlation.sequence_generator import SequenceGenerator
 from src.correlation.validator import Validator
 
 
+@dataclass(frozen=True)
 class PositionWithSiteId:
-    def __init__(self, siteId: int, position: int):
-        self.siteId = siteId
-        self.position = position
+    siteId: int
+    position: int
 
 
 def adjustPeakPositions(peakPositions: np.ndarray, resolution: int, start: int = 0) -> np.ndarray:

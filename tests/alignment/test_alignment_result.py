@@ -1,10 +1,6 @@
 from __future__ import annotations
-
 from typing import List, Tuple
-
 import pytest
-
-from src.alignment.alignment_position import AlignmentPosition
 from src.alignment.alignment_results import AlignmentResultRow
 from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
 
@@ -57,110 +53,6 @@ def test_cigarString(pairs: List[Tuple[int, int]], expected: str):
     row = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(pairs))
 
     assert row.cigarString == expected
-
-
-@pytest.mark.skip("not implemented")
-def test_merge_unionsQueryAndReferenceStartAndEndPositions():
-    row1 = AlignmentResultRow([],
-                              # queryStartPosition=5, queryEndPosition=8, referenceStartPosition=40,
-                              # referenceEndPosition=50
-                              )
-    row2 = AlignmentResultRow([],
-                              # queryStartPosition=7, queryEndPosition=10, referenceStartPosition=35,
-                              # referenceEndPosition=45
-                              )
-
-    merged = row1.merge(row2)
-
-    assert merged.queryStartPosition == 5
-    assert merged.queryEndPosition == 10
-    assert merged.referenceStartPosition == 35
-    assert merged.referenceEndPosition == 50
-
-
-@pytest.mark.skip("not implemented")
-def test_merge_unionsQueryAndReferenceStartAndEndPositions_reverse():
-    row1 = AlignmentResultRow([],
-                              # queryStartPosition=8, queryEndPosition=5, referenceStartPosition=40,
-                              # referenceEndPosition=50,
-                              reverseStrand=True)
-    row2 = AlignmentResultRow([],
-                              # queryStartPosition=10, queryEndPosition=7, referenceStartPosition=35,
-                              # referenceEndPosition=45,
-                              reverseStrand=True)
-
-    merged = row1.merge(row2)
-
-    assert merged.queryStartPosition == 10
-    assert merged.queryEndPosition == 5
-    assert merged.referenceStartPosition == 35
-    assert merged.referenceEndPosition == 50
-
-
-def test_merge_preserveOtherMetadata():
-    row1 = AlignmentResultRow([], 2, 2, 2, 2, True)
-    row2 = AlignmentResultRow([])
-
-    merged = row1.merge(row2)
-
-    assert merged.queryId == row1.queryId
-    assert merged.referenceId == row1.referenceId
-    assert merged.queryLength == row1.queryLength
-    assert merged.referenceLength == row1.referenceLength
-    assert merged.reverseStrand == row1.reverseStrand
-
-
-def test_merge_noConflicts():
-    row1 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(1, 1), (2, 2)]))
-    row2 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(3, 3), (4, 5)]))
-
-    merged = row1.merge(row2)
-
-    assert merged.alignedPairs == [(1, 1), (2, 2), (3, 3), (4, 5)]
-
-
-def test_merge_solvesConflict():
-    row1 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(1, 1, 0), (2, 2, 50)]))
-    row2 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs([(3, 2, 51), (4, 3, 0)]))
-
-    merged = row1.merge(row2)
-
-    assert merged.alignedPairs == [(1, 1, 0), (2, 2, 50), (4, 3, 0)]
-
-
-def test_merge_solvesConflict2():
-    row1 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(
-        [(1616, 2, -235.10), (1622, 7, 1772.40), (1623, 9, 702.90), (1625, 10, 1898.60), (1626, 11, 1772.00),
-         (1627, 12, 555.20), (1628, 13, -42.00), (1629, 14, 1.90), (1630, 15, -112.80), (1631, 16, -89.20),
-         (1632, 17, -49.00), (1633, 18, 8.70), (1634, 19, 121.90), (1635, 20, 176.00), (1636, 21, 146.20),
-         (1637, 22, 1868.00), (1638, 22, 150.00), (1640, 23, 488.80), (1641, 24, 818.90), (1642, 24, 45.90),
-         (1643, 25, 317.00)]))
-    row2 = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(
-        [(1616, 1, -77.30), (1617, 2, -174.10), (1618, 3, -102.30), (1619, 4, -2.30), (1620, 4, -583.30),
-         (1621, 5, 34.00), (1622, 6, -44.70), (1623, 7, -40.60), (1624, 8, 105.10), (1625, 9, 34.90),
-         (1626, 10, 177.60), (1627, 11, 166.00), (1630, 14, 762.90), (1632, 16, -1733.20), (1633, 17, 1599.00),
-         (1636, 20, 1600.00), (1637, 21, -1072.80), (1639, 22, 2020.00)]))
-
-    merged = row1.merge(row2)
-
-    assert merged.alignedPairs == [(1616, 1, -77.30), (1617, 2, -174.10), (1618, 3, -102.30), (1619, 4, -2.30),
-                                   (1621, 5, 34.00), (1622, 6, -44.70), (1623, 7, -40.60), (1624, 8, 105.10),
-                                   (1625, 9, 34.90), (1626, 10, 177.60), (1627, 11, 166.00), (1628, 13, -42.00),
-                                   (1629, 14, 1.90), (1630, 15, -112.80), (1631, 16, -89.20), (1632, 17, -49.00),
-                                   (1633, 18, 8.70), (1634, 19, 121.90), (1635, 20, 176.00), (1636, 21, 146.20),
-                                   (1638, 22, 150.00), (1640, 23, 488.80), (1642, 24, 45.90), (1643, 25, 317.00)]
-
-
-class __TestAlignmentPosition(AlignmentPosition):
-    def __init__(self, score: float):
-        self.score = score
-
-    @property
-    def absolutePosition(self) -> int:
-        return 0
-
-    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int, unmatchedPenalty: int) -> float:
-        return self.score
 
 
 if __name__ == '__main__':
