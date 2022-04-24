@@ -116,7 +116,9 @@ class AlignedPair(AlignmentPosition):
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId}), distance:{self.queryShift:.2f}, source:{self.source}"
 
-    def __eq__(self, other: Tuple[int, int] | Tuple[int, int, int]) -> bool:
+    def __eq__(self, other: AlignedPair | Tuple[int, int] | Tuple[int, int, int]) -> bool:
+        if isinstance(other, AlignedPair):
+            return self.query == other.query and self.reference == other.reference
         return self.reference.siteId == other[0] and self.query.siteId == other[1] and (
                 len(other) == 2 or self.queryShift == other[2])
 

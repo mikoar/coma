@@ -6,7 +6,7 @@ from enum import Enum
 from typing import List
 
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition, nullAlignedPair
-from src.alignment.segments import AlignmentSegment, AlignmentSegmentsWithoutConflicts
+from src.alignment.segments import AlignmentSegment, AlignmentSegmentsWithResolvedConflicts
 
 
 class HitEnum(Enum):
@@ -24,7 +24,7 @@ class AlignmentResults:
 
 class AlignmentResultRow:
     @staticmethod
-    def create(segmentsWithoutConflicts: AlignmentSegmentsWithoutConflicts,
+    def create(segmentsWithoutConflicts: AlignmentSegmentsWithResolvedConflicts,
                queryId: int,
                referenceId: int,
                queryLength: int,
