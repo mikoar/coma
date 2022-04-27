@@ -28,7 +28,7 @@ def __segment(scoredPositionTuples: List[Tuple[int | None, int | None, float]]):
         id="segment0 following segment 1"
     )
 ])
-def test_checkForConflicts_noConflicts_returnsUnchanged(segment0, segment1):
+def test_conflicts_noConflicts_returnsUnchanged(segment0, segment1):
     segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
 
     assert segmentsAfter[0] == segment0
@@ -46,25 +46,19 @@ def test_checkForConflicts_noConflicts_returnsUnchanged(segment0, segment1):
             [__segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])]
     ),
 ])
-def test_checkForConflicts_withEmptySegment_returnsUnchanged(
+def test_conflicts_withEmptySegment_returnsUnchanged(
         segment0, segment1, expectedSegments: List[AlignmentSegment]):
     segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
 
     assert segmentsAfter == expectedSegments
 
 
-@pytest.mark.parametrize("segment0, segment1, expectedSegments", [
+checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
     pytest.param(
         __segment([(1, 1, 101.)]),
         __segment([(1, 2, 100.)]),
         [__segment([(1, 1, 101.)])],
         id="single position segments ref conflict"
-    ),
-    pytest.param(
-        __segment([(1, 2, 100.)]),
-        __segment([(1, 1, 101.)]),
-        [__segment([(1, 1, 101.)])],
-        id="single position segments ref conflict alternate"
     ),
     pytest.param(
         __segment([(1, 2, 100.), (2, 3, 100.), (3, 4, 100.)]),
@@ -74,26 +68,11 @@ def test_checkForConflicts_withEmptySegment_returnsUnchanged(
         id="single position segment and a larger segment ref conflict at the start, larger segment gets trimmed"
     ),
     pytest.param(
-        __segment([(1, 1, 101.)]),
-        __segment([(1, 2, 100.), (2, 3, 100.), (3, 4, 100.)]),
-        [__segment([(1, 1, 101.)]),
-         __segment([(2, 3, 100.), (3, 4, 100.)])],
-        id="single position segment and a larger segment ref conflict at the start, larger segment gets trimmed, "
-           "alternate"
-    ),
-    pytest.param(
         __segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)]),
         __segment([(1, 1, 100.)]),
         [__segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)])],
         id="single position segment and a larger segment ref conflict at the start, "
            "single position segment gets dropped"
-    ),
-    pytest.param(
-        __segment([(1, 1, 100.)]),
-        __segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)]),
-        [__segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)])],
-        id="single position segment and a larger segment ref conflict at the start, "
-           "single position segment gets dropped, alternate"
     ),
     pytest.param(
         __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
@@ -103,25 +82,10 @@ def test_checkForConflicts_withEmptySegment_returnsUnchanged(
         id="single position segment and a larger segment ref conflict at the end, larger segment gets trimmed"
     ),
     pytest.param(
-        __segment([(3, 4, 101.)]),
-        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
-        [__segment([(3, 4, 101.)]),
-         __segment([(1, 1, 100.), (2, 2, 100.)])],
-        id="single position segment and a larger segment ref conflict at the end, larger segment gets trimmed, "
-           "alternate"
-    ),
-    pytest.param(
         __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)]),
         __segment([(3, 4, 100.)]),
         [__segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)])],
         id="single position segment and a larger segment ref conflict at the end, single position segment gets dropped"
-    ),
-    pytest.param(
-        __segment([(3, 4, 100.)]),
-        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)]),
-        [__segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)])],
-        id="single position segment and a larger segment ref conflict at the end, "
-           "single position segment gets dropped, alternate"
     ),
     pytest.param(
         __segment([(1, 1, 100.), (2, 2, 100.)]),
@@ -131,25 +95,11 @@ def test_checkForConflicts_withEmptySegment_returnsUnchanged(
         id="ref and query conflict at (2,2)"
     ),
     pytest.param(
-        __segment([(2, 2, 101.), (3, 3, 100.)]),
-        __segment([(1, 1, 100.), (2, 2, 100.)]),
-        [__segment([(2, 2, 101.), (3, 3, 100.)]),
-         __segment([(1, 1, 100.)])],
-        id="ref and query conflict at (2,2) alternate"
-    ),
-    pytest.param(
         __segment([(1, 1, 100.), (2, 2, 100.)]),
         __segment([(2, 3, 101.), (3, 4, 100.)]),
         [__segment([(1, 1, 100.)]),
          __segment([(2, 3, 101.), (3, 4, 100.)])],
         id="ref conflict at (2,2) and (2,3)"
-    ),
-    pytest.param(
-        __segment([(2, 3, 101.), (3, 4, 100.)]),
-        __segment([(1, 1, 100.), (2, 2, 100.)]),
-        [__segment([(2, 3, 101.), (3, 4, 100.)]),
-         __segment([(1, 1, 100.)])],
-        id="ref conflict at (2,3) and (2,2)"
     ),
     pytest.param(
         __segment([(1, 1, 100.), (2, 2, 100.)]),
@@ -159,19 +109,23 @@ def test_checkForConflicts_withEmptySegment_returnsUnchanged(
         marks=pytest.mark.xfail(reason="not implemented yet"),
         id="query conflict at (2,2) and (3,2)"
     ),
-    pytest.param(
-        __segment([(3, 2, 101.), (4, 3, 100.)]),
-        __segment([(1, 1, 100.), (2, 2, 100.)]),
-        [__segment([(3, 2, 101.), (4, 3, 100.)]),
-         __segment([(1, 1, 100.)])],
-        marks=pytest.mark.xfail(reason="not implemented yet"),
-        id="query conflict at (3,2) and (2,2)",
-    ),
-])
-def test_checkForConflicts_overlappingSegments_trimsWhileMaxingScore(
+]
+
+
+@pytest.mark.parametrize("segment0, segment1, expectedSegments",
+                         checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params)
+def test_conflicts_overlappingSegments_trimsWhileMaxingScore(
         segment0, segment1, expectedSegments: List[AlignmentSegment]):
     segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
     assert segmentsAfter == expectedSegments
+
+
+@pytest.mark.parametrize("segment0, segment1, expectedSegments",
+                         checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params)
+def test_conflicts_overlappingSegments_trimsWhileMaxingScore_reversed(
+        segment0, segment1, expectedSegments: List[AlignmentSegment]):
+    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment1, segment0]).segments
+    assert segmentsAfter == expectedSegments[::-1]
 
 
 def test_sliceByReference():
