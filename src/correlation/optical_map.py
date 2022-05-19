@@ -18,6 +18,9 @@ class PositionWithSiteId:
     siteId: int
     position: int
 
+    def __lt__(self, other: PositionWithSiteId):
+        return self.position < other.position
+
 
 def adjustPeakPositions(peakPositions: np.ndarray, resolution: int, start: int = 0) -> np.ndarray:
     resolutionAdjustment = ceil(resolution / 2) - 1

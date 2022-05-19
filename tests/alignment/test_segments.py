@@ -106,7 +106,6 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
         __segment([(3, 2, 101.), (4, 3, 100.)]),
         [__segment([(1, 1, 100.)]),
          __segment([(3, 2, 101.), (4, 3, 100.)])],
-        marks=pytest.mark.xfail(reason="not implemented yet"),
         id="query conflict at (2,2) and (3,2)"
     ),
 ]
@@ -149,6 +148,23 @@ def test_subtract_noPositionsLeft_returnsEmptySegment():
     segment1 = __segment([(1, 1, 100.), (2, 2, 100.)])
     result = segment0 - segment1
     assert result == AlignmentSegment.empty
+
+
+@pytest.mark.parametrize("segments, expectedOrder", [
+    pytest.param([
+        __segment([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
+        __segment([(7, 7, 100.), (8, 8, 100.)]),
+        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
+    ], [1, 2, 0]),
+    pytest.param([
+        __segment([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
+        __segment([(2, 3, 100.), (4, 3, 100.)]),
+        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
+    ], [2, 1, 0]),
+])
+def test_order(segments: List[AlignmentSegment], expectedOrder: List[int]):
+    orderedSegments = AlignmentSegment.order(segments)
+    assert orderedSegments == [s for _, s in sorted(zip(expectedOrder, segments), key=lambda x: x[0])]
 
 
 if __name__ == '__main__':

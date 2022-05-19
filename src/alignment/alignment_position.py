@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC, abstractmethod
-from typing import Tuple, Final, Iterable, Callable
+from typing import Tuple, Iterable, Callable
 
 from src.correlation.optical_map import PositionWithSiteId
 
@@ -66,6 +66,8 @@ class NotAlignedReferencePosition(NotAlignedPosition):
 
 
 class AlignedPair(AlignmentPosition):
+    null: AlignedPair
+
     def __init__(self, reference: PositionWithSiteId, query: PositionWithSiteId, queryShift: int = 0, source: int = 0):
         self.reference = reference
         self.query = query
@@ -113,6 +115,14 @@ class AlignedPair(AlignmentPosition):
         score = scoreMultiplier * (perfectMatchScore - self.distance)
         return ScoredAlignedPair(self, score)
 
+    def __le__(self, other: AlignedPair):
+        return self.reference.siteId < other.reference.siteId or \
+               self.query.siteId < other.query.siteId or \
+               self.equalOnAtLeastOneSequence(other)
+
+    def equalOnAtLeastOneSequence(self, other: AlignedPair):
+        return self.query == other.query or self.reference == other.reference
+
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId}), distance:{self.queryShift:.2f}, source:{self.source}"
 
@@ -123,7 +133,7 @@ class AlignedPair(AlignmentPosition):
                 len(other) == 2 or self.queryShift == other[2])
 
 
-nullAlignedPair: Final[AlignedPair] = AlignedPair(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
+AlignedPair.null = AlignedPair(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
 
 
 class ScoredAlignmentPosition(AlignmentPosition, ABC):

@@ -203,14 +203,14 @@ def test_returnsUnmatchedPositions(query, positions: List[AlignmentPosition]):
 
 
 def test_multiplePeaks():
-    reference = OpticalMap(1, length=13, positions=[0, 4, 8, 12])
-    query = OpticalMap(1, length=5, positions=[0, 4])
-    peakPositions = [0, 8]
+    reference = OpticalMap(1, length=111, positions=[0, 4, 100, 110])
+    query = OpticalMap(1, length=61, positions=[0, 4, 50, 60])
+    peakPositions = [0, 50]
     result = getSut().align(reference, query, peakPositions)
 
     assert len(result.segments) == 2
-    assert result.segments[0].positions == [(1, 1), (2, 2)]
-    assert result.segments[1].positions == [(3, 1), (4, 2)]
+    assert result.segments[0].positions == [(1, 1), (2, 2), (None, 3), (None, 4)]
+    assert result.segments[1].positions == [(None, 1), (None, 2), (3, 3), (4, 4)]
 
 
 if __name__ == '__main__':

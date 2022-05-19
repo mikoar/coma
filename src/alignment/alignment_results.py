@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List
 
-from src.alignment.alignment_position import AlignedPair, NotAlignedPosition, nullAlignedPair
+from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segments import AlignmentSegment, AlignmentSegmentsWithResolvedConflicts
 
 
@@ -32,8 +32,8 @@ class AlignmentResultRow:
                reverseStrand: bool):
         segments = segmentsWithoutConflicts.segments
         alignedPairs = sorted(p for s in segments for p in s.positions if isinstance(p, AlignedPair))
-        firstPair = alignedPairs[0] if alignedPairs else nullAlignedPair
-        lastPair = alignedPairs[-1] if alignedPairs else nullAlignedPair
+        firstPair = alignedPairs[0] if alignedPairs else AlignedPair.null
+        lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
         queryStartPosition = (firstPair if not reverseStrand else lastPair).query.position
         queryEndPosition = (lastPair if not reverseStrand else firstPair).query.position
         referenceStartPosition = firstPair.reference.position
