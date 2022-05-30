@@ -115,13 +115,12 @@ class AlignedPair(AlignmentPosition):
         score = scoreMultiplier * (perfectMatchScore - self.distance)
         return ScoredAlignedPair(self, score)
 
-    def __le__(self, other: AlignedPair):
-        return self.reference.siteId < other.reference.siteId or \
-               self.query.siteId < other.query.siteId or \
-               self.equalOnAtLeastOneSequence(other)
+    def lessOnBothSequences(self, other: AlignedPair):
+        return self.query < other.query and self.reference < other.reference
 
-    def equalOnAtLeastOneSequence(self, other: AlignedPair):
-        return self.query == other.query or self.reference == other.reference
+    def lessOrEqualOnAnySequence(self, other: AlignedPair):
+        return self.query < other.query or self.reference < other.reference \
+               or self.query == other.query or self.reference == other.reference
 
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId}), distance:{self.queryShift:.2f}, source:{self.source}"

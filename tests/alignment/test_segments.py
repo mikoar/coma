@@ -4,9 +4,10 @@ from typing import List, Tuple
 
 import pytest
 
-from src.alignment.segments import AlignmentSegment, AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segments import AlignmentSegment
 from tests.test_doubles.alignment_segment_stub import ScoredAlignedPairStub, \
-    ScoredNotAlignedPositionStub
+    ScoredNotAlignedPositionStub, AlignedPairStub
 
 
 def __segment(scoredPositionTuples: List[Tuple[int | None, int | None, float]]):
@@ -16,23 +17,22 @@ def __segment(scoredPositionTuples: List[Tuple[int | None, int | None, float]]):
     return AlignmentSegment(positions, sum(p.score for p in positions))
 
 
-@pytest.mark.parametrize("segment0, segment1", [
-    pytest.param(
-        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
-        __segment([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)]),
-        id="segment0 preceding segment 1"
-    ),
-    pytest.param(
-        __segment([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)]),
-        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
-        id="segment0 following segment 1"
-    )
-])
-def test_conflicts_noConflicts_returnsUnchanged(segment0, segment1):
+def test_conflicts_noConflicts_segmentsInOrder_returnsUnchanged():
+    segment0 = __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
+    segment1 = __segment([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)])
     segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
 
     assert segmentsAfter[0] == segment0
     assert segmentsAfter[1] == segment1
+
+
+def test_conflicts_noConflicts_segmentsNotInOrder_returnsOrdered():
+    segment0 = __segment([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)])
+    segment1 = __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
+    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
+
+    assert segmentsAfter[0] == segment1
+    assert segmentsAfter[1] == segment0
 
 
 @pytest.mark.parametrize("segment0, segment1, expectedSegments", [
@@ -61,15 +61,15 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
         id="single position segments ref conflict"
     ),
     pytest.param(
-        __segment([(1, 2, 100.), (2, 3, 100.), (3, 4, 100.)]),
         __segment([(1, 1, 101.)]),
-        [__segment([(2, 3, 100.), (3, 4, 100.)]),
-         __segment([(1, 1, 101.)])],
+        __segment([(1, 2, 100.), (2, 3, 100.), (3, 4, 100.)]),
+        [__segment([(1, 1, 101.)]),
+         __segment([(2, 3, 100.), (3, 4, 100.)])],
         id="single position segment and a larger segment ref conflict at the start, larger segment gets trimmed"
     ),
     pytest.param(
-        __segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)]),
         __segment([(1, 1, 100.)]),
+        __segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)]),
         [__segment([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)])],
         id="single position segment and a larger segment ref conflict at the start, "
            "single position segment gets dropped"
@@ -108,6 +108,13 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
          __segment([(3, 2, 101.), (4, 3, 100.)])],
         id="query conflict at (2,2) and (3,2)"
     ),
+    pytest.param(
+        __segment([(4, 4, 100.), (5, 7, 100.)]),
+        __segment([(6, 6, 101.), (8, 8, 100.)]),
+        [__segment([(4, 4, 100.)]),
+         __segment([(6, 6, 101.), (8, 8, 100.)])],
+        id="cross conflict"
+    ),
 ]
 
 
@@ -119,19 +126,16 @@ def test_conflicts_overlappingSegments_trimsWhileMaxingScore(
     assert segmentsAfter == expectedSegments
 
 
-@pytest.mark.parametrize("segment0, segment1, expectedSegments",
-                         checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params)
-def test_conflicts_overlappingSegments_trimsWhileMaxingScore_reversed(
-        segment0, segment1, expectedSegments: List[AlignmentSegment]):
-    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment1, segment0]).segments
-    assert segmentsAfter == expectedSegments[::-1]
-
-
-def test_sliceByReference():
+@pytest.mark.parametrize("start, stop", [
+    pytest.param(AlignedPairStub(12, 3), AlignedPairStub(13, 5)),
+])
+def test_slice(start, stop):
     segment = __segment(
         [(10, 1, 100.), (11, None, -50.), (None, 2, -50.), (12, 3, 100.), (None, 4, -50.), (13, 5, 100.),
          (None, 6, -50.), (14, 7, 100.), (15, 8, 100.)])
-    sliced = segment.sliceByReference(12, 14)
+
+    sliced = segment.slice(start, stop)
+
     assert sliced.positions == [(12, 3), (None, 4), (13, 5)]
     assert sliced.segmentScore == 150.
 
@@ -139,14 +143,18 @@ def test_sliceByReference():
 def test_subtract():
     segment0 = __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.), (4, 4, 100.)])
     segment1 = __segment([(2, 2, 100.), (3, 3, 100.)])
+
     result = segment0 - segment1
+
     assert result == __segment([(1, 1, 100.), (4, 4, 100.)])
 
 
 def test_subtract_noPositionsLeft_returnsEmptySegment():
     segment0 = __segment([(1, 1, 100.), (2, 2, 100.)])
     segment1 = __segment([(1, 1, 100.), (2, 2, 100.)])
+
     result = segment0 - segment1
+
     assert result == AlignmentSegment.empty
 
 
@@ -161,10 +169,24 @@ def test_subtract_noPositionsLeft_returnsEmptySegment():
         __segment([(2, 3, 100.), (4, 3, 100.)]),
         __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
     ], [2, 1, 0]),
+    pytest.param([
+        __segment([(1, 1, 100.), (2, 2, 100.), (None, 3, 0.), (None, 4, 0.)]),
+        __segment([(None, 1, 0.), (None, 2, 0.), (3, 3, 100.), (4, 4, 100.)]),
+    ], [1, 2]),
 ])
-def test_order(segments: List[AlignmentSegment], expectedOrder: List[int]):
-    orderedSegments = AlignmentSegment.order(segments)
-    assert orderedSegments == [s for _, s in sorted(zip(expectedOrder, segments), key=lambda x: x[0])]
+def test_chain(segments: List[AlignmentSegment], expectedOrder: List[int]):
+    chainedSegments = AlignmentSegment.chain(segments)
+    assert chainedSegments == [s for _, s in sorted(zip(expectedOrder, segments), key=lambda x: x[0])]
+
+
+def test_chain_dropsOutlyingSegment():
+    segments = [
+        __segment([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
+        __segment([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
+        __segment([(1, 3, 10.), (2, 5, 120.), (5, 6, 5.)])
+    ]
+    chainedSegments = AlignmentSegment.chain(segments)
+    assert chainedSegments == [segments[0], segments[1]]
 
 
 if __name__ == '__main__':

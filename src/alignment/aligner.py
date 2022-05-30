@@ -8,7 +8,7 @@ from src.alignment.alignment_position import AlignedPair, NotAlignedQueryPositio
     NotAlignedReferencePosition, NotAlignedPosition, AlignmentPosition
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segments import AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 

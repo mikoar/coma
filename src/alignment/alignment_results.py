@@ -6,7 +6,8 @@ from enum import Enum
 from typing import List
 
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
-from src.alignment.segments import AlignmentSegment, AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segments import AlignmentSegment
 
 
 class HitEnum(Enum):
