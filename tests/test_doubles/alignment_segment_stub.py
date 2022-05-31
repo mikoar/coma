@@ -9,13 +9,18 @@ from src.correlation.optical_map import PositionWithSiteId
 
 
 class AlignmentSegmentStub(AlignmentSegment):
-    def __init__(self, positions: List[ScoredAlignedPairStub]):
-        super().__init__(positions, 0)
+    def __init__(self, positions: List[ScoredAlignedPairStub], score: float = 0.):
+        super().__init__(positions, score)
 
     @staticmethod
-    def createFromPairs(pairs: List[Tuple[int, int] | Tuple[int, int, int]]):
-        return [AlignmentSegmentStub(
-            list(map(lambda p: ScoredAlignedPairStub(p[0], p[1], p[2] if 2 < len(p) else 0), pairs)))]
+    def createFromPairs(
+            scoredPositionTuples: List[Tuple[int | None, int | None] | Tuple[int | None, int | None, float]]):
+        positions = list(map(
+            lambda pair: ScoredNotAlignedPositionStub(pair[0], pair[1], pair[2] if len(pair) > 2 else 0)
+            if not pair[0] or not pair[1] else
+            ScoredAlignedPairStub(pair[0], pair[1], 0, pair[2] if len(pair) > 2 else 0),
+            scoredPositionTuples))
+        return AlignmentSegmentStub(positions, sum(p.score for p in positions))
 
 
 class ScoredAlignedPairStub(ScoredAlignedPair):

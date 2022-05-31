@@ -1,6 +1,7 @@
 import itertools
 from typing import List, Iterable
 
+from src.alignment.segment_chainer import SegmentChainer
 from src.alignment.segments import AlignmentSegment
 
 
@@ -19,7 +20,7 @@ class AlignmentSegmentsWithResolvedConflicts:
 
     @staticmethod
     def __pairAndResolveConflicts(segments: Iterable[AlignmentSegment]):
-        segments = AlignmentSegment.chain(segments)
+        segments = SegmentChainer().chain(segments)
         for (i0, i1) in AlignmentSegmentsWithResolvedConflicts.__pairIndexes(len(segments)):
             pair = segments[i0].checkForConflicts(segments[i1])
             segments[i0], segments[i1] = pair.resolveConflict()

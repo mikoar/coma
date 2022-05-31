@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from typing import List, Tuple
+
 import pytest
+
 from src.alignment.alignment_results import AlignmentResultRow
 from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
 
@@ -50,7 +53,7 @@ from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
      "14M2D2M1D7M1D14M1D6M1D2M1D6M1D2M1D2M1D3M1D1M1D1M1D2M1D11M1D2M1D30M2D5M1D1M1D3M1D3M1D1M1I12M1D1M2D15M2D30M1D1M1D3M23I12D2M14I19D20M1D1M1D6M"),
 ])
 def test_cigarString(pairs: List[Tuple[int, int]], expected: str):
-    row = AlignmentResultRow(AlignmentSegmentStub.createFromPairs(pairs))
+    row = AlignmentResultRow([AlignmentSegmentStub.createFromPairs(pairs)])
 
     assert row.cigarString == expected
 
