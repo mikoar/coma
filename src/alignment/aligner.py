@@ -8,7 +8,7 @@ from src.alignment.alignment_position import AlignedPair, NotAlignedQueryPositio
     NotAlignedReferencePosition, NotAlignedPosition, AlignmentPosition
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
 
@@ -79,10 +79,13 @@ class AlignerEngine:
 
 class Aligner:
     def __init__(self, scorer: AlignmentPositionScorer,
-                 segmentsFactory: AlignmentSegmentsFactory, alignmentEngine: AlignerEngine) -> None:
+                 segmentsFactory: AlignmentSegmentsFactory,
+                 alignmentEngine: AlignerEngine,
+                 segmentConflictResolver: AlignmentSegmentConflictResolver) -> None:
         self.scorer = scorer
         self.segmentsFactory = segmentsFactory
         self.alignmentEngine = alignmentEngine
+        self.segmentConflictResolver = segmentConflictResolver
 
     def align(self, reference: OpticalMap, query: OpticalMap, peakPositions: int | List[int],
               isReverse: bool = False) -> AlignmentResultRow:
@@ -91,7 +94,7 @@ class Aligner:
         segments = list(itertools.chain.from_iterable(
             [self.getSegments(isReverse, p, query, reference) for p in peakPositions]))
 
-        return AlignmentResultRow.create(AlignmentSegmentsWithResolvedConflicts.create(segments),
+        return AlignmentResultRow.create(self.segmentConflictResolver.resolveConflicts(segments),
                                          query.moleculeId,
                                          reference.moleculeId,
                                          query.length,

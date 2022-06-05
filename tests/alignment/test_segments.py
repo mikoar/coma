@@ -4,27 +4,21 @@ from typing import List
 
 import pytest
 
-from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments import AlignmentSegment
 from tests.test_doubles.alignment_segment_stub import AlignedPairStub, AlignmentSegmentStub
+from tests.test_doubles.mock_segment_chainer import MockSegmentChainer
 
 
-def test_conflicts_noConflicts_segmentsInOrder_returnsUnchanged():
+def test_conflicts_noConflicts_returnsUnchanged():
     segment0 = AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
     segment1 = AlignmentSegmentStub.createFromPairs([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)])
-    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
+    resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
+
+    segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
 
     assert segmentsAfter[0] == segment0
     assert segmentsAfter[1] == segment1
-
-
-def test_conflicts_noConflicts_segmentsNotInOrder_returnsOrdered():
-    segment0 = AlignmentSegmentStub.createFromPairs([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)])
-    segment1 = AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
-    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
-
-    assert segmentsAfter[0] == segment1
-    assert segmentsAfter[1] == segment0
 
 
 @pytest.mark.parametrize("segment0, segment1, expectedSegments", [
@@ -40,8 +34,8 @@ def test_conflicts_noConflicts_segmentsNotInOrder_returnsOrdered():
 ])
 def test_conflicts_withEmptySegment_returnsUnchanged(
         segment0, segment1, expectedSegments: List[AlignmentSegment]):
-    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
-
+    resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
+    segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
     assert segmentsAfter == expectedSegments
 
 
@@ -114,7 +108,8 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
                          checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params)
 def test_conflicts_overlappingSegments_trimsWhileMaxingScore(
         segment0, segment1, expectedSegments: List[AlignmentSegment]):
-    segmentsAfter = AlignmentSegmentsWithResolvedConflicts.create([segment0, segment1]).segments
+    resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
+    segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
     assert segmentsAfter == expectedSegments
 
 

@@ -6,6 +6,8 @@ import pytest
 from src.alignment.aligner import Aligner, AlignerEngine
 from src.alignment.alignment_position import AlignedPair, AlignmentPosition
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver, \
+    AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap
@@ -14,7 +16,12 @@ from src.correlation.optical_map import OpticalMap
 def getSut(maxDistance=0):
     segmentsFactoryMock: AlignmentSegmentsFactory = Mock(spec=AlignmentSegmentsFactory)
     segmentsFactoryMock.getSegments = lambda positions: [AlignmentSegment(positions, 300)]
-    return Aligner(AlignmentPositionScorer(100, 1, 0), segmentsFactoryMock, AlignerEngine(maxDistance))
+    segmentConflictResolverMock: AlignmentSegmentConflictResolver = Mock(spec=AlignmentSegmentConflictResolver)
+    segmentConflictResolverMock.resolveConflicts = lambda segments: AlignmentSegmentsWithResolvedConflicts(segments)
+    return Aligner(AlignmentPositionScorer(100, 1, 0),
+                   segmentsFactoryMock,
+                   AlignerEngine(maxDistance),
+                   segmentConflictResolverMock)
 
 
 @pytest.mark.parametrize("reference,query", [
