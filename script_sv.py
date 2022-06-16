@@ -43,7 +43,7 @@ def pipeline(resolution=43, blurRadius=2, plot=False):
         fig.savefig(f"../plots_irys/plot_molecule{query.moleculeId}_res{resolution}_blur{blurRadius}.svg",
                     bbox_inches='tight', pad_inches=0)
 
-    print(f"res: {resolution}, blur:{blurRadius}, score: {result.peaks.score}")
+    print(f"res: {resolution}, blur:{blurRadius}, score: {result.peaks.getScore}")
     return result
     # return result.quality.reverseScore
 

@@ -119,7 +119,7 @@ fig, axes = plt.subplots(resolutionsCount, blursCount, figsize=(blursCount * 2.5
                          constrained_layout=True)
 xTicker = ticker.MultipleLocator(0.4)
 for resolution, blur, ax in zip(resolutions, blurs, axes.flat):
-    ax.hist(results[results.index == (resolution, blur)].score, 100, range=(-0.2, 1))
+    ax.hist(results[results.index == (resolution, blur)].getScore, 100, range=(-0.2, 1))
     ax.xaxis.set_major_locator(xTicker)
     ax.set_title(f"resolution: {resolution}, blur: {blur}")
 

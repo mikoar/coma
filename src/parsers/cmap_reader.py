@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, TextIO
 
 from src.correlation.optical_map import OpticalMap
 from src.parsers.bionano_file_reader import BionanoFileReader
@@ -8,20 +8,20 @@ class CmapReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
-    def readQueries(self, filePath: str, moleculeIds: List[int] = None):
-        return self.__read(filePath, moleculeIds or [])
+    def readQueries(self, file: TextIO, moleculeIds: List[int] = None):
+        return self.__read(file, moleculeIds or [])
 
-    def readQuery(self, filePath: str, moleculeId: int):
-        return self.__read(filePath, [moleculeId])[0]
+    def readQuery(self, file: TextIO, moleculeId: int):
+        return self.__read(file, [moleculeId])[0]
 
-    def readReference(self, filePath: str, chromosome: int = 1):
-        return self.__read(filePath, [chromosome])[0]
+    def readReference(self, file: TextIO, chromosome: int = 1):
+        return self.__read(file, [chromosome])[0]
 
-    def readReferences(self, filePath: str, chromosomes: List[int] = None):
-        return self.__read(filePath, chromosomes or [])
+    def readReferences(self, file: TextIO, chromosomes: List[int] = None):
+        return self.__read(file, chromosomes or [])
 
-    def __read(self, filePath, moleculeIds=None) -> List[OpticalMap]:
-        maps = self.reader.readFile(filePath, ["CMapId", "Position", "ContigLength", "LabelChannel"])
+    def __read(self, file: TextIO, moleculeIds=None) -> List[OpticalMap]:
+        maps = self.reader.readFile(file, ["CMapId", "Position", "ContigLength", "LabelChannel"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]

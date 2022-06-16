@@ -9,6 +9,7 @@ from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
 
 
 @pytest.mark.parametrize("pairs, expected", [
+    ([], ""),
     ([(1, 1), (2, 2), (3, 3)], "3M"),
     ([(1, 9), (2, 8), (3, 7)], "3M"),
     ([(20, 42), (21, 43), (22, 44), (23, 45)], "4M"),

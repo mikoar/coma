@@ -104,7 +104,21 @@ class CorrelationResult:
             peakHeight = self.__getMaxValidPeakHeight(reference,
                                                       validator) or self.__getMaxCorrelationValueInAlignmentRange(
                 reference)
-        return self.__score(peakHeight)
+        return self.getScore(peakHeight)
+
+    def getScore(self, peakHeight: float = None):
+        order = 5
+        heights = self.__peakHeights
+
+        if not heights.any():
+            return 0.
+
+        if len(heights) < order:
+            return 1.
+
+        firstPeakHeight, nthPeakHeight = sorted(heights, reverse=True)[:order:order - 1]
+        peakHeightToScore = peakHeight if peakHeight else firstPeakHeight
+        return peakHeightToScore - nthPeakHeight
 
     @property
     def maxPeak(self):
@@ -122,15 +136,15 @@ class CorrelationResult:
             yield Peak(position, height, leftBase, rightBase)
 
     @property
-    def __peakHeights(self) -> List[float]:
+    def __peakHeights(self) -> np.ndarray:
         return self.peakProperties["peak_heights"]
 
     @property
-    def __leftBases(self) -> List[int]:
+    def __leftBases(self) -> np.ndarray:
         return self.peakProperties["left_ips"]
 
     @property
-    def __rightBases(self) -> List[int]:
+    def __rightBases(self) -> np.ndarray:
         return self.peakProperties["right_ips"]
 
     def __getMaxValidPeakHeight(self, reference: BionanoAlignment, validator: Validator):
@@ -144,17 +158,6 @@ class CorrelationResult:
         expectedQueryRange: np.ndarray = self.correlation[
                                          expectedQueryStartPosition: expectedQueryEndPosition]
         return np.max(expectedQueryRange) if expectedQueryRange.any() else 0.
-
-    def __score(self, peakHeight: float | None):
-        order = 5
-        heights = self.__peakHeights
-
-        if len(heights) < order:
-            return 1.
-
-        firstPeakHeight, nthPeakHeight = sorted(heights, reverse=True)[:order:order - 1]
-        peakHeightToScore = peakHeight if peakHeight else firstPeakHeight
-        return peakHeightToScore - nthPeakHeight
 
 
 class InitialAlignment(CorrelationResult):

@@ -84,6 +84,8 @@ class AlignmentResultRow:
 
     @property
     def cigarString(self):
+        if not self.alignedPairs:
+            return ""
         hitEnums = list(self.__getHitEnums())
         return "".join(self.__aggregateHitEnums(hitEnums))
 
