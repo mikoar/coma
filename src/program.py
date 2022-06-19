@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import argparse
 import sys
-from typing import TextIO, List
+from typing import TextIO, List, NamedTuple
 
 from tqdm import tqdm
 
@@ -15,7 +17,8 @@ from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser(description="Optical map aligner.")
     parser.add_argument("-r", "--reference", dest="referenceFile", type=argparse.FileType("r"))
     parser.add_argument("-q", "--query", dest="queryFile", type=argparse.FileType("r"))
@@ -35,62 +38,75 @@ if __name__ == '__main__':
     parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1600)
     parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=600)
 
-    args = parser.parse_args()
-    referenceFile: TextIO = args.referenceFile
-    queryFile: TextIO = args.queryFile
-    outputFile: TextIO = args.outputFile
-    primaryResolution: int = args.primaryResolution
-    primaryBlur: int = args.primaryBlur
-    secondaryResolution: int = args.secondaryResolution
-    secondaryBlur: int = args.secondaryBlur
-    minAdjustment: int = args.minAdjustment
-    referenceIds: List[int] = args.referenceIds
-    queryIds: List[int] = args.queryIds
-    numberOfCpus: int = args.numberOfCpus
-    maxDistance: int = args.maxDistance
-    perfectMatchScore: int = args.perfectMatchScore
-    scoreMultiplier: int = args.scoreMultiplier
-    unmatchedPenalty: int = args.unmatchedPenalty
-    minScore: int = args.minScore
-    breakSegmentThreshold: int = args.breakSegmentThreshold
-
-    cmapReader = CmapReader()
-    xmapReader = XmapReader()
-    primaryGenerator = SequenceGenerator(primaryResolution, primaryBlur)
-    secondaryGenerator = SequenceGenerator(secondaryResolution, secondaryBlur)
-    scorer = AlignmentPositionScorer(perfectMatchScore, scoreMultiplier, unmatchedPenalty)
-    segmentsFactory = AlignmentSegmentsFactory(minScore, breakSegmentThreshold)
-    alignerEngine = AlignerEngine(maxDistance)
-    alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
-    aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-
-    referenceMaps: List[OpticalMap]
-    queryMaps: List[OpticalMap]
-    with referenceFile:
-        referenceMaps = cmapReader.readReferences(referenceFile, referenceIds)
-    with queryFile:
-        queryMaps = cmapReader.readQueries(queryFile, queryIds)
+    args: Args = parser.parse_args()  # type: ignore
+    Program(args).run()
 
 
-    def align(referenceMap: OpticalMap, queryMap: OpticalMap):
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, primaryGenerator)
-        primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, primaryGenerator, reverseStrand=True)
+class Args(NamedTuple):
+    referenceFile: TextIO
+    queryFile: TextIO
+    outputFile: TextIO
+    primaryResolution: int
+    primaryBlur: int
+    secondaryResolution: int
+    secondaryBlur: int
+    minAdjustment: int
+    referenceIds: List[int]
+    queryIds: List[int]
+    numberOfCpus: int
+    maxDistance: int
+    perfectMatchScore: int
+    scoreMultiplier: int
+    unmatchedPenalty: int
+    minScore: int
+    breakSegmentThreshold: int
+
+
+class Program:
+    def __init__(self, args: Args):
+        self.args = args
+        self.cmapReader = CmapReader()
+        self.xmapReader = XmapReader()
+        self.primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
+        self.secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
+        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.scoreMultiplier, args.unmatchedPenalty)
+        segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
+        alignerEngine = AlignerEngine(args.maxDistance)
+        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
+        self.aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
+
+    def run(self):
+        referenceMaps: List[OpticalMap]
+        queryMaps: List[OpticalMap]
+        with self.args.referenceFile:
+            referenceMaps = self.cmapReader.readReferences(self.args.referenceFile, self.args.referenceIds)
+        with self.args.queryFile:
+            queryMaps = self.cmapReader.readQueries(self.args.queryFile, self.args.queryIds)
+
+        count = len(referenceMaps) * len(queryMaps)
+        alignmentResultRows = [r for r in
+                               tqdm((self.__align(r, q) for r in referenceMaps for q in queryMaps), total=count)
+                               if r is not None]
+        alignmentResult = AlignmentResults(self.args.referenceFile.name, self.args.queryFile.name, alignmentResultRows)
+
+        self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
+        if self.args.outputFile is not sys.stdout:
+            self.args.outputFile.close()
+
+    def __align(self, referenceMap: OpticalMap, queryMap: OpticalMap):
+        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator)
+        primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
+                                                                 reverseStrand=True)
         bestPrimaryCorrelation, isReverse = \
             sorted([(primaryCorrelation, False), (primaryCorrelationReverse, True)], key=lambda c: c[0].getScore())[-1]
 
         if not bestPrimaryCorrelation.peakPositions.any():
             return None
 
-        secondaryCorrelation = bestPrimaryCorrelation.refine(secondaryGenerator, minAdjustment)
-        alignmentResultRow = aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions, isReverse)
+        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment)
+        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions, isReverse)
         return alignmentResultRow
 
 
-    count = len(referenceMaps) * len(queryMaps)
-    alignmentResultRows = [r for r in tqdm((align(r, q) for r in referenceMaps for q in queryMaps), total=count) if
-                           r is not None]
-    alignmentResult = AlignmentResults(referenceFile.name, queryFile.name, alignmentResultRows)
-
-    xmapReader.writeAlignments(outputFile, alignmentResult)
-    if outputFile is not sys.stdout:
-        outputFile.close()
+if __name__ == '__main__':
+    main()
