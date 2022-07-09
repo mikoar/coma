@@ -4,7 +4,7 @@ import argparse
 import sys
 from typing import TextIO, List, NamedTuple
 
-from tqdm import tqdm
+from p_tqdm import p_imap
 
 from src.alignment.aligner import Aligner, AlignerEngine
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
@@ -30,7 +30,7 @@ def main():
     parser.add_argument("-ma", "--minAdjustment", dest="minAdjustment", type=int, default=1024)
     parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*")
     parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*")
-    parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=1)
+    parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None)
     parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=2048)
     parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=400)
     parser.add_argument("-sm", "--scoreMultiplier", dest="scoreMultiplier", type=float, default=1.)
@@ -53,7 +53,7 @@ class Args(NamedTuple):
     minAdjustment: int
     referenceIds: List[int]
     queryIds: List[int]
-    numberOfCpus: int
+    numberOfCpus: int | None
     maxDistance: int
     perfectMatchScore: int
     scoreMultiplier: int
@@ -83,10 +83,9 @@ class Program:
         with self.args.queryFile:
             queryMaps = self.cmapReader.readQueries(self.args.queryFile, self.args.queryIds)
 
-        count = len(referenceMaps) * len(queryMaps)
-        alignmentResultRows = [r for r in
-                               tqdm((self.__align(r, q) for r in referenceMaps for q in queryMaps), total=count)
-                               if r is not None]
+        alignmentResultRows = [r for r in p_imap(lambda x: self.__align(*x),
+                                                 list((r, q) for r in referenceMaps for q in queryMaps),
+                                                 num_cpus=self.args.numberOfCpus) if r is not None]
         alignmentResult = AlignmentResults(self.args.referenceFile.name, self.args.queryFile.name, alignmentResultRows)
 
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
