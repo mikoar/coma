@@ -57,7 +57,7 @@ class OpticalMap:
 
         correlation /= np.max(correlation)
 
-        peakPositions, peakProperties = find_peaks(correlation, height=0.75, width=(None, None), rel_height=0.75,
+        peakPositions, peakProperties = find_peaks(correlation, height=0.75, width=(None, None), rel_height=0.5,
                                                    distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
         return InitialAlignment(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
                                 sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
@@ -104,21 +104,10 @@ class CorrelationResult:
             peakHeight = self.__getMaxValidPeakHeight(reference,
                                                       validator) or self.__getMaxCorrelationValueInAlignmentRange(
                 reference)
-        return self.getScore(peakHeight)
+        return self.__getScoreRelativeToNthPeak(peakHeight)
 
-    def getScore(self, peakHeight: float = None):
-        order = 5
-        heights = self.__peakHeights
-
-        if not heights.any():
-            return 0.
-
-        if len(heights) < order:
-            return 1.
-
-        firstPeakHeight, nthPeakHeight = sorted(heights, reverse=True)[:order:order - 1]
-        peakHeightToScore = peakHeight if peakHeight else firstPeakHeight
-        return peakHeightToScore - nthPeakHeight
+    def getScore(self):
+        return self.maxPeak.height - self.correlation.mean() if self.maxPeak else 0
 
     @property
     def maxPeak(self):
@@ -159,6 +148,20 @@ class CorrelationResult:
                                          expectedQueryStartPosition: expectedQueryEndPosition]
         return np.max(expectedQueryRange) if expectedQueryRange.any() else 0.
 
+    def __getScoreRelativeToNthPeak(self, peakHeight: float = None):
+        heights = self.__peakHeights
+        if len(heights) == 0:
+            return 0.
+
+        if len(heights) == 1:
+            return 1.
+
+        order = min(5, len(heights))
+
+        firstPeakHeight, nthPeakHeight = sorted(heights, reverse=True)[:order:order - 1]
+        peakHeightToScore = peakHeight if peakHeight else firstPeakHeight
+        return peakHeightToScore - nthPeakHeight
+
 
 class InitialAlignment(CorrelationResult):
     def refine(self, sequenceGenerator: SequenceGenerator, minAdjustment: int = 1024):
@@ -172,8 +175,7 @@ class InitialAlignment(CorrelationResult):
         referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
                                                        referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
-        peakPositions, peakProperties = find_peaks(correlation, height=10 * sequenceGenerator.blurRadius,
-                                                   width=(None, None))
+        peakPositions, peakProperties = find_peaks(correlation, height=0.75 * correlation.max(), width=(None, None))
 
         correlationLength = len(correlation) * resolution
 

@@ -13,6 +13,7 @@ from src.alignment.segment_chainer import SegmentChainer
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap
+from src.correlation.plot import plotRefinedCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
@@ -31,12 +32,13 @@ def main():
     parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*")
     parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*")
     parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None)
-    parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=2048)
-    parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=400)
+    parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=8000)
+    parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800)
     parser.add_argument("-sm", "--scoreMultiplier", dest="scoreMultiplier", type=float, default=1.)
     parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-100)
     parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1600)
     parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=600)
+    parser.add_argument("-p", "--plot", dest="plot", action="store_true")
 
     args: Args = parser.parse_args()  # type: ignore
     Program(args).run()
@@ -60,6 +62,7 @@ class Args(NamedTuple):
     unmatchedPenalty: int
     minScore: int
     breakSegmentThreshold: int
+    plot: bool
 
 
 class Program:
@@ -96,14 +99,20 @@ class Program:
         primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator)
         primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
                                                                  reverseStrand=True)
-        bestPrimaryCorrelation, isReverse = \
-            sorted([(primaryCorrelation, False), (primaryCorrelationReverse, True)], key=lambda c: c[0].getScore())[-1]
+        bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
 
         if not bestPrimaryCorrelation.peakPositions.any():
             return None
 
         secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment)
-        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions, isReverse)
+        if self.args.plot:
+            fig = plotRefinedCorrelation(bestPrimaryCorrelation, secondaryCorrelation, self.args.secondaryResolution)
+            fig.savefig(
+                f"C:/Users/arcis/Documents/code/optical_maps/output_alignments/correlation_refined_{self.args.queryIds[0]}.svg",
+                bbox_inches='tight', pad_inches=0)
+
+        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions,
+                                                secondaryCorrelation.reverseStrand)
         return alignmentResultRow
 
 

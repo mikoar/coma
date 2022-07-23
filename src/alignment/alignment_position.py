@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC, abstractmethod
+from collections import Sized
 from typing import Tuple, Iterable, Callable
 
 from src.correlation.optical_map import PositionWithSiteId
@@ -43,7 +44,7 @@ class NotAlignedQueryPosition(NotAlignedPosition):
         return f"(-, {self.query.siteId})"
 
     def __eq__(self, other: NotAlignedQueryPosition | Tuple[None, int]) -> bool:
-        return other[0] is None and self.query.siteId == other[1] if len(other) == 2 \
+        return other[0] is None and self.query.siteId == other[1] if isinstance(other, Sized) and len(other) == 2 \
             else isinstance(other, NotAlignedQueryPosition) \
                  and self.query.siteId == other.query.siteId
 
@@ -60,7 +61,7 @@ class NotAlignedReferencePosition(NotAlignedPosition):
         return f"({self.reference.siteId}, -)"
 
     def __eq__(self, other: NotAlignedReferencePosition | Tuple[int, None]) -> bool:
-        return self.reference.siteId == other[0] and other[1] is None if len(other) == 2 \
+        return self.reference.siteId == other[0] and other[1] is None if isinstance(other, Sized) and len(other) == 2 \
             else isinstance(other, NotAlignedReferencePosition) \
                  and self.reference.siteId == other.reference.siteId
 
