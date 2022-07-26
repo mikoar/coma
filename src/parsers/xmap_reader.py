@@ -58,7 +58,7 @@ class XmapReader:
             "QryEndPos": "{:.1f}".format(row.queryEndPosition),
             "RefStartPos": "{:.1f}".format(row.referenceStartPosition),
             "RefEndPos": "{:.1f}".format(row.referenceEndPosition),
-            "Orientation": "-" if row.reverseStrand else "+",
+            "Orientation": row.orientation,
             "Confidence": "{:.2f}".format(row.confidence),
             "HitEnum": row.cigarString,
             "QryLen": "{:.1f}".format(row.queryLength),

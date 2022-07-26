@@ -32,7 +32,7 @@ def main():
     parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*")
     parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*")
     parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None)
-    parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=8000)
+    parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=1000)
     parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800)
     parser.add_argument("-sm", "--scoreMultiplier", dest="scoreMultiplier", type=float, default=1.)
     parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-100)

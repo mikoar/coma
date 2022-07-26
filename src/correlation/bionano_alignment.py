@@ -1,31 +1,28 @@
-from typing import NamedTuple, List
+from typing import List
+
+from src.correlation.xmap_alignment import XmapAlignment, XmapAlignedPair
 
 
-class RefAlignedPair(NamedTuple):
-    referenceSiteId: int
-    querySiteId: int
-
-
-class BionanoAlignment:
+class BionanoAlignment(XmapAlignment):
     def __init__(self, alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, reverseStrand, confidence,
-                 hitEnum, queryLength, referenceLength, alignedPairs: List[RefAlignedPair]) -> None:
+                 cigarString, queryLength, referenceLength, alignedPairs: List[XmapAlignedPair]) -> None:
         self.alignmentId = alignmentId
         self.queryId = queryId
         self.referenceId = refId
-        self.__queryStartPositionRelativeToStrand = queryStart
-        self.__queryEndPositionRelativeToStrand = queryEnd
+        self.queryStartPosition = queryStart
+        self.queryEndPosition = queryEnd
         self.referenceStartPosition = refStart
         self.referenceEndPosition = refEnd
         self.reverseStrand = reverseStrand
         self.confidence = confidence
-        self.cigarString = hitEnum
+        self.cigarString = cigarString
         self.queryLength = queryLength
         self.referenceLength = referenceLength
         self.alignedPairs = alignedPairs
 
     @staticmethod
     def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence,
-              hitEnum, queryLength, referenceLength, alignment: str):
+              cigarString, queryLength, referenceLength, alignment: str):
         return BionanoAlignment(
             alignmentId,
             int(queryId),
@@ -36,26 +33,18 @@ class BionanoAlignment:
             int(refEnd),
             orientation == "-",
             confidence,
-            hitEnum,
+            cigarString,
             int(queryLength),
             int(referenceLength),
-            list(map(lambda pair: RefAlignedPair(*pair.split(',')), alignment[:-1].replace('(', '').split(')'))))
-
-    @property
-    def queryStartPosition(self):
-        return self.queryLength - self.__queryStartPositionRelativeToStrand if self.reverseStrand else self.__queryStartPositionRelativeToStrand
-
-    @property
-    def queryEndPosition(self):
-        return self.queryLength - self.__queryEndPositionRelativeToStrand if self.reverseStrand else self.__queryEndPositionRelativeToStrand
+            list(map(lambda pair: XmapAlignedPair(*pair.split(',')), alignment[:-1].replace('(', '').split(')'))))
 
     @property
     def expectedQueryMoleculeStart(self):
-        return self.referenceStartPosition - self.queryStartPosition
+        return self.referenceStartPosition - self.__queryStartPositionDisregardingOrientation
 
     @property
     def expectedQueryMoleculeEnd(self):
-        return self.referenceEndPosition + self.queryLength - self.queryEndPosition
+        return self.referenceEndPosition + self.queryLength - self.__queryEndPositionDisregardingOrientation
 
     @property
     def queryReferenceAlignmentLengthDifference(self):
@@ -66,4 +55,12 @@ class BionanoAlignment:
         return abs(self.referenceEndPosition - self.referenceStartPosition)
 
     def queryAlignmentLength(self):
-        return abs(self.queryEndPosition - self.queryStartPosition)
+        return abs(self.__queryEndPositionDisregardingOrientation - self.__queryStartPositionDisregardingOrientation)
+
+    @property
+    def __queryStartPositionDisregardingOrientation(self):
+        return self.queryLength - self.queryStartPosition if self.reverseStrand else self.queryStartPosition
+
+    @property
+    def __queryEndPositionDisregardingOrientation(self):
+        return self.queryLength - self.queryEndPosition if self.reverseStrand else self.queryEndPosition

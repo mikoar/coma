@@ -8,6 +8,7 @@ from typing import List
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
+from src.correlation.xmap_alignment import XmapAlignment
 
 
 class HitEnum(Enum):
@@ -23,7 +24,7 @@ class AlignmentResults:
     rows: List[AlignmentResultRow]
 
 
-class AlignmentResultRow:
+class AlignmentResultRow(XmapAlignment):
     @staticmethod
     def create(segmentsWithoutConflicts: AlignmentSegmentsWithResolvedConflicts,
                queryId: int,
@@ -57,18 +58,17 @@ class AlignmentResultRow:
                  reverseStrand: bool = False,
                  confidence: float = 0.):
 
-        self.segments = segments
         self.queryId = queryId
         self.referenceId = referenceId
-        self.queryLength = queryLength
-        self.referenceLength = referenceLength
-        self.reverseStrand = reverseStrand
         self.queryStartPosition = queryStartPosition
         self.queryEndPosition = queryEndPosition
         self.referenceStartPosition = referenceStartPosition
         self.referenceEndPosition = referenceEndPosition
         self.reverseStrand = reverseStrand
         self.confidence = confidence
+        self.queryLength = queryLength
+        self.referenceLength = referenceLength
+        self.segments = segments
 
     @property
     def positions(self):

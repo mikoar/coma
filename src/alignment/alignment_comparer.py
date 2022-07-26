@@ -3,8 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple, List
 
-from src.alignment.alignment_results import AlignmentResultRow
-from src.correlation.bionano_alignment import BionanoAlignment
+from src.correlation.xmap_alignment import XmapAlignment
 
 
 @dataclass
@@ -18,9 +17,9 @@ class AlignmentComparisonResult:
 
 
 class AlignmentComparer:
-    def compare(self, referenceAlignment: BionanoAlignment, actualAlignment: AlignmentResultRow):
+    def compare(self, referenceAlignment: XmapAlignment, actualAlignment: XmapAlignment):
         pairs1 = list(
-            map(lambda pair: (int(pair.referenceSiteId), int(pair.querySiteId)), referenceAlignment.alignedPairs))
+            map(lambda pair: (int(pair.reference.siteId), int(pair.query.siteId)), referenceAlignment.alignedPairs))
         pairs2 = list(
             map(lambda pair: (int(pair.reference.siteId), int(pair.query.siteId)), actualAlignment.alignedPairs))
         query1Coverage = self.__getCoverage(pairs1, pairs2)

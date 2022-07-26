@@ -5,28 +5,36 @@ import pytest
 from src.alignment.alignment_comparer import AlignmentComparer
 from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segments import AlignmentSegment
-from src.correlation.bionano_alignment import BionanoAlignment, RefAlignedPair
+from src.correlation.bionano_alignment import BionanoAlignment
+from src.correlation.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
 from tests.test_doubles.alignment_segment_stub import ScoredAlignedPairStub, AlignmentSegmentStub
 
 
+def __pair(referenceSiteId: int, querySiteId: int):
+    return XmapAlignedPair(XmapAlignmentPosition(referenceSiteId), XmapAlignmentPosition(querySiteId))
+
+
 @pytest.mark.parametrize("referencePairs, segment, query1Coverage, query2Coverage", [
-    ([RefAlignedPair(1, 1), RefAlignedPair(2, 2), RefAlignedPair(3, 3)],
-     AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]), 1.,
-     1.),
-    ([RefAlignedPair(1, 1), RefAlignedPair(2, 2), RefAlignedPair(3, 3)], AlignmentSegmentStub([]), 0., 1.),
+    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
+     AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]),
+     1., 1.),
+    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
+     AlignmentSegmentStub([]),
+     0., 1.),
     ([], AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]),
      1., 0.),
-    ([RefAlignedPair(1, 1), RefAlignedPair(2, 2), RefAlignedPair(3, 3)],
-     AlignmentSegmentStub([ScoredAlignedPairStub(2, 1), ScoredAlignedPairStub(3, 2), ScoredAlignedPairStub(4, 3)]), 0.,
-     0.),
-    ([RefAlignedPair(1, 1), RefAlignedPair(2, 2), RefAlignedPair(3, 3), RefAlignedPair(4, 4)],
+    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
+     AlignmentSegmentStub([ScoredAlignedPairStub(2, 1), ScoredAlignedPairStub(3, 2), ScoredAlignedPairStub(4, 3)]),
+     0., 0.),
+    ([__pair(1, 1), __pair(2, 2), __pair(3, 3), __pair(4, 4)],
      AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]),
      0.75, 1.),
-    ([RefAlignedPair(1, 1), RefAlignedPair(2, 2), RefAlignedPair(3, 3)],
+    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
      AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3),
-                           ScoredAlignedPairStub(4, 4)]), 1., 0.75),
+                           ScoredAlignedPairStub(4, 4)]),
+     1., 0.75),
 ], ids=["identical", "empty query2", "empty query1", "shifted", "one missing in query2", "one missing in query1"])
-def test_compare(referencePairs: List[RefAlignedPair], segment: AlignmentSegment, query1Coverage, query2Coverage):
+def test_compare(referencePairs: List[XmapAlignedPair], segment: AlignmentSegment, query1Coverage, query2Coverage):
     referenceAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, referencePairs)
     actualAlignment = AlignmentResultRow([segment])
 
