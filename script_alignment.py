@@ -10,7 +10,7 @@ from p_tqdm import p_map
 from tqdm import tqdm
 
 from src.alignment.aligner import Aligner
-from src.alignment.alignment_comparer import AlignmentComparer, AlignmentComparisonResult
+from src.alignment.alignment_comparer import AlignmentRowComparison
 from src.alignment.alignment_results import AlignmentResults
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.optical_map import OpticalMap
@@ -39,7 +39,7 @@ def initFile(file):
     ]).to_csv(file, mode='w')
 
 
-def appendToFile(items: List[AlignmentComparisonResult], file):
+def appendToFile(items: List[AlignmentRowComparison], file):
     pd.DataFrame.from_dict([{
         "query1Coverage": i.query1Coverage,
         "query2Coverage": i.query2Coverage,
@@ -65,7 +65,7 @@ def alignWithReference(params):
 
     alignmentResultRow = Aligner(3000).align(reference, query, peaks.maxPeak.position,
                                              refAlignment.reverseStrand)
-    return AlignmentComparer().compare(refAlignment, alignmentResultRow), alignmentResultRow
+    return AlignmentRowComparison.create(refAlignment, alignmentResultRow), alignmentResultRow
 
 
 if __name__ == '__main__':

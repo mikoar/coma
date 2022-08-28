@@ -1,47 +1,40 @@
-from typing import List
+from typing import Tuple
+from unittest.mock import Mock, call
 
 import pytest
 
-from src.alignment.alignment_comparer import AlignmentComparer
-from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segments import AlignmentSegment
-from src.correlation.bionano_alignment import BionanoAlignment
-from src.correlation.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
-from tests.test_doubles.alignment_segment_stub import ScoredAlignedPairStub, AlignmentSegmentStub
+from src.alignment.alignment_comparer import AlignmentRowComparer, AlignmentRowComparison, AlignmentComparer
+from src.correlation.xmap_alignment import XmapAlignment
 
 
-def __pair(referenceSiteId: int, querySiteId: int):
-    return XmapAlignedPair(XmapAlignmentPosition(referenceSiteId), XmapAlignmentPosition(querySiteId))
+class __XmapAlignmentStub(XmapAlignment):
+    def __init__(self, queryId: int, referenceId: int):
+        self.queryId = queryId
+        self.referenceId = referenceId
+        self.alignedPairs = []
 
 
-@pytest.mark.parametrize("referencePairs, segment, query1Coverage, query2Coverage", [
-    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
-     AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]),
-     1., 1.),
-    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
-     AlignmentSegmentStub([]),
-     0., 1.),
-    ([], AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]),
-     1., 0.),
-    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
-     AlignmentSegmentStub([ScoredAlignedPairStub(2, 1), ScoredAlignedPairStub(3, 2), ScoredAlignedPairStub(4, 3)]),
-     0., 0.),
-    ([__pair(1, 1), __pair(2, 2), __pair(3, 3), __pair(4, 4)],
-     AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3)]),
-     0.75, 1.),
-    ([__pair(1, 1), __pair(2, 2), __pair(3, 3)],
-     AlignmentSegmentStub([ScoredAlignedPairStub(1, 1), ScoredAlignedPairStub(2, 2), ScoredAlignedPairStub(3, 3),
-                           ScoredAlignedPairStub(4, 4)]),
-     1., 0.75),
-], ids=["identical", "empty query2", "empty query1", "shifted", "one missing in query2", "one missing in query1"])
-def test_compare(referencePairs: List[XmapAlignedPair], segment: AlignmentSegment, query1Coverage, query2Coverage):
-    referenceAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, referencePairs)
-    actualAlignment = AlignmentResultRow([segment])
+def __getSut() -> Tuple[AlignmentComparer, Mock]:
+    rowComparer: AlignmentRowComparer = Mock(spec=AlignmentRowComparer)
+    rowCompareMock = Mock(return_value=AlignmentRowComparison(0, 0, [], 0., [], 0., 0.))
+    rowComparer.compare = rowCompareMock
+    return AlignmentComparer(rowComparer), rowCompareMock
 
-    result = AlignmentComparer().compare(referenceAlignment, actualAlignment)
 
-    assert query1Coverage == result.query1Coverage
-    assert query2Coverage == result.query2Coverage
+def test_matchesAlignmentsByQueryAndReferenceIds():
+    alignments1 = [__XmapAlignmentStub(1, 1), __XmapAlignmentStub(2, 1), __XmapAlignmentStub(3, 1)]
+    alignments2 = [__XmapAlignmentStub(2, 1), __XmapAlignmentStub(3, 1), __XmapAlignmentStub(4, 1)]
+
+    sut, rowComparerMock = __getSut()
+    result = sut.compare(alignments1, alignments2)
+
+    rowComparerMock.assert_has_calls([
+        call(alignments1[1], alignments2[0]),
+        call(alignments1[2], alignments2[1])
+    ])
+
+    assert AlignmentRowComparison.alignment1Only(1, 1, []) in result.rows
+    assert AlignmentRowComparison.alignment2Only(4, 1, []) in result.rows
 
 
 if __name__ == '__main__':
