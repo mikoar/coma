@@ -23,6 +23,7 @@ class BionanoAlignment(XmapAlignment):
     @staticmethod
     def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence,
               cigarString, queryLength, referenceLength, alignment: str):
+        alignmentPairStrings = alignment[:-1].replace('(', '').split(')')
         return BionanoAlignment(
             alignmentId,
             int(queryId),
@@ -36,7 +37,7 @@ class BionanoAlignment(XmapAlignment):
             cigarString,
             int(queryLength),
             int(referenceLength),
-            list(map(lambda pair: XmapAlignedPair(*pair.split(',')), alignment[:-1].replace('(', '').split(')'))))
+            list(map(lambda pair: XmapAlignedPair.create(*pair.split(',')), alignmentPairStrings)))
 
     @property
     def expectedQueryMoleculeStart(self):

@@ -88,7 +88,7 @@ class Program:
 
         alignmentResultRows = [r for r in p_imap(lambda x: self.__align(*x),
                                                  list((r, q) for r in referenceMaps for q in queryMaps),
-                                                 num_cpus=self.args.numberOfCpus) if r is not None]
+                                                 num_cpus=self.args.numberOfCpus) if r is not None and r.alignedPairs]
         alignmentResult = AlignmentResults(self.args.referenceFile.name, self.args.queryFile.name, alignmentResultRows)
 
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)

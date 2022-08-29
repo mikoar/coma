@@ -10,6 +10,13 @@ class XmapAlignedPair(NamedTuple):
     reference: XmapAlignmentPosition
     query: XmapAlignmentPosition
 
+    @staticmethod
+    def create(reference: str, query: str):
+        return XmapAlignedPair(XmapAlignmentPosition(int(reference)), XmapAlignmentPosition(int(query)))
+
+    def __repr__(self) -> str:
+        return f"({self.reference.siteId}, {self.query.siteId})"
+
 
 class XmapAlignment(ABC):
     queryId: int
