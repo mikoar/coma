@@ -15,22 +15,22 @@ rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
-def plotCorrelation(correlationResult: CorrelationResult, resolution: int,
+def plotCorrelation(correlationResult: CorrelationResult,
                     expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
-    plot, _ = __plotCorrelation(correlationResult, resolution, expectedReferenceRanges)
+    plot, _ = __plotCorrelation(correlationResult, correlationResult.resolution, expectedReferenceRanges)
     return plot
 
 
-def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult, refinedCorrelationResult: CorrelationResult,
-                           resolution: int):
-    fig, ax = __plotCorrelation(refinedCorrelationResult, resolution)
+def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult, refinedCorrelationResult: CorrelationResult):
+    fig, ax = __plotCorrelation(refinedCorrelationResult, refinedCorrelationResult.resolution)
     ax2 = ax.twinx()
     start = round(refinedCorrelationResult.correlationStart / initialCorrelationResult.resolution)
     end = round(refinedCorrelationResult.correlationEnd / initialCorrelationResult.resolution)
     correlationFragment = initialCorrelationResult.correlation[start:end]
     interpolated = interp1d(np.arange(correlationFragment.size), correlationFragment, kind='nearest')
     stretched = interpolated(np.linspace(0, correlationFragment.size - 1, refinedCorrelationResult.correlation.size))
-    x = range(refinedCorrelationResult.correlationStart, refinedCorrelationResult.correlationEnd, resolution)
+    x = range(refinedCorrelationResult.correlationStart, refinedCorrelationResult.correlationEnd,
+              refinedCorrelationResult.resolution)
     ax2.fill_between(x, stretched, alpha=0.25)
     return fig
 

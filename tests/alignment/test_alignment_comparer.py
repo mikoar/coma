@@ -3,7 +3,8 @@ from unittest.mock import Mock, call
 
 import pytest
 
-from src.alignment.alignment_comparer import AlignmentRowComparer, AlignmentRowComparison, AlignmentComparer
+from src.alignment.alignment_comparer import AlignmentRowComparer, AlignmentRowComparison, AlignmentComparer, \
+    AlignmentRowComparisonResultType
 from src.correlation.xmap_alignment import XmapAlignment
 
 
@@ -16,7 +17,8 @@ class __XmapAlignmentStub(XmapAlignment):
 
 def __getSut() -> Tuple[AlignmentComparer, Mock]:
     rowComparer: AlignmentRowComparer = Mock(spec=AlignmentRowComparer)
-    rowCompareMock = Mock(return_value=AlignmentRowComparison(0, 0, [], 0., [], 0., 0.))
+    rowCompareMock = Mock(
+        return_value=AlignmentRowComparison(0, 0, AlignmentRowComparisonResultType.BOTH, [], 0., [], 0., 0.))
     rowComparer.compare = rowCompareMock
     return AlignmentComparer(rowComparer), rowCompareMock
 

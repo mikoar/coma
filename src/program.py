@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import argparse
 import sys
-from typing import TextIO, List, NamedTuple
+from typing import List
 
 from p_tqdm import p_imap
 
@@ -12,57 +11,17 @@ from src.alignment.alignment_results import AlignmentResults
 from src.alignment.segment_chainer import SegmentChainer
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
+from src.args import Args
 from src.correlation.optical_map import OpticalMap
-from src.correlation.plot import plotRefinedCorrelation
+from src.correlation.plot import plotRefinedCorrelation, plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Optical map aligner.")
-    parser.add_argument("-r", "--reference", dest="referenceFile", type=argparse.FileType("r"))
-    parser.add_argument("-q", "--query", dest="queryFile", type=argparse.FileType("r"))
-    parser.add_argument("-o", "--output", dest="outputFile", nargs="?", type=argparse.FileType("w"), default=sys.stdout)
-    parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=256)
-    parser.add_argument("-b1", "--primaryBlur", dest="primaryBlur", type=int, default=4)
-    parser.add_argument("-r2", "--secondaryResolution", dest="secondaryResolution", type=int, default=40)
-    parser.add_argument("-b2", "--secondaryBlur", dest="secondaryBlur", type=int, default=2)
-    parser.add_argument("-ma", "--minAdjustment", dest="minAdjustment", type=int, default=1024)
-    parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*")
-    parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*")
-    parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None)
-    parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=1000)
-    parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800)
-    parser.add_argument("-sm", "--scoreMultiplier", dest="scoreMultiplier", type=float, default=1.)
-    parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-100)
-    parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1600)
-    parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=600)
-    parser.add_argument("-p", "--plot", dest="plot", action="store_true")
-
-    args: Args = parser.parse_args()  # type: ignore
+    args = Args.parse()
     Program(args).run()
-
-
-class Args(NamedTuple):
-    referenceFile: TextIO
-    queryFile: TextIO
-    outputFile: TextIO
-    primaryResolution: int
-    primaryBlur: int
-    secondaryResolution: int
-    secondaryBlur: int
-    minAdjustment: int
-    referenceIds: List[int]
-    queryIds: List[int]
-    numberOfCpus: int | None
-    maxDistance: int
-    perfectMatchScore: int
-    scoreMultiplier: int
-    unmatchedPenalty: int
-    minScore: int
-    breakSegmentThreshold: int
-    plot: bool
 
 
 class Program:
@@ -104,9 +63,15 @@ class Program:
         if not bestPrimaryCorrelation.peakPositions.any():
             return None
 
-        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment)
-        if self.args.plot:
-            fig = plotRefinedCorrelation(bestPrimaryCorrelation, secondaryCorrelation, self.args.secondaryResolution)
+        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment,
+                                                             self.args.peakHeightThreshold)
+        if self.args.diagnostics:
+            fig = plotCorrelation(bestPrimaryCorrelation)
+            fig.savefig(
+                f"C:/Users/arcis/Documents/code/optical_maps/output_alignments/correlation_primary_{self.args.queryIds[0]}.svg",
+                bbox_inches='tight', pad_inches=0)
+
+            fig = plotRefinedCorrelation(bestPrimaryCorrelation, secondaryCorrelation)
             fig.savefig(
                 f"C:/Users/arcis/Documents/code/optical_maps/output_alignments/correlation_refined_{self.args.queryIds[0]}.svg",
                 bbox_inches='tight', pad_inches=0)

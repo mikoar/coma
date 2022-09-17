@@ -164,7 +164,7 @@ class CorrelationResult:
 
 
 class InitialAlignment(CorrelationResult):
-    def refine(self, sequenceGenerator: SequenceGenerator, minAdjustment: int = 1024):
+    def refine(self, sequenceGenerator: SequenceGenerator, minAdjustment: int = 1024, peakHeightThreshold: float = 0.5):
         leftAdjustment = self.__getAdjustment(minAdjustment, self.maxPeak.leftProminenceBasePosition)
         rightAdjustment = self.__getAdjustment(minAdjustment, self.maxPeak.rightProminenceBasePosition)
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
@@ -175,7 +175,8 @@ class InitialAlignment(CorrelationResult):
         referenceSequence = self.reference.getSequence(sequenceGenerator, self.reverseStrand, referenceStart,
                                                        referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
-        peakPositions, peakProperties = find_peaks(correlation, height=0.75 * correlation.max(), width=(None, None))
+        peakPositions, peakProperties = find_peaks(correlation, height=peakHeightThreshold * correlation.max(),
+                                                   width=(None, None))
 
         correlationLength = len(correlation) * resolution
 
