@@ -6,6 +6,8 @@ import matplotlib.patches as patches
 import numpy as np
 import seaborn as sns
 from matplotlib import cycler, pyplot, rcParams  # type: ignore
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
 from scipy.interpolate import interp1d
 
@@ -16,12 +18,13 @@ rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
 
 
 def plotCorrelation(correlationResult: CorrelationResult,
-                    expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
+                    expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None) -> Figure:
     plot, _ = __plotCorrelation(correlationResult, correlationResult.resolution, expectedReferenceRanges)
     return plot
 
 
-def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult, refinedCorrelationResult: CorrelationResult):
+def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult,
+                           refinedCorrelationResult: CorrelationResult) -> Figure:
     fig, ax = __plotCorrelation(refinedCorrelationResult, refinedCorrelationResult.resolution)
     ax2 = ax.twinx()
     start = round(refinedCorrelationResult.correlationStart / initialCorrelationResult.resolution)
@@ -35,8 +38,10 @@ def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult, refinedC
     return fig
 
 
-def __plotCorrelation(correlationResult: CorrelationResult, resolution: int,
-                      expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None):
+def __plotCorrelation(correlationResult: CorrelationResult,
+                      resolution: int,
+                      expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None) \
+        -> Tuple[Figure, Axes]:
     fig = pyplot.figure(figsize=(20, 4))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')

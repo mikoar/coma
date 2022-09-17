@@ -25,7 +25,7 @@ class Args(NamedTuple):
     unmatchedPenalty: int
     minScore: int
     breakSegmentThreshold: int
-    diagnostics: bool
+    diagnosticsEnabled: bool
 
     @staticmethod
     def parse() -> Args:
@@ -51,6 +51,6 @@ class Args(NamedTuple):
         parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-100)
         parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1600)
         parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=600)
-        parser.add_argument("-d", "--diagnostics", dest="diagnostics", action="store_true")
+        parser.add_argument("-D", "--diagnostics", dest="diagnosticsEnabled", action="store_true")
         args = parser.parse_args()
         return args  # type: ignore

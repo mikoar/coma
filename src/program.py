@@ -13,8 +13,8 @@ from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConfli
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.args import Args
 from src.correlation.optical_map import OpticalMap
-from src.correlation.plot import plotRefinedCorrelation, plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
+from src.diagnostic.diagnostics import Diagnostics
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 
@@ -36,6 +36,7 @@ class Program:
         alignerEngine = AlignerEngine(args.maxDistance)
         alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
         self.aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
+        self.diagnostics = Diagnostics.create(args.diagnosticsEnabled, args.benchmarkAlignmentFile, args.outputFile)
 
     def run(self):
         referenceMaps: List[OpticalMap]
@@ -59,25 +60,18 @@ class Program:
         primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
                                                                  reverseStrand=True)
         bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
+        self.diagnostics.primaryCorrelation(bestPrimaryCorrelation)
 
         if not bestPrimaryCorrelation.peakPositions.any():
             return None
 
         secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment,
                                                              self.args.peakHeightThreshold)
-        if self.args.diagnostics:
-            fig = plotCorrelation(bestPrimaryCorrelation)
-            fig.savefig(
-                f"C:/Users/arcis/Documents/code/optical_maps/output_alignments/correlation_primary_{self.args.queryIds[0]}.svg",
-                bbox_inches='tight', pad_inches=0)
-
-            fig = plotRefinedCorrelation(bestPrimaryCorrelation, secondaryCorrelation)
-            fig.savefig(
-                f"C:/Users/arcis/Documents/code/optical_maps/output_alignments/correlation_refined_{self.args.queryIds[0]}.svg",
-                bbox_inches='tight', pad_inches=0)
+        self.diagnostics.secondaryCorrelation(secondaryCorrelation)
 
         alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions,
                                                 secondaryCorrelation.reverseStrand)
+        self.diagnostics.alignment(alignmentResultRow)
         return alignmentResultRow
 
 
