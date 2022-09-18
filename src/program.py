@@ -14,7 +14,10 @@ from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.args import Args
 from src.correlation.optical_map import OpticalMap
 from src.correlation.sequence_generator import SequenceGenerator
-from src.diagnostic.diagnostics import Diagnostics
+from src.diagnostic.diagnostics import DiagnosticsPlotter, PrimaryCorrelationDiagnosticsHandler, \
+    SecondaryCorrelationDiagnosticsHandler
+from src.messaging.dispatcher import Dispatcher
+from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 
@@ -36,7 +39,11 @@ class Program:
         alignerEngine = AlignerEngine(args.maxDistance)
         alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
         self.aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-        self.diagnostics = Diagnostics.create(args.diagnosticsEnabled, args.benchmarkAlignmentFile, args.outputFile)
+        self.dispatcher = Dispatcher([])
+        if args.diagnosticsEnabled:
+            plotter = DiagnosticsPlotter(args.outputFile)
+            self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(plotter))
+            self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(plotter))
 
     def run(self):
         referenceMaps: List[OpticalMap]
@@ -60,18 +67,17 @@ class Program:
         primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
                                                                  reverseStrand=True)
         bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
-        self.diagnostics.primaryCorrelation(bestPrimaryCorrelation)
+        self.dispatcher.dispatch(InitialAlignmentMessage(bestPrimaryCorrelation))
 
         if not bestPrimaryCorrelation.peakPositions.any():
             return None
 
         secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment,
                                                              self.args.peakHeightThreshold)
-        self.diagnostics.secondaryCorrelation(secondaryCorrelation)
+        self.dispatcher.dispatch(CorrelationResultMessage(bestPrimaryCorrelation, secondaryCorrelation))
 
         alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions,
                                                 secondaryCorrelation.reverseStrand)
-        self.diagnostics.alignment(alignmentResultRow)
         return alignmentResultRow
 
 
