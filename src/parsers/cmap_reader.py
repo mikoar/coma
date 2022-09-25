@@ -1,4 +1,4 @@
-from typing import List, TextIO
+from typing import List, TextIO, Iterable
 
 from src.correlation.optical_map import OpticalMap
 from src.parsers.bionano_file_reader import BionanoFileReader
@@ -8,7 +8,7 @@ class CmapReader:
     def __init__(self) -> None:
         self.reader = BionanoFileReader()
 
-    def readQueries(self, file: TextIO, moleculeIds: List[int] = None):
+    def readQueries(self, file: TextIO, moleculeIds: Iterable[int] = None):
         return self.__read(file, moleculeIds or [])
 
     def readQuery(self, file: TextIO, moleculeId: int):
@@ -17,10 +17,10 @@ class CmapReader:
     def readReference(self, file: TextIO, chromosome: int = 1):
         return self.__read(file, [chromosome])[0]
 
-    def readReferences(self, file: TextIO, chromosomes: List[int] = None):
+    def readReferences(self, file: TextIO, chromosomes: Iterable[int] = None):
         return self.__read(file, chromosomes or [])
 
-    def __read(self, file: TextIO, moleculeIds=None) -> List[OpticalMap]:
+    def __read(self, file: TextIO, moleculeIds: Iterable[int] = None) -> List[OpticalMap]:
         maps = self.reader.readFile(file, ["CMapId", "Position", "ContigLength", "LabelChannel"])
 
         if moleculeIds:

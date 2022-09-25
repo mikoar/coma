@@ -2,16 +2,18 @@ import os.path
 from typing import List, TextIO
 
 import pandas as pd
-from pandas import Series, DataFrame
+from pandas import DataFrame, Series
 
 from src.alignment.alignment_results import AlignmentResults
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.parsers.bionano_file_reader import BionanoFileReader
+from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairParser, BaseXmapAlignmentPairParser
 
 
 class XmapReader:
-    def __init__(self) -> None:
+    def __init__(self, pairParser: BaseXmapAlignmentPairParser = None) -> None:
         self.reader = BionanoFileReader()
+        self.pairParser = pairParser or XmapAlignmentPairParser()
 
     def readAlignments(self, file: TextIO, alignmentIds=None, queryIds=None) -> List[BionanoAlignment]:
         alignments = self.reader.readFile(file,
@@ -24,7 +26,7 @@ class XmapReader:
         if queryIds:
             alignments = alignments[alignments["QryContigID"].isin(queryIds)]
 
-        return alignments.apply(self.__parseRow, axis=1).tolist()
+        return alignments.apply(self.__rowParserFactory(), axis=1).tolist()
 
     @staticmethod
     def writeAlignments(file: TextIO, alignmentResults: AlignmentResults):
@@ -70,8 +72,13 @@ class XmapReader:
 
         dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator="\n")
 
-    @staticmethod
-    def __parseRow(row: Series):
-        return BionanoAlignment.parse(row["XmapEntryID"], row["QryContigID"], row["RefContigID"], row["QryStartPos"],
-                                      row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
-                                      row["Confidence"], row["HitEnum"], row["QryLen"], row["RefLen"], row["Alignment"])
+    def __rowParserFactory(self):
+        def parseRow(row: Series):
+            queryId = int(row["QryContigID"])
+            referenceId = int(row["RefContigID"])
+            return BionanoAlignment.parse(row["XmapEntryID"], queryId, referenceId, row["QryStartPos"],
+                                          row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
+                                          row["Confidence"], row["HitEnum"], row["QryLen"], row["RefLen"],
+                                          self.pairParser.parse(row["Alignment"], queryId, referenceId))
+
+        return parseRow

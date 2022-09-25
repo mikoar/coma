@@ -4,6 +4,7 @@ from typing import NamedTuple, List
 
 class XmapAlignmentPosition(NamedTuple):
     siteId: int
+    position: int
 
 
 class XmapAlignedPair(NamedTuple):
@@ -12,7 +13,7 @@ class XmapAlignedPair(NamedTuple):
 
     @staticmethod
     def create(reference: str, query: str):
-        return XmapAlignedPair(XmapAlignmentPosition(int(reference)), XmapAlignmentPosition(int(query)))
+        return XmapAlignedPair(XmapAlignmentPosition(int(reference), 0), XmapAlignmentPosition(int(query), 0))
 
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId})"
