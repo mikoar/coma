@@ -76,9 +76,10 @@ class XmapReader:
         def parseRow(row: Series):
             queryId = int(row["QryContigID"])
             referenceId = int(row["RefContigID"])
+            reverseStrand = row["Orientation"] == "-"
             return BionanoAlignment.parse(row["XmapEntryID"], queryId, referenceId, row["QryStartPos"],
-                                          row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], row["Orientation"],
+                                          row["QryEndPos"], row["RefStartPos"], row["RefEndPos"], reverseStrand,
                                           row["Confidence"], row["HitEnum"], row["QryLen"], row["RefLen"],
-                                          self.pairParser.parse(row["Alignment"], queryId, referenceId))
+                                          self.pairParser.parse(row["Alignment"], queryId, referenceId, reverseStrand))
 
         return parseRow

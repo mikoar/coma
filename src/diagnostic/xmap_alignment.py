@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from abc import ABC
+from dataclasses import dataclass
 from typing import NamedTuple, List
 
 
@@ -7,7 +10,8 @@ class XmapAlignmentPosition(NamedTuple):
     position: int
 
 
-class XmapAlignedPair(NamedTuple):
+@dataclass
+class XmapAlignedPair:
     reference: XmapAlignmentPosition
     query: XmapAlignmentPosition
 
@@ -17,6 +21,22 @@ class XmapAlignedPair(NamedTuple):
 
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId})"
+
+
+@dataclass
+class XmapAlignedPairWithDistance(XmapAlignedPair):
+    distance: int
+
+    @staticmethod
+    def calculateDistance(pair: XmapAlignedPair, firstPair: XmapAlignedPair | None, reverseStrand: bool):
+        def queryDifference():
+            return firstPair.query.position - pair.query.position if reverseStrand else pair.query.position - firstPair.query.position
+
+        distance = queryDifference() - (pair.reference.position - firstPair.reference.position) if firstPair else 0
+        return XmapAlignedPairWithDistance(pair.reference, pair.query, distance)
+
+    def __repr__(self) -> str:
+        return f"({self.reference.siteId}, {self.query.siteId} [{self.distance}])"
 
 
 class XmapAlignment(ABC):

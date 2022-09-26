@@ -7,12 +7,12 @@ from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
 
 class BaseXmapAlignmentPairParser(ABC):
     @abstractmethod
-    def parse(self, alignment: str, queryId: int, referenceId: int):
+    def parse(self, alignment: str, queryId: int, referenceId: int, reverseStrand: bool):
         pass
 
 
 class XmapAlignmentPairParser(BaseXmapAlignmentPairParser):
-    def parse(self, alignment: str, queryId: int, referenceId: int):
+    def parse(self, alignment: str, queryId: int, referenceId: int, reverseStrand: bool):
         alignmentPairStrings = alignment[:-1].replace('(', '').split(')')
         return list(map(lambda pair: XmapAlignedPair.create(*pair.split(',')), alignmentPairStrings))
 
@@ -22,7 +22,7 @@ class XmapAlignmentPairWithDistanceParser(BaseXmapAlignmentPairParser):
         self.references = references
         self.queries = queries
 
-    def parse(self, alignment: str, queryId: int, referenceId: int):
+    def parse(self, alignment: str, queryId: int, referenceId: int, reverseStrand: bool):
         alignmentPairStrings = alignment[:-1].replace('(', '').split(')')
         reference = next(r for r in self.references if r.moleculeId == referenceId)
         query = next(q for q in self.queries if q.moleculeId == queryId)

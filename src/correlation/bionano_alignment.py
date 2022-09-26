@@ -21,7 +21,7 @@ class BionanoAlignment(XmapAlignment):
         self.alignedPairs = alignedPairs
 
     @staticmethod
-    def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, orientation, confidence,
+    def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, reverseStrand, confidence,
               cigarString, queryLength, referenceLength, alignment: List[XmapAlignedPair]):
         return BionanoAlignment(
             alignmentId,
@@ -31,7 +31,7 @@ class BionanoAlignment(XmapAlignment):
             int(queryEnd),
             int(refStart),
             int(refEnd),
-            orientation == "-",
+            reverseStrand,
             confidence,
             cigarString,
             int(queryLength),
