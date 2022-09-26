@@ -1,6 +1,6 @@
 from typing import List
 
-from src.correlation.xmap_alignment import XmapAlignment, XmapAlignedPair
+from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
 
 
 class BionanoAlignment(XmapAlignment):

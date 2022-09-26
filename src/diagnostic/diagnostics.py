@@ -1,7 +1,7 @@
 import os.path
 from typing import TextIO
 
-from src.correlation.plot import plotCorrelation, plotRefinedCorrelation
+from src.diagnostic.plot import plotCorrelation, plotRefinedCorrelation
 from src.messaging.message_handler import MessageHandler
 from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage
 

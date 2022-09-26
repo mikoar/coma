@@ -10,7 +10,7 @@ from scipy.signal import find_peaks, correlate
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.peak import Peak
 from src.correlation.sequence_generator import SequenceGenerator
-from src.correlation.validator import Validator
+from src.diagnostic.validator import Validator
 
 
 @dataclass(frozen=True)

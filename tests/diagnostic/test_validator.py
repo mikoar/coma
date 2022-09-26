@@ -2,7 +2,7 @@ import pytest
 
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.peak import Peak
-from src.correlation.validator import Validator
+from src.diagnostic.validator import Validator
 
 
 @pytest.mark.parametrize('peakPosition,expected',

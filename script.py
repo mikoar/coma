@@ -7,8 +7,8 @@ from matplotlib import rcParams  # type: ignore
 from scipy.optimize import minimize_scalar
 
 from src.correlation.optical_map import OpticalMap
-from src.correlation.plot import plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
+from src.diagnostic.plot import plotCorrelation
 from src.parsers.cmap_reader import CmapReader
 
 rcParams["lines.linewidth"] = 1

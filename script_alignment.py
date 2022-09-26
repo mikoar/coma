@@ -10,12 +10,12 @@ from p_tqdm import p_map
 from tqdm import tqdm
 
 from src.alignment.aligner import Aligner
-from src.alignment.alignment_comparer import AlignmentRowComparison
 from src.alignment.alignment_results import AlignmentResults
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.optical_map import OpticalMap
 from src.correlation.sequence_generator import SequenceGenerator
-from src.correlation.validator import Validator
+from src.diagnostic.alignment_comparer import AlignmentRowComparison
+from src.diagnostic.validator import Validator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 

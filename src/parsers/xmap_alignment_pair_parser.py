@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from src.correlation.optical_map import OpticalMap
-from src.correlation.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
+from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
 
 
 class BaseXmapAlignmentPairParser(ABC):

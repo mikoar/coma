@@ -3,8 +3,8 @@ import pandas as pd
 from matplotlib import pyplot as plt, ticker
 from pandas.core.groupby.groupby import GroupBy
 
-from src.correlation.plot import plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
+from src.diagnostic.plot import plotCorrelation
 from src.parsers.bionano_file_reader import BionanoFileReader
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader

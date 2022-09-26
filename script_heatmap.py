@@ -11,9 +11,9 @@ from tqdm import tqdm
 
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.correlation.optical_map import OpticalMap
-from src.correlation.plot import plotHeatMap
 from src.correlation.sequence_generator import SequenceGenerator
-from src.correlation.validator import Validator
+from src.diagnostic.plot import plotHeatMap
+from src.diagnostic.validator import Validator
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 

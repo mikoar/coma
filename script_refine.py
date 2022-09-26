@@ -7,8 +7,8 @@ from matplotlib.figure import Figure
 
 from src.alignment.aligner import Aligner
 from src.alignment.alignment_results import AlignmentResults
-from src.correlation.plot import plotRefinedCorrelation, plotCorrelation
 from src.correlation.sequence_generator import SequenceGenerator
+from src.diagnostic.plot import plotRefinedCorrelation, plotCorrelation
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 

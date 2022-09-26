@@ -8,7 +8,7 @@ from typing import List
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
-from src.correlation.xmap_alignment import XmapAlignment
+from src.diagnostic.xmap_alignment import XmapAlignment
 
 
 class HitEnum(Enum):

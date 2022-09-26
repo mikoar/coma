@@ -3,9 +3,9 @@ from unittest.mock import Mock, call
 
 import pytest
 
-from src.alignment.alignment_comparer import AlignmentRowComparer, AlignmentRowComparison, AlignmentComparer, \
+from src.diagnostic.alignment_comparer import AlignmentRowComparer, AlignmentRowComparison, AlignmentComparer, \
     AlignmentRowComparisonResultType
-from src.correlation.xmap_alignment import XmapAlignment
+from src.diagnostic.xmap_alignment import XmapAlignment
 
 
 class __XmapAlignmentStub(XmapAlignment):

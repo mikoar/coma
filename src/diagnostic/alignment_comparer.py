@@ -8,7 +8,7 @@ from typing import Tuple, List, Dict, TextIO
 import pandas as pd
 from pandas import DataFrame
 
-from src.correlation.xmap_alignment import XmapAlignment
+from src.diagnostic.xmap_alignment import XmapAlignment
 
 
 @dataclass

@@ -2,15 +2,15 @@ from typing import List
 
 import pytest
 
-from src.alignment.alignment_comparer import AlignmentRowComparer
 from src.alignment.alignment_results import AlignmentResultRow
 from src.correlation.bionano_alignment import BionanoAlignment
-from src.correlation.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
+from src.diagnostic.alignment_comparer import AlignmentRowComparer
+from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
 from tests.test_doubles.alignment_segment_stub import ScoredAlignedPairStub, AlignmentSegmentStub
 
 
 def __pair(referenceSiteId: int, querySiteId: int):
-    return XmapAlignedPair(XmapAlignmentPosition(referenceSiteId), XmapAlignmentPosition(querySiteId))
+    return XmapAlignedPair(XmapAlignmentPosition(referenceSiteId, 0), XmapAlignmentPosition(querySiteId, 0))
 
 
 @pytest.mark.parametrize("referencePairs, queryPairs, alignment1Coverage, alignment2Coverage", [

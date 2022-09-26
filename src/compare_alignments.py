@@ -2,7 +2,7 @@ import argparse
 import sys
 from typing import NamedTuple, TextIO, List
 
-from src.alignment.alignment_comparer import AlignmentRowComparer, AlignmentComparer
+from src.diagnostic.alignment_comparer import AlignmentRowComparer, AlignmentComparer
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
