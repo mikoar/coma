@@ -3,12 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from enum import Enum
-from typing import Tuple, List, Dict, TextIO
+from typing import List, Dict, TextIO
 
 import pandas as pd
 from pandas import DataFrame
 
-from src.diagnostic.xmap_alignment import XmapAlignment
+from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
 
 
 @dataclass
@@ -57,19 +57,19 @@ class AlignmentRowComparison:
     queryId: int
     referenceId: int
     type: AlignmentRowComparisonResultType
-    pairs1: List[Tuple[int, int]]
+    pairs1: List[XmapAlignedPair]
     alignment1Coverage: float
-    pairs2: List[Tuple[int, int]]
+    pairs2: List[XmapAlignedPair]
     alignment2Coverage: float
     identity: float
 
     @staticmethod
-    def alignment1Only(queryId: int, referenceId: int, pairs1: List[Tuple[int, int]]):
+    def alignment1Only(queryId: int, referenceId: int, pairs1: List[XmapAlignedPair]):
         return AlignmentRowComparison(queryId, referenceId, AlignmentRowComparisonResultType.FIRST_ONLY, pairs1, 0., [],
                                       0., 0.)
 
     @staticmethod
-    def alignment2Only(queryId: int, referenceId: int, pairs2: List[Tuple[int, int]]):
+    def alignment2Only(queryId: int, referenceId: int, pairs2: List[XmapAlignedPair]):
         return AlignmentRowComparison(queryId, referenceId, AlignmentRowComparisonResultType.SECOND_ONLY, [], 0.,
                                       pairs2, 0., 0.)
 
@@ -99,20 +99,22 @@ class AlignmentComparer:
 
 
 class AlignmentRowComparer:
-    def compare(self, referenceAlignmentRow: XmapAlignment, actualAlignmentRow: XmapAlignment):
-        pairs1 = list(
-            map(lambda pair: (int(pair.reference.siteId), int(pair.query.siteId)), referenceAlignmentRow.alignedPairs))
-        pairs2 = list(
-            map(lambda pair: (int(pair.reference.siteId), int(pair.query.siteId)), actualAlignmentRow.alignedPairs))
-        alignment1Coverage = self.__getCoverage(pairs1, pairs2)
-        alignment2Coverage = self.__getCoverage(pairs2, pairs1)
-        matcher = SequenceMatcher(None, pairs1, pairs2)
-        ratio = matcher.ratio()
-        return AlignmentRowComparison(referenceAlignmentRow.queryId, referenceAlignmentRow.referenceId,
-                                      AlignmentRowComparisonResultType.BOTH, pairs1, alignment1Coverage, pairs2,
+    def compare(self, alignment1: XmapAlignment, alignment2: XmapAlignment):
+        alignment1Coverage = self.__getCoverage(alignment1.alignedPairs, alignment2.alignedPairs)
+        alignment2Coverage = self.__getCoverage(alignment2.alignedPairs, alignment1.alignedPairs)
+
+        ratio = self.__getIdentityRatio(alignment1, alignment2)
+        return AlignmentRowComparison(alignment1.queryId, alignment1.referenceId, AlignmentRowComparisonResultType.BOTH,
+                                      alignment1.alignedPairs, alignment1Coverage, alignment2.alignedPairs,
                                       alignment2Coverage, ratio)
 
     @staticmethod
-    def __getCoverage(pairs: List[Tuple[int, int]], otherPairs: List[Tuple[int, int]]):
+    def __getIdentityRatio(referenceAlignmentRow: XmapAlignment, actualAlignmentRow: XmapAlignment):
+        matcher = SequenceMatcher(None, referenceAlignmentRow.alignedPairs, actualAlignmentRow.alignedPairs)
+        ratio = matcher.ratio()
+        return ratio
+
+    @staticmethod
+    def __getCoverage(pairs: List[XmapAlignedPair], otherPairs: List[XmapAlignedPair]):
         pairsLength = len(pairs)
         return (pairsLength - len(set(pairs).difference(set(otherPairs)))) / pairsLength if pairsLength > 0 else 1.

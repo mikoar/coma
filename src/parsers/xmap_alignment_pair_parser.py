@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from src.correlation.optical_map import OpticalMap
-from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition
+from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition, XmapAlignedPairWithDistance
 
 
 class BaseXmapAlignmentPairParser(ABC):
@@ -33,4 +33,8 @@ class XmapAlignmentPairWithDistanceParser(BaseXmapAlignmentPairParser):
             queryPosition = XmapAlignmentPosition(querySiteId, query.positions[querySiteId - 1])
             return XmapAlignedPair(referencePosition, queryPosition)
 
-        return list(map(lambda pair: createAlignedPair(pair), alignmentPairStrings))
+        alignedPairs = list(map(lambda pair: createAlignedPair(pair), alignmentPairStrings))
+        alignedPairsWithDistances = map(
+            lambda pair: XmapAlignedPairWithDistance.calculateDistance(pair, alignedPairs[0], reverseStrand),
+            alignedPairs)
+        return list(alignedPairsWithDistances) if alignedPairs else []
