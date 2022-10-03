@@ -5,8 +5,8 @@ from src.parsers.bionano_file_reader import BionanoFileReader
 
 
 class CmapReader:
-    def __init__(self) -> None:
-        self.reader = BionanoFileReader()
+    def __init__(self, reader: BionanoFileReader = None) -> None:
+        self.reader = reader or BionanoFileReader()
 
     def readQueries(self, file: TextIO, moleculeIds: Iterable[int] = None):
         return self.__read(file, moleculeIds or [])
@@ -21,18 +21,19 @@ class CmapReader:
         return self.__read(file, chromosomes or [])
 
     def __read(self, file: TextIO, moleculeIds: Iterable[int] = None) -> List[OpticalMap]:
-        maps = self.reader.readFile(file, ["CMapId", "Position", "ContigLength", "LabelChannel"])
+        maps = self.reader.readFile(file, ["CMapId", "Position", "LabelChannel"])
 
         if moleculeIds:
             maps = maps[maps["CMapId"].isin(moleculeIds)]
 
         opticalMaps = maps.groupby("CMapId").apply(self.__parseCmapRowsGroup)
-        return opticalMaps.tolist()
+        return [] if opticalMaps.empty else opticalMaps[opticalMaps.notnull()].tolist()
 
     @staticmethod
     def __parseCmapRowsGroup(group):
-        group = group[group["LabelChannel"] != 0]
         moleculeId = group["CMapId"].iloc[0]
-        length = int(group["ContigLength"].iloc[0])
-        positions = group["Position"].sort_values().tolist()
-        return OpticalMap(moleculeId, length, positions)
+        labelSites = group[group["LabelChannel"] != 0]
+        moleculeEndMarker = group[group["LabelChannel"] == 0].iloc[0]
+        length = int(moleculeEndMarker["Position"])
+        positions = labelSites["Position"].sort_values().tolist()
+        return OpticalMap(moleculeId, length, positions) if positions else None
