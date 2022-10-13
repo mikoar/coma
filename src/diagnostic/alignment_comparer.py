@@ -26,8 +26,8 @@ class AlignmentComparison:
             "Identity",
             "Alignment1Coverage",
             "Alignment2Coverage",
-            "Alignment1",
-            "Alignment2"
+            "Alignment1 (referenceID, referencePosition, queryID, queryPosition, distance)",
+            "Alignment2 (referenceID, referencePosition, queryID, queryPosition, distance)"
         ]
         file.write("\t".join([header for header in headers]) + "\n")
 

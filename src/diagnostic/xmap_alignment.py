@@ -36,7 +36,8 @@ class XmapAlignedPairWithDistance(XmapAlignedPair):
         return XmapAlignedPairWithDistance(pair.reference, pair.query, distance)
 
     def __repr__(self) -> str:
-        return f"({self.reference.siteId}, {self.query.siteId} [{round(self.distance)}])"
+        return f"({self.reference.siteId}, {int(self.reference.position)}, {self.query.siteId}, " \
+               f"{int(self.reference.position)}, {round(self.distance)})"
 
 
 class XmapAlignment(ABC):
