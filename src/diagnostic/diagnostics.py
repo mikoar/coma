@@ -8,7 +8,7 @@ from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMes
 
 class DiagnosticsPlotter:
     def __init__(self, outputFile: TextIO):
-        self.outputDir = os.path.join(os.path.dirname(outputFile.name), "diagnostics")
+        self.outputDir = os.path.splitext(outputFile.name)[0] + "_diagnostics"
         os.makedirs(self.outputDir, exist_ok=True)
 
     def savePlot(self, fig, fileName: str):
