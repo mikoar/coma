@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import statistics
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from enum import Enum
@@ -11,13 +12,60 @@ from pandas import DataFrame
 from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
 
 
-@dataclass
 class AlignmentComparison:
+    avgOverlappingAlignment1Coverage: float
+    avgOverlappingAlignment2Coverage: float
+    avgOverlappingIdentity: float
+    overlapping: int
+    nonOverlapping: int
+    firstOnly: int
+    secondOnly: int
     rows: List[AlignmentRowComparison]
+    null: AlignmentComparison
+
+    def __init__(self, avgAlignment1Coverage: float,
+                 avgAlignment2Coverage: float,
+                 avgIdentity: float,
+                 overlapping: int,
+                 nonOverlapping: int,
+                 firstOnly: int,
+                 secondOnly: int,
+                 rows: List[AlignmentRowComparison]):
+        self.avgOverlappingAlignment1Coverage = avgAlignment1Coverage
+        self.avgOverlappingAlignment2Coverage = avgAlignment2Coverage
+        self.avgOverlappingIdentity = avgIdentity
+        self.overlapping = overlapping
+        self.nonOverlapping = nonOverlapping
+        self.firstOnly = firstOnly
+        self.secondOnly = secondOnly
+        self.rows = rows
+
+    @staticmethod
+    def create(rows: List[AlignmentRowComparison]):
+        if not rows:
+            return AlignmentComparison.null
+
+        overlappingRows = [row for row in rows if row.overlapping]
+        return AlignmentComparison(
+            statistics.fmean(map(lambda row: row.alignment1Coverage, overlappingRows)) if overlappingRows else 0,
+            statistics.fmean(map(lambda row: row.alignment2Coverage, overlappingRows)) if overlappingRows else 0,
+            statistics.fmean(map(lambda row: row.identity, overlappingRows)) if overlappingRows else 0,
+            len(overlappingRows),
+            sum(1 for row in rows if row.type == AlignmentRowComparisonResultType.BOTH and not row.overlapping),
+            sum(1 for row in rows if row.type == AlignmentRowComparisonResultType.FIRST_ONLY),
+            sum(1 for row in rows if row.type == AlignmentRowComparisonResultType.SECOND_ONLY),
+            rows)
 
     def write(self, file: TextIO):
-        if not self.rows:
-            return
+        file.writelines([
+            f"# AvgOverlappingAlignment1Coverage\t{self.avgOverlappingAlignment1Coverage}\n",
+            f"# AvgOverlappingAlignment2Coverage\t{self.avgOverlappingAlignment2Coverage}\n",
+            f"# AvgOverlappingIdentity\t{self.avgOverlappingIdentity}\n",
+            f"# Overlapping\t{self.overlapping}\n",
+            f"# NonOverlapping\t{self.nonOverlapping}\n",
+            f"# FirstOnly\t{self.firstOnly}\n",
+            f"# SecondOnly\t{self.secondOnly}\n"
+        ])
 
         headers = [
             "QryContigID",
@@ -46,6 +94,17 @@ class AlignmentComparison:
         dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator="\n")
 
 
+class _NullAlignmentComparison(AlignmentComparison):
+    def __init__(self):
+        super().__init__(0., 0., 0., 0, 0, 0, 0, [])
+
+    def write(self, file: TextIO):
+        return
+
+
+AlignmentComparison.null = _NullAlignmentComparison()
+
+
 class AlignmentRowComparisonResultType(Enum):
     BOTH = 1,
     FIRST_ONLY = 2,
@@ -62,6 +121,10 @@ class AlignmentRowComparison:
     pairs2: List[XmapAlignedPair]
     alignment2Coverage: float
     identity: float
+
+    @property
+    def overlapping(self):
+        return self.identity > 0.
 
     @staticmethod
     def alignment1Only(queryId: int, referenceId: int, pairs1: List[XmapAlignedPair]):
@@ -87,7 +150,7 @@ class AlignmentComparer:
                                in self.__getNotMatchingAlignments(alignments1Dict, alignments2Dict)]
         alignments2OnlyRows = [AlignmentRowComparison.alignment2Only(a2.queryId, a2.referenceId, a2.alignedPairs) for a2
                                in self.__getNotMatchingAlignments(alignments2Dict, alignments1Dict)]
-        return AlignmentComparison(comparedRows + alignments1OnlyRows + alignments2OnlyRows)
+        return AlignmentComparison.create(comparedRows + alignments1OnlyRows + alignments2OnlyRows)
 
     @staticmethod
     def __toDict(alignments: List[XmapAlignment]) -> Dict[(int, int), XmapAlignment]:

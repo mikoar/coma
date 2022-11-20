@@ -36,13 +36,17 @@ def __pair(referenceSiteId: int, querySiteId: int):
 ], ids=["identical", "empty query2", "empty query1", "shifted", "one missing in query2", "one missing in query1"])
 def test_queryCoverage(referencePairs: List[XmapAlignedPair], queryPairs: List[XmapAlignedPair],
                        alignment1Coverage, alignment2Coverage):
-    referenceAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, referencePairs)
-    actualAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, queryPairs)
-
-    result = AlignmentRowComparer().compare(referenceAlignment, actualAlignment)
+    result = compare(queryPairs, referencePairs)
 
     assert alignment1Coverage == result.alignment1Coverage
     assert alignment2Coverage == result.alignment2Coverage
+
+
+def compare(queryPairs, referencePairs):
+    referenceAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, referencePairs)
+    actualAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, queryPairs)
+    result = AlignmentRowComparer().compare(referenceAlignment, actualAlignment)
+    return result
 
 
 @pytest.mark.parametrize("referencePairs, queryPairs, identity", [
@@ -58,11 +62,7 @@ def test_queryCoverage(referencePairs: List[XmapAlignedPair], queryPairs: List[X
 
 ], ids=["identical", "different", "half identical "])
 def test_identity(referencePairs: List[XmapAlignedPair], queryPairs: List[ScoredAlignedPairStub], identity):
-    referenceAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, referencePairs)
-    actualAlignment = BionanoAlignment(1, 1, 1, 0, 99, 0, 99, False, 123, "1M", 100, 100, queryPairs)
-
-    result = AlignmentRowComparer().compare(referenceAlignment, actualAlignment)
-
+    result = compare(queryPairs, referencePairs)
     assert identity == result.identity
 
 

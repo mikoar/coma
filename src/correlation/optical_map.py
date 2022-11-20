@@ -176,7 +176,7 @@ class InitialAlignment(CorrelationResult):
                                                        referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
         peakPositions, peakProperties = find_peaks(correlation, height=peakHeightThreshold,
-                                                   width=(None, None))
+                                                   width=(None, None), prominence=0.05 * correlation.max())
 
         correlationLength = len(correlation) * resolution
 

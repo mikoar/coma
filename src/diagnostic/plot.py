@@ -1,7 +1,6 @@
 from math import floor
 from typing import List, Tuple, Union
 
-import matplotlib.axes
 import matplotlib.patches as patches
 import numpy as np
 import seaborn as sns
@@ -32,6 +31,7 @@ def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult,
     correlationFragment = initialCorrelationResult.correlation[start:end]
     interpolated = interp1d(np.arange(correlationFragment.size), correlationFragment, kind='nearest')
     stretched = interpolated(np.linspace(0, correlationFragment.size - 1, refinedCorrelationResult.correlation.size))
+    ax2.set_ylim(bottom=0, top=stretched.max() * 1.1)
     x = range(refinedCorrelationResult.correlationStart, refinedCorrelationResult.correlationEnd,
               refinedCorrelationResult.resolution)
     ax2.fill_between(x, stretched, alpha=0.25)
@@ -42,12 +42,13 @@ def __plotCorrelation(correlationResult: CorrelationResult,
                       resolution: int,
                       expectedReferenceRanges: Union[List[Tuple[int, int]], Tuple[int, int]] = None) \
         -> Tuple[Figure, Axes]:
-    fig = pyplot.figure(figsize=(20, 4))
-    ax = fig.add_axes([0, 0, 1, 1])
+    fig: Figure = pyplot.figure(figsize=(20, 4))
+    ax: Axes = fig.add_axes([0, 0, 1, 1])
     ax.ticklabel_format(style='plain')
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, p: format(int(value), ',')))
 
     ax.set_xlim(correlationResult.correlationStart, correlationResult.correlationEnd)
+    ax.set_ylim(bottom=0, top=correlationResult.correlation.max() * 1.1)
 
     if expectedReferenceRanges:
         if isinstance(expectedReferenceRanges, tuple):
@@ -62,7 +63,7 @@ def __plotCorrelation(correlationResult: CorrelationResult,
     return fig, ax
 
 
-def __plotPeaks(peaks: CorrelationResult, ax: matplotlib.axes.Axes):
+def __plotPeaks(peaks: CorrelationResult, ax: Axes):
     maxPeak = peaks.maxPeak
     if not maxPeak:
         return
@@ -74,10 +75,9 @@ def __plotPeaks(peaks: CorrelationResult, ax: matplotlib.axes.Axes):
             floor((p.position - peaks.correlationStart) / peaks.resolution) for p in peaksExceptMax]], "x",
                 markersize=16, markeredgewidth=4, alpha=0.5)
 
-    labelVerticalPositionIncrement = maxPeak.height / 16
     for i, peak in enumerate(peaks.peaks):
-        ax.annotate(f"({int(peak.position / 1000):,}K, {peak.height:.2f})",
-                    (peak.position, labelVerticalPositionIncrement * (i % 2)))
+        ax.annotate(f"({int(peak.position / 1000):,}K, {peak.height:.0f})",
+                    (peak.position, peak.height), rotation=-45, ha="center", va="top")
 
 
 def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], peaks: CorrelationResult):
