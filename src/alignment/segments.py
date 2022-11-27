@@ -10,10 +10,11 @@ from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlig
 class AlignmentSegment:
     empty: AlignmentSegment
 
-    def __init__(self, positions: List[ScoredAlignmentPosition], segmentScore: float):
+    def __init__(self, positions: List[ScoredAlignmentPosition], segmentScore: float, peakPosition: int):
         self.positions = positions
         self.segmentScore = segmentScore  # todo: refactor this
         self.alignedPositions = [p for p in positions if isinstance(p, ScoredAlignedPair)]
+        self.peakPosition = peakPosition
 
     @property
     def startPosition(self):
@@ -41,7 +42,7 @@ class AlignmentSegment:
                 lambda p: not isinstance(p, AlignedPair) or p.lessOrEqualOnAnySequence(end),
                 slicedAtStart))
         self.__trimNotAlignedPositionsFromEnd(positions)
-        return AlignmentSegment(positions, sum(p.score for p in positions))
+        return AlignmentSegment(positions, sum(p.score for p in positions), self.peakPosition)
 
     @staticmethod
     def __trimNotAlignedPositionsFromEnd(positions):
@@ -58,7 +59,7 @@ class AlignmentSegment:
         positions = [p for p in self.positions if p not in other.positions]
         if not positions:
             return AlignmentSegment.empty
-        return AlignmentSegment(positions, sum(p.score for p in positions))
+        return AlignmentSegment(positions, sum(p.score for p in positions), self.peakPosition)
 
     def __repr__(self):
         return f"score: {self.segmentScore}, positions: {self.positions}"
@@ -66,7 +67,7 @@ class AlignmentSegment:
 
 class __EmptyAlignmentSegment(AlignmentSegment):
     def __init__(self):
-        super().__init__([], 0.)
+        super().__init__([], 0., 0)
 
     @property
     def startPosition(self):

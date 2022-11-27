@@ -10,7 +10,7 @@ from src.correlation.optical_map import PositionWithSiteId
 
 class AlignmentSegmentStub(AlignmentSegment):
     def __init__(self, positions: List[ScoredAlignedPairStub], score: float = 0.):
-        super().__init__(positions, score)
+        super().__init__(positions, score, 0)
 
     @staticmethod
     def createFromPairs(

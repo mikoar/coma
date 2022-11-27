@@ -15,7 +15,7 @@ def __scoredPositions(scores: List[float]):
 
 def test_fullAlignment():
     positions = __scoredPositions([5., 6., 7., 4., 3.])
-    segments = AlignmentSegmentsFactory(5, 10).getSegments(positions)
+    segments = AlignmentSegmentsFactory(5, 10).getSegments(positions, 0)
     assert len(segments) == 1
     segment = segments[0]
     assert segment.segmentScore == 25.
@@ -25,13 +25,13 @@ def test_fullAlignment():
 
 
 def test_empty():
-    segments = AlignmentSegmentsFactory(5, 10).getSegments([])
+    segments = AlignmentSegmentsFactory(5, 10).getSegments([], 0)
     assert len(segments) == 0
 
 
 def test_partialAlignment():
     positions = __scoredPositions([-1., 5., 6., 7., 4., 3., -1])
-    segment = AlignmentSegmentsFactory(5, 10).getSegments(positions)[0]
+    segment = AlignmentSegmentsFactory(5, 10).getSegments(positions, 0)[0]
     assert segment.segmentScore == 25.
     assert segment.positions[0].score == positions[1].score
     assert segment.positions[-1].score == positions[5].score
@@ -39,17 +39,23 @@ def test_partialAlignment():
 
 def test_alignmentWithGap():
     positions = __scoredPositions([1., 1., -3., 2., 1., -3., 2.])
-    segment = AlignmentSegmentsFactory(3, 1).getSegments(positions)[0]
+    segment = AlignmentSegmentsFactory(3, 1).getSegments(positions, 0)[0]
     assert segment.segmentScore == 3.
     assert segment.positions[0].score == positions[3].score
     assert segment.positions[-1].score == positions[4].score
+
+
+def test_setsPeakPosition():
+    positions = __scoredPositions([1.])
+    segment = AlignmentSegmentsFactory(1, 1).getSegments(positions, 123)[0]
+    assert segment.peakPosition == 123
 
 
 def test_multipleSegments():
     positions = __scoredPositions([1., 1., 1., 1., 1., -1., -1., -1., 1., 1.])
     minScore = 2
     threshold = 3
-    segments = AlignmentSegmentsFactory(minScore, threshold).getSegments(positions)
+    segments = AlignmentSegmentsFactory(minScore, threshold).getSegments(positions, 0)
 
     assert len(segments) == 2
     assert segments[0].segmentScore == 5.
@@ -67,7 +73,7 @@ def test_filterSegment():
                       (1627, 11, 34.0), (1630, 14, -562.9), (1632, 16, -1533.2), (1633, 17, -1399.0),
                       (1636, 20, -1400.0), (1637, 21, -872.8), (1639, 22, -1820.0)]))
 
-    segments = AlignmentSegmentsFactory(200, 0).getSegments(pairs)
+    segments = AlignmentSegmentsFactory(200, 0).getSegments(pairs, 0)
 
     assert len(segments) == 1
     assert segments[0].positions == [(1616, 1), (1617, 2), (1618, 3), (1619, 4),

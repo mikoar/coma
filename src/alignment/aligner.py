@@ -107,4 +107,4 @@ class Aligner:
         alignmentPositions = self.alignmentEngine.align(reference, query, referenceStartPosition,
                                                         referenceEndPosition, isReverse)
         scoredPositions = self.scorer.getScoredPositions(alignmentPositions)
-        return self.segmentsFactory.getSegments(scoredPositions)
+        return self.segmentsFactory.getSegments(scoredPositions, peakPosition)

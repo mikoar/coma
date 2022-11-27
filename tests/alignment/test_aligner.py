@@ -15,7 +15,7 @@ from src.correlation.optical_map import OpticalMap
 
 def getSut(maxDistance=0):
     segmentsFactoryMock: AlignmentSegmentsFactory = Mock(spec=AlignmentSegmentsFactory)
-    segmentsFactoryMock.getSegments = lambda positions: [AlignmentSegment(positions, 300)]
+    segmentsFactoryMock.getSegments = lambda positions, peakPosition: [AlignmentSegment(positions, 300, peakPosition)]
     segmentConflictResolverMock: AlignmentSegmentConflictResolver = Mock(spec=AlignmentSegmentConflictResolver)
     segmentConflictResolverMock.resolveConflicts = lambda segments: AlignmentSegmentsWithResolvedConflicts(segments)
     return Aligner(AlignmentPositionScorer(100, 1, 0),

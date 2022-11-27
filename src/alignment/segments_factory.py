@@ -13,7 +13,7 @@ class AlignmentSegmentsFactory:
         self.minScore = minScore
         self.breakSegmentThreshold = breakSegmentThreshold
 
-    def getSegments(self, positions: List[ScoredAlignmentPosition]) -> List[AlignmentSegment]:
+    def getSegments(self, positions: List[ScoredAlignmentPosition], peakPosition: int) -> List[AlignmentSegment]:
         start = end = 0
         currentScore = 0
         resultSegments = []
@@ -25,7 +25,7 @@ class AlignmentSegmentsFactory:
             if currentScore > max(0., segmentWithMaxScore.segmentScore - self.breakSegmentThreshold):
                 end += 1
                 if currentScore > segmentWithMaxScore.segmentScore:
-                    segmentWithMaxScore = AlignmentSegment(positions[start:end], currentScore)
+                    segmentWithMaxScore = AlignmentSegment(positions[start:end], currentScore, peakPosition)
             else:
                 if segmentWithMaxScore.segmentScore >= self.minScore:
                     resultSegments.append(segmentWithMaxScore)
