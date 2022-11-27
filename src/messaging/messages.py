@@ -1,7 +1,7 @@
 from abc import ABC
 
 from src.alignment.alignment_results import AlignmentResultRow
-from src.correlation.optical_map import InitialAlignment, CorrelationResult
+from src.correlation.optical_map import InitialAlignment, CorrelationResult, OpticalMap
 
 
 class Message(ABC):
@@ -21,5 +21,7 @@ class CorrelationResultMessage(Message):
 
 
 class AlignmentResultRowMessage(Message):
-    def __init__(self, data: AlignmentResultRow):
-        self.data = data
+    def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow):
+        self.reference = reference
+        self.query = query
+        self.alignment = alignment

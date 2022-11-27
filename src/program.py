@@ -14,10 +14,10 @@ from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.args import Args
 from src.correlation.optical_map import OpticalMap
 from src.correlation.sequence_generator import SequenceGenerator
-from src.diagnostic.diagnostics import DiagnosticsPlotter, PrimaryCorrelationDiagnosticsHandler, \
-    SecondaryCorrelationDiagnosticsHandler
+from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
+    SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter
 from src.messaging.dispatcher import Dispatcher
-from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage
+from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_reader import XmapReader
 
@@ -41,9 +41,10 @@ class Program:
         self.aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
         self.dispatcher = Dispatcher([])
         if args.diagnosticsEnabled:
-            plotter = DiagnosticsPlotter(args.outputFile)
-            self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(plotter))
-            self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(plotter))
+            writer = DiagnosticsWriter(args.outputFile)
+            self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
+            self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
+            self.dispatcher.addHandler(AlignmentPlotter(writer))
 
     def run(self):
         referenceMaps: List[OpticalMap]
@@ -78,6 +79,7 @@ class Program:
 
         alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions,
                                                 secondaryCorrelation.reverseStrand)
+        self.dispatcher.dispatch(AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow))
         return alignmentResultRow
 
 
