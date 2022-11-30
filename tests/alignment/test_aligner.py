@@ -11,17 +11,22 @@ from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConfli
 from src.alignment.segments import AlignmentSegment
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap
+from src.correlation.peak import Peak
 
 
 def getSut(maxDistance=0):
     segmentsFactoryMock: AlignmentSegmentsFactory = Mock(spec=AlignmentSegmentsFactory)
-    segmentsFactoryMock.getSegments = lambda positions, peakPosition: [AlignmentSegment(positions, 300, peakPosition)]
+    segmentsFactoryMock.getSegments = lambda positions, peak: [AlignmentSegment(positions, 300, peak)]
     segmentConflictResolverMock: AlignmentSegmentConflictResolver = Mock(spec=AlignmentSegmentConflictResolver)
     segmentConflictResolverMock.resolveConflicts = lambda segments: AlignmentSegmentsWithResolvedConflicts(segments)
     return Aligner(AlignmentPositionScorer(100, 1, 0),
                    segmentsFactoryMock,
                    AlignerEngine(maxDistance),
                    segmentConflictResolverMock)
+
+
+def __peak(position: int = 0):
+    return Peak(position, 100)
 
 
 @pytest.mark.parametrize("reference,query", [
@@ -35,30 +40,30 @@ def getSut(maxDistance=0):
     )
 ])
 def test_empty(reference, query):
-    result = getSut().align(reference, query, 0)
+    result = getSut().align(reference, query, __peak(0))
 
     assert len(result.alignedPairs) == 0
 
 
-@pytest.mark.parametrize("reference,query,peakPosition", [
+@pytest.mark.parametrize("reference,query,peak", [
     (
             OpticalMap(1, length=9, positions=[0, 4, 8]),
             OpticalMap(1, length=9, positions=[0, 4, 8]),
-            0
+            __peak(0)
     ),
     (
             OpticalMap(1, length=10, positions=[0, 5, 9]),
             OpticalMap(1, length=10, positions=[0, 5, 9]),
-            0
+            __peak(0)
     ),
     (
             OpticalMap(1, length=30, positions=[10, 15, 19]),
             OpticalMap(1, length=10, positions=[0, 5, 9]),
-            10
+            __peak(10)
     )
 ])
-def test_perfectMatch(reference, query, peakPosition):
-    result = getSut().align(reference, query, peakPosition)
+def test_perfectMatch(reference, query, peak):
+    result = getSut().align(reference, query, peak)
 
     assert result.alignedPairs == [(1, 1), (2, 2), (3, 3)]
 
@@ -67,7 +72,7 @@ def test_perfectMatch_reverseStrand():
     reference = OpticalMap(1, length=9, positions=[0, 4, 8])
     query = OpticalMap(1, length=9, positions=[0, 4, 8])
 
-    result = getSut().align(reference, query, 0, True)
+    result = getSut().align(reference, query, __peak(), True)
 
     assert result.alignedPairs == [(1, 3), (2, 2), (3, 1)]
 
@@ -76,7 +81,7 @@ def test_ignoresExtraPositionsOnReferenceBeforeAndAfterAlignment():
     reference = OpticalMap(1, length=30, positions=[9, 10, 15, 19, 20])
     query = OpticalMap(1, length=10, positions=[0, 5, 9])
 
-    result = getSut().align(reference, query, 10)
+    result = getSut().align(reference, query, __peak(10))
 
     assert result.referenceStartPosition == 10
     assert result.alignedPairs == [(2, 1), (3, 2), (4, 3)]
@@ -87,7 +92,7 @@ def test_alignsPositionsWithinMaxDistanceOnly():
     reference = OpticalMap(1, length=300, positions=[89, 115, 150, 185, 210])
     query = OpticalMap(1, length=100, positions=[0, 25, 50, 75, 99])
 
-    result = getSut(maxDistance).align(reference, query, 100)
+    result = getSut(maxDistance).align(reference, query, __peak(100))
 
     assert result.alignedPairs == [(2, 2), (3, 3), (4, 4)]
 
@@ -97,7 +102,7 @@ def test_returnsCorrectQueryShifts():
     reference = OpticalMap(1, length=300, positions=[105, 115, 150, 185, 194])
     query = OpticalMap(1, length=100, positions=[0, 25, 50, 75, 99])
 
-    result = getSut(maxDistance).align(reference, query, 100)
+    result = getSut(maxDistance).align(reference, query, __peak(100))
 
     assert list(map(AlignedPair.queryShiftSelector, result.alignedPairs)) == [-5, 10, 0, -10, 5]
 
@@ -107,7 +112,7 @@ def test_ignoresPositionBeyondMaxDistance():
     query = OpticalMap(1, length=100, positions=[0, 49, 89])
     maxDistance = 10
 
-    result = getSut(maxDistance).align(reference, query, 99)
+    result = getSut(maxDistance).align(reference, query, __peak(99))
 
     assert result.referenceEndPosition == 149
     assert result.alignedPairs == [(1, 1), (2, 2)]
@@ -120,7 +125,7 @@ def test_ignoresPositionBeyondMaxDistance():
     )
 ])
 def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, query):
-    result = getSut(10).align(reference, query, 100)
+    result = getSut(10).align(reference, query, __peak(100))
 
     assert result.referenceEndPosition == 189
     assert result.alignedPairs == [(1, 1), (2, 2), (4, 3)]
@@ -138,7 +143,7 @@ def test_handlesDeletions_referencePosition3OutOfRange_NotAligned(reference, que
     )
 ])
 def test_handlesDeletions_atReferencePosition3(reference, query, expected):
-    result = getSut(10).align(reference, query, 100)
+    result = getSut(10).align(reference, query, __peak(100))
 
     assert result.referenceEndPosition == 189
     assert result.positions == expected
@@ -157,7 +162,7 @@ def test_handlesDeletions_atReferencePosition3(reference, query, expected):
     )
 ])
 def test_handlesInsertions_noAlignmentForQueryPosition3(reference, query):
-    result = getSut(10).align(reference, query, 100)
+    result = getSut(10).align(reference, query, __peak(100))
 
     assert result.referenceEndPosition == 189
     assert result.alignedPairs == [(1, 1), (2, 2), (3, 4)]
@@ -179,7 +184,7 @@ def test_handlesInsertions_noAlignmentForQueryPosition3(reference, query):
     )
 ])
 def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd, queryStart, queryEnd):
-    result = getSut(10).align(reference, query, 0)
+    result = getSut(10).align(reference, query, __peak(0))
 
     assert result.referenceStartPosition == refStart
     assert result.referenceEndPosition == refEnd
@@ -204,7 +209,7 @@ def test_correctAlignmentStartAndEndPositions(reference, query, refStart, refEnd
 ])
 def test_returnsUnmatchedPositions(query, positions: List[AlignmentPosition]):
     reference = OpticalMap(1, length=10, positions=[1, 5, 9])
-    result = getSut().align(reference, query, 0)
+    result = getSut().align(reference, query, __peak(0))
 
     assert result.positions == positions
 
@@ -212,8 +217,8 @@ def test_returnsUnmatchedPositions(query, positions: List[AlignmentPosition]):
 def test_multiplePeaks():
     reference = OpticalMap(1, length=111, positions=[0, 4, 100, 110])
     query = OpticalMap(1, length=61, positions=[0, 4, 50, 60])
-    peakPositions = [0, 50]
-    result = getSut().align(reference, query, peakPositions)
+    peaks = [__peak(0), __peak(50)]
+    result = getSut().align(reference, query, peaks)
 
     assert len(result.segments) == 2
     assert result.segments[0].positions == [(1, 1), (2, 2), (None, 3), (None, 4)]

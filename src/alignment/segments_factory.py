@@ -2,6 +2,7 @@ from typing import List
 
 from src.alignment.alignment_position import ScoredAlignmentPosition
 from src.alignment.segments import AlignmentSegment
+from src.correlation.peak import Peak
 
 
 class AlignmentSegmentsFactory:
@@ -13,7 +14,7 @@ class AlignmentSegmentsFactory:
         self.minScore = minScore
         self.breakSegmentThreshold = breakSegmentThreshold
 
-    def getSegments(self, positions: List[ScoredAlignmentPosition], peakPosition: int) -> List[AlignmentSegment]:
+    def getSegments(self, positions: List[ScoredAlignmentPosition], peak: Peak) -> List[AlignmentSegment]:
         start = end = 0
         currentScore = 0
         resultSegments = []
@@ -25,7 +26,7 @@ class AlignmentSegmentsFactory:
             if currentScore > max(0., segmentWithMaxScore.segmentScore - self.breakSegmentThreshold):
                 end += 1
                 if currentScore > segmentWithMaxScore.segmentScore:
-                    segmentWithMaxScore = AlignmentSegment(positions[start:end], currentScore, peakPosition)
+                    segmentWithMaxScore = AlignmentSegment(positions[start:end], currentScore, peak)
             else:
                 if segmentWithMaxScore.segmentScore >= self.minScore:
                     resultSegments.append(segmentWithMaxScore)

@@ -70,14 +70,14 @@ class Program:
         bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
         self.dispatcher.dispatch(InitialAlignmentMessage(bestPrimaryCorrelation))
 
-        if not bestPrimaryCorrelation.peakPositions.any():
+        if not bestPrimaryCorrelation.peaks.any():
             return None
 
         secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment,
                                                              self.args.peakHeightThreshold)
         self.dispatcher.dispatch(CorrelationResultMessage(bestPrimaryCorrelation, secondaryCorrelation))
 
-        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peakPositions,
+        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peaks,
                                                 secondaryCorrelation.reverseStrand)
         self.dispatcher.dispatch(AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow))
         return alignmentResultRow

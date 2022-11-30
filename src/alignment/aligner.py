@@ -11,6 +11,7 @@ from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId
+from src.correlation.peak import Peak
 
 
 class _ReferenceIndexWithDistance(NamedTuple):
@@ -87,12 +88,12 @@ class Aligner:
         self.alignmentEngine = alignmentEngine
         self.segmentConflictResolver = segmentConflictResolver
 
-    def align(self, reference: OpticalMap, query: OpticalMap, peakPositions: int | List[int],
+    def align(self, reference: OpticalMap, query: OpticalMap, peaks: Peak | List[Peak],
               isReverse: bool = False) -> AlignmentResultRow:
-        if isinstance(peakPositions, int):
-            peakPositions = [peakPositions]
+        if isinstance(peaks, Peak):
+            peaks = [peaks]
         segments = list(itertools.chain.from_iterable(
-            [self.getSegments(isReverse, p, query, reference) for p in peakPositions]))
+            [self.getSegments(isReverse, p, query, reference) for p in peaks]))
 
         return AlignmentResultRow.create(self.segmentConflictResolver.resolveConflicts(segments),
                                          query.moleculeId,
@@ -101,10 +102,10 @@ class Aligner:
                                          reference.length,
                                          isReverse)
 
-    def getSegments(self, isReverse, peakPosition, query, reference):
-        referenceStartPosition = peakPosition
-        referenceEndPosition = peakPosition + query.length
+    def getSegments(self, isReverse: bool, peak: Peak, query: OpticalMap, reference: OpticalMap):
+        referenceStartPosition = peak.position
+        referenceEndPosition = peak.position + query.length
         alignmentPositions = self.alignmentEngine.align(reference, query, referenceStartPosition,
                                                         referenceEndPosition, isReverse)
         scoredPositions = self.scorer.getScoredPositions(alignmentPositions)
-        return self.segmentsFactory.getSegments(scoredPositions, peakPosition)
+        return self.segmentsFactory.getSegments(scoredPositions, peak)

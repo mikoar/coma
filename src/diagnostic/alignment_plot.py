@@ -21,10 +21,12 @@ class AlignmentPlot:
 
     def __setLimits(self, alignment: AlignmentResultRow):
         offset = (alignment.queryEndPosition - alignment.queryStartPosition) / 10
-        self.yMin = alignment.queryStartPosition - offset
-        self.xMin = alignment.referenceStartPosition - offset
+        self.yMin = - offset
+        peakPositions = list(map(lambda s: s.peak, alignment.segments))
+        self.xMin = min([alignment.referenceStartPosition - offset] + peakPositions)
         self.axes.set_xlim(self.xMin - offset, alignment.referenceEndPosition + offset)
-        self.axes.set_ylim(self.yMin - offset, alignment.queryEndPosition + offset)
+        self.axes.set_ylim(self.yMin - offset, alignment.queryLength + offset)
+        self.axes.set_aspect("equal")
 
     def __plotReference(self, alignment: AlignmentResultRow, reference: OpticalMap):
         self.axes.set_xlabel(f"Reference {reference.moleculeId}")
@@ -59,7 +61,7 @@ class AlignmentPlot:
                                va="center")
 
     def __plotSegments(self, alignment: AlignmentResultRow):
-        groupedSegments = groupby(alignment.segments, lambda s: s.peakPosition)
+        groupedSegments = groupby(alignment.segments, lambda s: s.peak)
         colors = self.__getColors(len(alignment.segments))
 
         for (peakNumber, (_, segments)), color in zip(enumerate(groupedSegments), colors):

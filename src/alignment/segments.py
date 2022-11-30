@@ -5,16 +5,17 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlignedPair, AlignedPair
+from src.correlation.peak import Peak
 
 
 class AlignmentSegment:
     empty: AlignmentSegment
 
-    def __init__(self, positions: List[ScoredAlignmentPosition], segmentScore: float, peakPosition: int):
+    def __init__(self, positions: List[ScoredAlignmentPosition], segmentScore: float, peak: Peak):
         self.positions = positions
-        self.segmentScore = segmentScore  # todo: refactor this
+        self.segmentScore = segmentScore
         self.alignedPositions = [p for p in positions if isinstance(p, ScoredAlignedPair)]
-        self.peakPosition = peakPosition
+        self.peak = peak
 
     @property
     def startPosition(self):
@@ -42,7 +43,7 @@ class AlignmentSegment:
                 lambda p: not isinstance(p, AlignedPair) or p.lessOrEqualOnAnySequence(end),
                 slicedAtStart))
         self.__trimNotAlignedPositionsFromEnd(positions)
-        return AlignmentSegment(positions, sum(p.score for p in positions), self.peakPosition)
+        return AlignmentSegment(positions, sum(p.score for p in positions), self.peak)
 
     @staticmethod
     def __trimNotAlignedPositionsFromEnd(positions):
@@ -59,7 +60,7 @@ class AlignmentSegment:
         positions = [p for p in self.positions if p not in other.positions]
         if not positions:
             return AlignmentSegment.empty
-        return AlignmentSegment(positions, sum(p.score for p in positions), self.peakPosition)
+        return AlignmentSegment(positions, sum(p.score for p in positions), self.peak)
 
     def __repr__(self):
         return f"score: {self.segmentScore}, positions: {self.positions}"
@@ -67,7 +68,7 @@ class AlignmentSegment:
 
 class __EmptyAlignmentSegment(AlignmentSegment):
     def __init__(self):
-        super().__init__([], 0., 0)
+        super().__init__([], 0., Peak.null)
 
     @property
     def startPosition(self):

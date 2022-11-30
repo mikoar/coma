@@ -63,7 +63,7 @@ def alignWithReference(params):
     if not isMaxPeakValid:
         return
 
-    alignmentResultRow = Aligner(3000).align(reference, query, peaks.maxPeak.position,
+    alignmentResultRow = Aligner(3000).align(reference, query, peaks.maxPeak,
                                              refAlignment.reverseStrand)
     return AlignmentRowComparison.create(refAlignment, alignmentResultRow), alignmentResultRow
 
