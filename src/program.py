@@ -70,7 +70,7 @@ class Program:
         bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
         self.dispatcher.dispatch(InitialAlignmentMessage(bestPrimaryCorrelation))
 
-        if not bestPrimaryCorrelation.peaks.any():
+        if not any(bestPrimaryCorrelation.peaks):
             return None
 
         secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment,

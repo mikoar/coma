@@ -10,5 +10,15 @@ class Peak:
         self.leftProminenceBasePosition = leftBase
         self.rightProminenceBasePosition = rightBase
 
+    @property
+    def width(self):
+        return self.rightProminenceBasePosition - self.leftProminenceBasePosition
+
+    def __eq__(self, other):
+        return isinstance(other, Peak) and self.position == other.position \
+               and self.height == other.height \
+               and self.leftProminenceBasePosition == other.leftProminenceBasePosition \
+               and self.rightProminenceBasePosition == other.rightProminenceBasePosition
+
 
 Peak.null = Peak(0, 0)
