@@ -12,38 +12,49 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
 from src.alignment.alignment_results import AlignmentResultRow
-from src.correlation.optical_map import OpticalMap, PositionWithSiteId
+from src.alignment.segments import AlignmentSegment
+from src.correlation.optical_map import OpticalMap, PositionWithSiteId, InitialAlignment
 from src.correlation.peak import Peak
 
 
 @dataclass
 class Options:
     limitQueryToAlignedArea = False
-    centerPeaks = True
 
 
 class AlignmentPlot:
     def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
-                 options: Options = None):
+                 correlation: InitialAlignment, options: Options = None):
         self.options = options or Options()
         self.figure: Figure = pyplot.figure(figsize=(24, 16))
         self.axes: Axes = self.figure.add_axes([0, 0, 1, 1])
-        self.__setLimits(alignment, query)
+        self.__setDimensions(alignment, query, correlation)
         self.__plotReference(alignment, reference)
         self.__plotQuery(alignment, query)
+        self.__drawPrimaryPeak(correlation)
         self.__plotSegments(alignment)
         self.axes.legend()
 
-    def __setLimits(self, alignment: AlignmentResultRow, query: OpticalMap):
+    def __setDimensions(self, alignment: AlignmentResultRow, query: OpticalMap, correlation: InitialAlignment):
         offset = alignment.queryLength / 10
         self.yMin = (alignment.queryStartPosition if self.options.limitQueryToAlignedArea else 0) - offset
         drawPeakPositionsWithOffset = list(
-            map(lambda s: self.__getDrawPeakPosition(s.peak, alignment) - offset, alignment.segments))
+            map(lambda s: s.peak.leftProminenceBasePosition - offset, alignment.segments)) + [
+                                          correlation.maxPeak.leftProminenceBasePosition - offset]
         self.xMin = min([alignment.referenceStartPosition - offset] + drawPeakPositionsWithOffset)
-        self.xMax = alignment.referenceEndPosition + offset
-        self.axes.set_xlim(self.xMin - offset, self.xMax)
+        self.xMax = alignment.referenceEndPosition
+        self.xMinWithOffset = self.xMin - offset
+        self.xMaxWithOffset = self.xMax + offset
+        self.axes.set_xlim(self.xMinWithOffset, self.xMaxWithOffset)
         self.yMax = alignment.queryEndPosition if self.options.limitQueryToAlignedArea else query.length
-        self.axes.set_ylim(self.yMin - offset, self.yMax + offset)
+        self.yMinWithOffset = self.yMin - offset
+        self.yMaxWithOffset = self.yMax + offset
+        self.axes.set_ylim(self.yMinWithOffset, self.yMaxWithOffset)
+        self.plotAreaMask = Rectangle((self.xMin + offset, self.yMin + offset),
+                                      self.xMax - self.xMin - offset,
+                                      self.yMax - self.yMin - offset,
+                                      facecolor='none', edgecolor='none')
+        self.axes.add_patch(self.plotAreaMask)
         self.axes.set_aspect("equal")
 
     def __plotReference(self, alignment: AlignmentResultRow, reference: OpticalMap):
@@ -91,24 +102,45 @@ class AlignmentPlot:
         colors = self.__getContrastingColors(len(alignment.segments))
 
         for (peakNumber, (peak, segments)), color in zip(enumerate(groupedSegments), colors):
-            self.__drawPeak(alignment, color, peak)
+            self.__drawPeak(color, peak)
             for segmentNumber, segment in enumerate(segments):
                 x = list(map(lambda p: p.reference.position, segment.alignedPositions))
                 y = list(map(lambda p: p.query.position, segment.alignedPositions))
-                self.__plotSegment(color, peakNumber, segmentNumber, x, y)
+                self.__plotSegment(color, peak, peakNumber, segment, segmentNumber, x, y)
                 self.__drawGrid(x, y)
 
-    def __drawPeak(self, alignment: AlignmentResultRow, color, peak: Peak):
-        drawPeakPosition = self.__getDrawPeakPosition(peak, alignment)
-        peakRectangle = Rectangle((drawPeakPosition, self.yMin), peak.width, self.yMax - self.yMin,
+    def __drawPeak(self, color, peak: Peak):
+        peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinWithOffset - 9999999999.),
+                                  peak.width,
+                                  self.yMaxWithOffset + 99999999999999.,
                                   color=color,
-                                  alpha=0.2)
+                                  alpha=0.2,
+                                  angle=-45.,
+                                  rotation_point=(peak.position, 0))  # type:ignore
         self.axes.add_patch(peakRectangle)
-        self.axes.annotate(f"Peak height: {peak.height}", (drawPeakPosition, self.yMax), rotation=90, va="top")
+        peakRectangle.set_clip_path(self.plotAreaMask)
 
-    def __plotSegment(self, color, peakNumber: int, segmentNumber: int, x, y):
+    def __drawPrimaryPeak(self, correlation: InitialAlignment):
+        peak = correlation.maxPeak
+        self.axes.plot([peak.position, self.xMax], [0, self.xMax - peak.position],
+                       linestyle="dashdot",
+                       marker=None,
+                       color="black",
+                       label="primary correlation")
+        peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinWithOffset - 9999999999.),
+                                  peak.width,
+                                  self.yMaxWithOffset + 99999999999999.,
+                                  color="wheat",
+                                  alpha=0.5,
+                                  angle=-45.,
+                                  rotation_point=(peak.position, 0))  # type:ignore
+        self.axes.add_patch(peakRectangle)
+        peakRectangle.set_clip_path(self.plotAreaMask)
+
+    def __plotSegment(self, color, peak: Peak, peakNumber: int, segment: AlignmentSegment, segmentNumber: int, x, y):
         self.axes.plot(x, y,
-                       label=f" peak {peakNumber + 1} segment {segmentNumber + 1}",
+                       label=f" peak {peakNumber + 1} (height: {peak.height:.0f}), segment {segmentNumber + 1} "
+                             f"(score: {segment.segmentScore:.1f})",
                        marker="+",
                        markersize=8,
                        markeredgecolor=color,
@@ -129,9 +161,6 @@ class AlignmentPlot:
                 yield currentPosition
                 previousPosition = currentPosition
             currentPosition = next(iterator, None)
-
-    def __getDrawPeakPosition(self, peak: Peak, alignment: AlignmentResultRow):
-        return peak.leftProminenceBasePosition + (alignment.queryLength / 2 if self.options.centerPeaks else 0)
 
     @staticmethod
     def __getContrastingColors(count: int):

@@ -21,7 +21,9 @@ class CorrelationResultMessage(Message):
 
 
 class AlignmentResultRowMessage(Message):
-    def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow):
+    def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
+                 correlation: InitialAlignment):
         self.reference = reference
         self.query = query
         self.alignment = alignment
+        self.correlation = correlation

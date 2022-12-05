@@ -79,7 +79,8 @@ class Program:
 
         alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peaks,
                                                 secondaryCorrelation.reverseStrand)
-        self.dispatcher.dispatch(AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow))
+        self.dispatcher.dispatch(
+            AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow, bestPrimaryCorrelation))
         return alignmentResultRow
 
 

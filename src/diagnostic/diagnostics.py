@@ -46,6 +46,6 @@ class AlignmentPlotter(MessageHandler):
         self.writer = writer
 
     def handle(self, message: AlignmentResultRowMessage):
-        plot = AlignmentPlot(message.reference, message.query, message.alignment)
+        plot = AlignmentPlot(message.reference, message.query, message.alignment, message.correlation)
         self.writer.savePlot(plot.figure,
                              f"Alignment_ref_{message.reference.moleculeId}_query_{message.query.moleculeId}.svg")
