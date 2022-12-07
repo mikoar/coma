@@ -1,10 +1,13 @@
 import os.path
 from typing import TextIO
 
+from matplotlib import pyplot as plt
+
 from src.diagnostic.alignment_plot import AlignmentPlot
 from src.diagnostic.plot import plotCorrelation, plotRefinedCorrelation
 from src.messaging.message_handler import MessageHandler
 from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage
+from src.parsers.xmap_reader import XmapReader
 
 
 class DiagnosticsWriter:
@@ -15,6 +18,7 @@ class DiagnosticsWriter:
     def savePlot(self, fig, fileName: str):
         fig.savefig(os.path.join(self.outputDir, fileName), bbox_inches='tight',
                     pad_inches=0)
+        plt.close(fig)
 
 
 class PrimaryCorrelationDiagnosticsHandler(MessageHandler):
@@ -42,10 +46,16 @@ class SecondaryCorrelationDiagnosticsHandler(MessageHandler):
 class AlignmentPlotter(MessageHandler):
     messageType = AlignmentResultRowMessage
 
-    def __init__(self, writer: DiagnosticsWriter):
+    def __init__(self, writer: DiagnosticsWriter, xmapReader: XmapReader, benchmarkAlignmentFile: TextIO):
         self.writer = writer
+        self.xmapReader = xmapReader
+        self.benchmarkAlignmentFile = benchmarkAlignmentFile
 
     def handle(self, message: AlignmentResultRowMessage):
-        plot = AlignmentPlot(message.reference, message.query, message.alignment, message.correlation)
+        benchmarkAlignment = next(iter(
+            self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))
+        plot = AlignmentPlot(message.reference, message.query, message.alignment, message.correlation,
+                             benchmarkAlignment)
+
         self.writer.savePlot(plot.figure,
                              f"Alignment_ref_{message.reference.moleculeId}_query_{message.query.moleculeId}.svg")

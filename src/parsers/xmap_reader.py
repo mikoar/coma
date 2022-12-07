@@ -1,5 +1,5 @@
 import os.path
-from typing import List, TextIO
+from typing import List, TextIO, Iterable
 
 import pandas as pd
 from pandas import DataFrame, Series
@@ -15,7 +15,8 @@ class XmapReader:
         self.reader = BionanoFileReader()
         self.pairParser = pairParser or XmapAlignmentPairParser()
 
-    def readAlignments(self, file: TextIO, alignmentIds=None, queryIds=None) -> List[BionanoAlignment]:
+    def readAlignments(self, file: TextIO, alignmentIds: Iterable[int] = None, queryIds: Iterable[int] = None) -> \
+            List[BionanoAlignment]:
         alignments = self.reader.readFile(file,
                                           ["XmapEntryID", "QryContigID", "RefContigID", "QryStartPos",
                                            "QryEndPos", "RefStartPos", "RefEndPos", "Orientation",

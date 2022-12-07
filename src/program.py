@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from typing import List
 
 from p_tqdm import p_imap
 
@@ -19,6 +18,7 @@ from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiag
 from src.messaging.dispatcher import Dispatcher
 from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage
 from src.parsers.cmap_reader import CmapReader
+from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
 
 
@@ -30,8 +30,8 @@ def main():
 class Program:
     def __init__(self, args: Args):
         self.args = args
-        self.cmapReader = CmapReader()
-        self.xmapReader = XmapReader()
+        self.__readMaps()
+        self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
         self.primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
         self.secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
         scorer = AlignmentPositionScorer(args.perfectMatchScore, args.scoreMultiplier, args.unmatchedPenalty)
@@ -44,21 +44,14 @@ class Program:
             writer = DiagnosticsWriter(args.outputFile)
             self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
-            self.dispatcher.addHandler(AlignmentPlotter(writer))
+            self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
 
     def run(self):
-        referenceMaps: List[OpticalMap]
-        queryMaps: List[OpticalMap]
-        with self.args.referenceFile:
-            referenceMaps = self.cmapReader.readReferences(self.args.referenceFile, self.args.referenceIds)
-        with self.args.queryFile:
-            queryMaps = self.cmapReader.readQueries(self.args.queryFile, self.args.queryIds)
-
         alignmentResultRows = [r for r in p_imap(lambda x: self.__align(*x),
-                                                 list((r, q) for r in referenceMaps for q in queryMaps),
+                                                 list((r, q) for r in self.referenceMaps for q in self.queryMaps),
                                                  num_cpus=self.args.numberOfCpus) if r is not None and r.alignedPairs]
-        alignmentResult = AlignmentResults(self.args.referenceFile.name, self.args.queryFile.name, alignmentResultRows)
 
+        alignmentResult = AlignmentResults(self.args.referenceFile.name, self.args.queryFile.name, alignmentResultRows)
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()
@@ -82,6 +75,13 @@ class Program:
         self.dispatcher.dispatch(
             AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow, bestPrimaryCorrelation))
         return alignmentResultRow
+
+    def __readMaps(self):
+        cmapReader = CmapReader()
+        with self.args.referenceFile:
+            self.referenceMaps = cmapReader.readReferences(self.args.referenceFile, self.args.referenceIds)
+        with self.args.queryFile:
+            self.queryMaps = cmapReader.readQueries(self.args.queryFile, self.args.queryIds)
 
 
 if __name__ == '__main__':
