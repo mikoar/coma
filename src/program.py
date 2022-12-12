@@ -47,11 +47,12 @@ class Program:
             self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
 
     def run(self):
-        alignmentResultRows = [r for r in p_imap(lambda x: self.__align(*x),
+        alignmentResultRows = [a for a in p_imap(lambda x: self.__align(*x),
                                                  list((r, q) for r in self.referenceMaps for q in self.queryMaps),
-                                                 num_cpus=self.args.numberOfCpus) if r is not None and r.alignedPairs]
+                                                 num_cpus=self.args.numberOfCpus) if a is not None and a.alignedPairs]
 
-        alignmentResult = AlignmentResults(self.args.referenceFile.name, self.args.queryFile.name, alignmentResultRows)
+        alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
+                                                  alignmentResultRows)
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()

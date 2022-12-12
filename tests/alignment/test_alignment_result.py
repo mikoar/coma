@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 import pytest
 
-from src.alignment.alignment_results import AlignmentResultRow
+from src.alignment.alignment_results import AlignmentResultRow, AlignmentResults
 from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
 
 
@@ -57,6 +57,19 @@ def test_cigarString(pairs: List[Tuple[int, int]], expected: str):
     row = AlignmentResultRow([AlignmentSegmentStub.createFromPairs(pairs)])
 
     assert row.cigarString == expected
+
+
+def test_filtersOutSubsequentAlignmentsOfOneQuery():
+    alignmentResults = AlignmentResults.create('', '', [
+        AlignmentResultRow([], queryId=20, referenceId=10, confidence=200),
+        AlignmentResultRow([], queryId=10, referenceId=10, confidence=100),
+        AlignmentResultRow([], queryId=10, referenceId=11, confidence=110),
+        AlignmentResultRow([], queryId=20, referenceId=12, confidence=210)])
+    assert len(alignmentResults.rows) == 2
+    assert alignmentResults.rows[0].queryId == 10
+    assert alignmentResults.rows[0].referenceId == 11
+    assert alignmentResults.rows[1].queryId == 20
+    assert alignmentResults.rows[1].referenceId == 12
 
 
 if __name__ == '__main__':

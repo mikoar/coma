@@ -23,6 +23,16 @@ class AlignmentResults:
     queryFilePath: str
     rows: List[AlignmentResultRow]
 
+    @staticmethod
+    def create(referenceFilePath: str,
+               queryFilePath: str,
+               rows: List[AlignmentResultRow]):
+        rowsSortedByQueryIdThenByConfidence = \
+            sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
+        rowsWithoutSubsequentAlignmentsForSingleQuery = \
+            [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
+        return AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)
+
 
 class AlignmentResultRow(XmapAlignment):
     @staticmethod

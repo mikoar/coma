@@ -52,6 +52,9 @@ class AlignmentPlotter(MessageHandler):
         self.benchmarkAlignmentFile = benchmarkAlignmentFile
 
     def handle(self, message: AlignmentResultRowMessage):
+        if not message.alignment.alignedPairs:
+            return
+
         benchmarkAlignment = next(iter(
             self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))
         plot = AlignmentPlot(message.reference, message.query, message.alignment, message.correlation,
