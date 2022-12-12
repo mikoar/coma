@@ -19,8 +19,6 @@ def test_refineAlignment_correctPeakPosition():
 
     assert initialAlignment.maxPeak.position == 300
     assert refinedAlignment.maxPeak.position == 300
-    # assert refinedAlignment.correlationStart == 290 #TODO: no longer valid when it's based on peak width
-    # assert refinedAlignment.correlationEnd == 311
 
 
 @pytest.mark.parametrize("positions,resolution,adjustedPositions,start", [
@@ -33,6 +31,16 @@ def test_refineAlignment_correctPeakPosition():
 ])
 def test_adjustPeakPositions(positions: List[int], resolution: int, adjustedPositions: List[int], start: int):
     assert adjustPeakPositions(np.array(positions), resolution, start).tolist() == adjustedPositions
+
+
+def test_getInitialAlignment_whenQueryIsShorterThanReference_returnsEmptyResult():
+    query = OpticalMap(1, 1000, [20, 100, 110, 300, 310, 330, 400, 1000])
+    reference = OpticalMap(2, 100, [0, 10, 30, 100])
+
+    initialAlignment = query.getInitialAlignment(reference, SequenceGenerator(2, 2))
+
+    assert len(list(initialAlignment.peaks)) == 0
+    assert initialAlignment.getScore() == 0
 
 
 if __name__ == '__main__':

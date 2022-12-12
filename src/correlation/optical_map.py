@@ -48,6 +48,9 @@ class OpticalMap:
 
     def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False,
                             flatten=True):
+        if self.length > reference.length:
+            return EmptyInitialAlignment(self, reference, sequenceGenerator.resolution, sequenceGenerator.blurRadius)
+
         sequence = self.getSequence(sequenceGenerator, reverseStrand)
         referenceSequence = reference.getSequence(sequenceGenerator)
         correlation = self.__getCorrelation(referenceSequence, sequence)
@@ -193,3 +196,22 @@ class InitialAlignment(CorrelationResult):
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
         return correlate(reference, query, mode='valid', method='fft')
+
+
+class EmptyInitialAlignment(InitialAlignment):
+    def __init__(self,
+                 query: OpticalMap,
+                 reference: OpticalMap,
+                 resolution: int,
+                 blur: int):
+        self.query = query
+        self.reference = reference
+        self.resolution = resolution
+        self.blur = blur
+
+    def getScore(self):
+        return 0.
+
+    @property
+    def peaks(self):
+        return []
