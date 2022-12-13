@@ -15,12 +15,13 @@ from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segments import AlignmentSegment
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId, InitialAlignment
 from src.correlation.peak import Peak
-from src.diagnostic.xmap_alignment import XmapAlignment
+from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
 
 
 @dataclass
 class Options:
     limitQueryToAlignedArea = False
+    drawGridForNotAlignedPositions = True
 
 
 class AlignmentPlot:
@@ -35,6 +36,7 @@ class AlignmentPlot:
         self.__drawPrimaryPeak(correlation)
         self.__plotBenchmarkAlignment(benchmarkAlignment)
         self.__plotSegments(alignment)
+        self.__drawGridForNotAlignedPositions(reference, query, alignment, benchmarkAlignment)
         self.axes.legend()
 
     def __setDimensions(self, alignment: AlignmentResultRow, query: OpticalMap, correlation: InitialAlignment):
@@ -160,7 +162,7 @@ class AlignmentPlot:
                        marker="o",
                        markersize=8,
                        linewidth=2)
-        self.__drawGrid(x, y, (0, (1, 5)))
+        self.__drawGrid(x, y, lineStyle=(0, (1, 5)))
 
     def __plotSegment(self, color, peak: Peak, peakNumber: int, segment: AlignmentSegment, segmentNumber: int, x, y):
         self.axes.plot(x, y,
@@ -172,9 +174,9 @@ class AlignmentPlot:
                        linewidth=2,
                        color=color)
 
-    def __drawGrid(self, x, y, lineStyle: str | Tuple = "--"):
-        self.axes.vlines(x, self.yMin, y, linestyles=lineStyle, colors="gray", linewidth=0.5)
-        self.axes.hlines(y, self.xMin, x, linestyles=lineStyle, colors="gray", linewidth=0.5)
+    def __drawGrid(self, x, y, xHeights=None, yHeights=None, lineStyle: str | Tuple = "--"):
+        self.axes.vlines(x, self.yMin, xHeights or y, linestyles=lineStyle, colors="gray", linewidth=0.5)
+        self.axes.hlines(y, self.xMin, yHeights or x, linestyles=lineStyle, colors="gray", linewidth=0.5)
 
     def __skipDensePositions(self, positions: List[PositionWithSiteId]):
         minDistance = (self.xMax - self.xMin) / 150
@@ -193,3 +195,16 @@ class AlignmentPlot:
         contrasting = np.column_stack((np.linspace(0, .5, ceil(count / 2)),
                                        np.linspace(.5, 1, ceil(count / 2)))).flatten()
         return colorMap(contrasting)
+
+    def __drawGridForNotAlignedPositions(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
+                                         benchmarkAlignment: XmapAlignment):
+        if not self.options.drawGridForNotAlignedPositions:
+            return
+
+        alignedPositions: List[XmapAlignedPair] = \
+            [position for segment in alignment.segments for position in segment.alignedPositions] \
+            + [pair for pair in benchmarkAlignment.alignedPairs]
+
+        x = [p for p in reference.positions if p not in [ap.reference.position for ap in alignedPositions]]
+        y = [p for p in query.positions if p not in [ap.query.position for ap in alignedPositions]]
+        self.__drawGrid(x, y, self.yMax, self.xMax, lineStyle=(0, (5, 15)))
