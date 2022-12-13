@@ -10,6 +10,7 @@ from matplotlib import pyplot
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
+from matplotlib.ticker import EngFormatter
 
 from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segments import AlignmentSegment
@@ -28,10 +29,9 @@ class AlignmentPlot:
     def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
                  correlation: InitialAlignment, benchmarkAlignment: XmapAlignment, options: Options = None):
         self.options = options or Options()
-        self.figure: Figure = pyplot.figure(figsize=(24, 16))
-        self.axes: Axes = self.figure.add_axes([0, 0, 1, 1])
-        self.__setDimensions(alignment, query, correlation)
-        self.__plotReference(alignment, reference)
+        self.__createFigure()
+        self.__setDimensions(alignment, benchmarkAlignment, query, correlation)
+        self.__plotReference(reference)
         self.__plotQuery(alignment, query)
         self.__drawPrimaryPeak(correlation)
         self.__plotBenchmarkAlignment(benchmarkAlignment)
@@ -39,36 +39,68 @@ class AlignmentPlot:
         self.__drawGridForNotAlignedPositions(reference, query, alignment, benchmarkAlignment)
         self.axes.legend()
 
-    def __setDimensions(self, alignment: AlignmentResultRow, query: OpticalMap, correlation: InitialAlignment):
+    def __createFigure(self):
+        self.figure: Figure = pyplot.figure()
+        self.axes: Axes = self.figure.add_axes([0, 0, 1, 1])
+        self.axes.set_aspect("equal")
+        self.axes.ticklabel_format(style='plain')
+        formatter = EngFormatter(unit="bp")
+        self.axes.xaxis.set_major_formatter(formatter)
+        self.axes.yaxis.set_major_formatter(formatter)
+
+    def __setDimensions(self, alignment: AlignmentResultRow, benchmarkAlignment: XmapAlignment, query: OpticalMap,
+                        correlation: InitialAlignment):
         offset = alignment.queryLength / 10
-        drawPeakPositionsWithOffset = list(
-            map(lambda s: s.peak.leftProminenceBasePosition - offset, alignment.segments)) + [
-                                          correlation.maxPeak.leftProminenceBasePosition - offset]
+        drawPeakPositionsWithOffset = \
+            list(map(lambda s: s.peak.leftProminenceBasePosition - offset, alignment.segments)) \
+            + [correlation.maxPeak.leftProminenceBasePosition - offset]
 
-        self.xMin = min([alignment.referenceStartPosition - offset] + drawPeakPositionsWithOffset)
-        self.xMax = alignment.referenceEndPosition
+        self.overlapsWithBenchmark = (alignment.referenceStartPosition <= benchmarkAlignment.referenceStartPosition
+                                      <= alignment.referenceEndPosition or alignment.referenceStartPosition
+                                      <= benchmarkAlignment.referenceEndPosition <= alignment.referenceEndPosition) \
+            if benchmarkAlignment else False
 
-        self.xMinWithOffset = self.xMin - offset
-        self.xMaxWithOffset = self.xMax + offset
-        self.axes.set_xlim(self.xMinWithOffset, self.xMaxWithOffset)
+        alignmentStartPositionsWithOffset = [alignment.referenceStartPosition - offset]
+        alignmentReferenceEndPositions = [alignment.referenceEndPosition]
 
         self.yMin = (alignment.queryStartPosition if self.options.limitQueryToAlignedArea else 0) - offset
         self.yMax = alignment.queryEndPosition if self.options.limitQueryToAlignedArea else query.length
 
         self.yMinWithOffset = self.yMin - offset
         self.yMaxWithOffset = self.yMax + offset
+
+        if self.overlapsWithBenchmark:
+            alignmentStartPositionsWithOffset.append(benchmarkAlignment.referenceStartPosition - offset)
+            alignmentReferenceEndPositions.append(benchmarkAlignment.referenceEndPosition)
+
+        self.xMin = min(alignmentStartPositionsWithOffset + drawPeakPositionsWithOffset)
+        self.xMax = max(alignmentReferenceEndPositions)
+
+        self.xMinWithOffset = self.xMin - offset
+        self.xMaxWithOffset = self.xMax + offset
+        self.axes.set_xlim(self.xMinWithOffset, self.xMaxWithOffset)
         self.axes.set_ylim(self.yMinWithOffset, self.yMaxWithOffset)
         self.plotAreaMask = Rectangle((self.xMin + offset, self.yMin + offset),
                                       self.xMax - self.xMin - offset,
                                       self.yMax - self.yMin - offset,
                                       facecolor='none', edgecolor='none')
         self.axes.add_patch(self.plotAreaMask)
-        self.axes.set_aspect("equal")
+        self.__setFigureSize()
 
-    def __plotReference(self, alignment: AlignmentResultRow, reference: OpticalMap):
+    def __setFigureSize(self):
+        scale = 45_000
+        minSize = 10.
+        maxSize = 60.
+        xSize = (self.xMaxWithOffset - self.xMinWithOffset) / scale
+        ySize = (self.yMaxWithOffset - self.yMinWithOffset) / scale
+        xSizeClamped = min(max([xSize, minSize]), maxSize)
+        ySizeClamped = min(max([ySize, minSize]), maxSize)
+        self.figure.set_size_inches((xSizeClamped, ySizeClamped))
+
+    def __plotReference(self, reference: OpticalMap):
         self.axes.set_xlabel(f"Reference {reference.moleculeId}")
         referenceLabelsInScope = [p for p in reference.getPositionsWithSiteIds() if
-                                  self.xMin <= p.position <= alignment.referenceEndPosition]
+                                  self.xMin <= p.position <= self.xMaxWithOffset]
         self.axes.plot([r.position for r in referenceLabelsInScope],
                        np.repeat(self.yMin, len(referenceLabelsInScope)),
                        marker="|",
@@ -86,9 +118,9 @@ class AlignmentPlot:
 
     def __plotQuery(self, alignment: AlignmentResultRow, query: OpticalMap):
         self.axes.set_ylabel(f"Query {query.moleculeId}")
-        queryLabelsInScope = [p for p in query.getPositionsWithSiteIds() if
-                              not self.options.limitQueryToAlignedArea
-                              or self.yMin <= p.position <= alignment.queryEndPosition]
+        queryLabelsInScope = \
+            [p for p in query.getPositionsWithSiteIds() if not self.options.limitQueryToAlignedArea
+             or self.yMin <= p.position <= alignment.queryEndPosition]
 
         self.axes.plot(np.repeat(self.xMin, len(queryLabelsInScope)), [q.position for q in queryLabelsInScope],
                        marker="_",
@@ -152,6 +184,7 @@ class AlignmentPlot:
     def __plotBenchmarkAlignment(self, benchmarkAlignment: XmapAlignment):
         if not benchmarkAlignment:
             return
+
         x, y = list(zip(*map(lambda p: (p.reference.position, p.query.position), benchmarkAlignment.alignedPairs)))
         self.axes.plot(x, y,
                        label=f"benchmark ({len(benchmarkAlignment.alignedPairs)} pairs, "
@@ -162,7 +195,9 @@ class AlignmentPlot:
                        marker="o",
                        markersize=8,
                        linewidth=2)
-        self.__drawGrid(x, y, lineStyle=(0, (1, 5)))
+
+        if self.overlapsWithBenchmark:
+            self.__drawGrid(x, y, lineStyle=(0, (1, 5)))
 
     def __plotSegment(self, color, peak: Peak, peakNumber: int, segment: AlignmentSegment, segmentNumber: int, x, y):
         self.axes.plot(x, y,
