@@ -32,7 +32,7 @@ class AlignmentPlot:
         self.__createFigure()
         self.__setDimensions(alignment, benchmarkAlignment, query, correlation)
         self.__plotReference(reference)
-        self.__plotQuery(alignment, query)
+        self.__plotQuery(query)
         self.__drawPrimaryPeak(correlation)
         self.__plotBenchmarkAlignment(benchmarkAlignment)
         self.__plotSegments(alignment)
@@ -99,16 +99,16 @@ class AlignmentPlot:
 
     def __plotReference(self, reference: OpticalMap):
         self.axes.set_xlabel(f"Reference {reference.moleculeId}")
-        referenceLabelsInScope = [p for p in reference.getPositionsWithSiteIds() if
-                                  self.xMin <= p.position <= self.xMaxWithOffset]
-        self.axes.plot([r.position for r in referenceLabelsInScope],
-                       np.repeat(self.yMin, len(referenceLabelsInScope)),
+        refLabelsInScope = [p for p in reference.getPositionsWithSiteIds()
+                            if self.__isReferencePositionInScope(p.position)]
+        self.axes.plot([r.position for r in refLabelsInScope],
+                       np.repeat(self.yMin, len(refLabelsInScope)),
                        marker="|",
                        markersize=16,
                        markeredgewidth="2", linewidth=16, markeredgecolor="black",
                        color="yellow")
 
-        for r in self.__skipDensePositions(referenceLabelsInScope):
+        for r in self.__skipDensePositions(refLabelsInScope):
             self.axes.annotate(r.siteId, (r.position, self.yMin),
                                textcoords="offset points",
                                xytext=(0, -10),
@@ -116,11 +116,10 @@ class AlignmentPlot:
                                va="top",
                                rotation=90)
 
-    def __plotQuery(self, alignment: AlignmentResultRow, query: OpticalMap):
+    def __plotQuery(self, query: OpticalMap):
         self.axes.set_ylabel(f"Query {query.moleculeId}")
-        queryLabelsInScope = \
-            [p for p in query.getPositionsWithSiteIds() if not self.options.limitQueryToAlignedArea
-             or self.yMin <= p.position <= alignment.queryEndPosition]
+        queryLabelsInScope = [p for p in query.getPositionsWithSiteIds()
+                              if not self.options.limitQueryToAlignedArea or self.__isQueryPositionInScope(p.position)]
 
         self.axes.plot(np.repeat(self.xMin, len(queryLabelsInScope)), [q.position for q in queryLabelsInScope],
                        marker="_",
@@ -240,6 +239,22 @@ class AlignmentPlot:
             [position for segment in alignment.segments for position in segment.alignedPositions] \
             + [pair for pair in benchmarkAlignment.alignedPairs]
 
-        x = [p for p in reference.positions if p not in [ap.reference.position for ap in alignedPositions]]
-        y = [p for p in query.positions if p not in [ap.query.position for ap in alignedPositions]]
+        x = [p for p in reference.positions
+             if self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
+        y = [p for p in query.positions
+             if self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
         self.__drawGrid(x, y, self.yMax, self.xMax, lineStyle=(0, (5, 15)))
+
+    @staticmethod
+    def __isNotAlignedReference(position: int, alignedPositions: List[XmapAlignedPair]):
+        return position not in [ap.reference.position for ap in alignedPositions]
+
+    @staticmethod
+    def __isNotAlignedQuery(position: int, alignedPositions: List[XmapAlignedPair]):
+        return position not in [ap.query.position for ap in alignedPositions]
+
+    def __isReferencePositionInScope(self, position: int):
+        return self.xMin <= position <= self.xMaxWithOffset
+
+    def __isQueryPositionInScope(self, position: int):
+        return self.yMin <= position <= self.yMax
