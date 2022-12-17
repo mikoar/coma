@@ -55,10 +55,10 @@ class AlignmentPlot:
             list(map(lambda s: s.peak.leftProminenceBasePosition - offset, alignment.segments)) \
             + [correlation.maxPeak.leftProminenceBasePosition - offset]
 
-        self.overlapsWithBenchmark = (alignment.referenceStartPosition <= benchmarkAlignment.referenceStartPosition
-                                      <= alignment.referenceEndPosition or alignment.referenceStartPosition
-                                      <= benchmarkAlignment.referenceEndPosition <= alignment.referenceEndPosition) \
-            if benchmarkAlignment else False
+        self.overlapsWithBenchmark = \
+            (not (benchmarkAlignment.referenceEndPosition < alignment.referenceStartPosition
+                  or alignment.referenceEndPosition <= benchmarkAlignment.referenceStartPosition)) \
+                if benchmarkAlignment else False
 
         alignmentStartPositionsWithOffset = [alignment.referenceStartPosition - offset]
         alignmentReferenceEndPositions = [alignment.referenceEndPosition]
@@ -208,9 +208,9 @@ class AlignmentPlot:
                        linewidth=2,
                        color=color)
 
-    def __drawGrid(self, x, y, xHeights=None, yHeights=None, lineStyle: str | Tuple = "--"):
+    def __drawGrid(self, x, y, xHeights=None, yHeights=None, lineStyle: str | Tuple = "--", label: str = None):
         self.axes.vlines(x, self.yMin, xHeights or y, linestyles=lineStyle, colors="gray", linewidth=0.5)
-        self.axes.hlines(y, self.xMin, yHeights or x, linestyles=lineStyle, colors="gray", linewidth=0.5)
+        self.axes.hlines(y, self.xMin, yHeights or x, linestyles=lineStyle, colors="gray", linewidth=0.5, label=label)
 
     def __skipDensePositions(self, positions: List[PositionWithSiteId]):
         minDistance = (self.xMax - self.xMin) / 150
@@ -243,7 +243,7 @@ class AlignmentPlot:
              if self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
         y = [p for p in query.positions
              if self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
-        self.__drawGrid(x, y, self.yMax, self.xMax, lineStyle=(0, (5, 15)))
+        self.__drawGrid(x, y, self.yMax, self.xMax, lineStyle=(0, (5, 15)), label="not aligned positions")
 
     @staticmethod
     def __isNotAlignedReference(position: int, alignedPositions: List[XmapAlignedPair]):
