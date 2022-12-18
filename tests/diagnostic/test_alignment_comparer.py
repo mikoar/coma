@@ -17,8 +17,8 @@ class __XmapAlignmentStub(XmapAlignment):
 
 def __getSut() -> Tuple[AlignmentComparer, Mock]:
     rowComparer: AlignmentRowComparer = Mock(spec=AlignmentRowComparer)
-    rowCompareMock = Mock(
-        return_value=AlignmentRowComparison(0, 0, AlignmentRowComparisonResultType.BOTH, [], 0., [], 0., 0.))
+    rowCompareMock = Mock(return_value=AlignmentRowComparison(
+        AlignmentRowComparisonResultType.BOTH, XmapAlignment.null, XmapAlignment.null, 0., 0., 0.))
     rowComparer.compare = rowCompareMock
     return AlignmentComparer(rowComparer), rowCompareMock
 
@@ -35,8 +35,8 @@ def test_matchesAlignmentsByQueryAndReferenceIds():
         call(alignments1[2], alignments2[1])
     ])
 
-    assert AlignmentRowComparison.alignment1Only(1, 1, []) in result.rows
-    assert AlignmentRowComparison.alignment2Only(4, 1, []) in result.rows
+    assert AlignmentRowComparison.alignment1Only(alignments1[0]) in result.rows
+    assert AlignmentRowComparison.alignment2Only(alignments2[2]) in result.rows
 
 
 if __name__ == '__main__':

@@ -74,6 +74,7 @@ class AlignmentComparison:
             "Identity",
             "Alignment1Coverage",
             "Alignment2Coverage",
+            "Orientation",
             "Alignment1 (referenceID, referencePosition, queryID, queryPosition, distance)",
             "Alignment2 (referenceID, referencePosition, queryID, queryPosition, distance)"
         ]
@@ -86,8 +87,9 @@ class AlignmentComparison:
             "{:.3f}".format(row.identity),
             "{:.3f}".format(row.alignment1Coverage),
             "{:.3f}".format(row.alignment2Coverage),
-            "".join(str(row.pairs1)),
-            "".join(str(row.pairs2))
+            row.orientation,
+            "".join(str(row.alignment1.alignedPairs)),
+            "".join(str(row.alignment2.alignedPairs))
         ] for row in self.rows]
 
         dataFrame = DataFrame(data, columns=headers, index=pd.RangeIndex(start=1, stop=len(self.rows) + 1))
@@ -113,28 +115,40 @@ class AlignmentRowComparisonResultType(Enum):
 
 @dataclass
 class AlignmentRowComparison:
-    queryId: int
-    referenceId: int
     type: AlignmentRowComparisonResultType
-    pairs1: List[XmapAlignedPair]
+    alignment1: XmapAlignment
+    alignment2: XmapAlignment
     alignment1Coverage: float
-    pairs2: List[XmapAlignedPair]
     alignment2Coverage: float
     identity: float
+
+    @property
+    def queryId(self):
+        return self.alignment1.queryId or self.alignment2.queryId
+
+    @property
+    def referenceId(self):
+        return self.alignment1.referenceId or self.alignment2.referenceId
+
+    @property
+    def orientation(self):
+        return self.alignment1.orientation \
+            if self.alignment1.orientation == self.alignment2.orientation \
+            else f"{self.alignment1.orientation}/{self.alignment2.orientation}"
 
     @property
     def overlapping(self):
         return self.identity > 0.
 
     @staticmethod
-    def alignment1Only(queryId: int, referenceId: int, pairs1: List[XmapAlignedPair]):
-        return AlignmentRowComparison(queryId, referenceId, AlignmentRowComparisonResultType.FIRST_ONLY, pairs1, 0., [],
-                                      0., 0.)
+    def alignment1Only(alignment1: XmapAlignment):
+        return AlignmentRowComparison(
+            AlignmentRowComparisonResultType.FIRST_ONLY, alignment1, XmapAlignment.null, 0., 0., 0.)
 
     @staticmethod
-    def alignment2Only(queryId: int, referenceId: int, pairs2: List[XmapAlignedPair]):
-        return AlignmentRowComparison(queryId, referenceId, AlignmentRowComparisonResultType.SECOND_ONLY, [], 0.,
-                                      pairs2, 0., 0.)
+    def alignment2Only(alignment2: XmapAlignment):
+        return AlignmentRowComparison(
+            AlignmentRowComparisonResultType.SECOND_ONLY, XmapAlignment.null, alignment2, 0., 0., 0.)
 
 
 class AlignmentComparer:
@@ -146,9 +160,9 @@ class AlignmentComparer:
         alignments2Dict = self.__toDict(alignments2)
         comparedRows = [self.__rowComparer.compare(a1, alignments2Dict[key]) for key, a1 in alignments1Dict.items() if
                         key in alignments2Dict]
-        alignments1OnlyRows = [AlignmentRowComparison.alignment1Only(a1.queryId, a1.referenceId, a1.alignedPairs) for a1
+        alignments1OnlyRows = [AlignmentRowComparison.alignment1Only(a1) for a1
                                in self.__getNotMatchingAlignments(alignments1Dict, alignments2Dict)]
-        alignments2OnlyRows = [AlignmentRowComparison.alignment2Only(a2.queryId, a2.referenceId, a2.alignedPairs) for a2
+        alignments2OnlyRows = [AlignmentRowComparison.alignment2Only(a2) for a2
                                in self.__getNotMatchingAlignments(alignments2Dict, alignments1Dict)]
         return AlignmentComparison.create(comparedRows + alignments1OnlyRows + alignments2OnlyRows)
 
@@ -163,13 +177,12 @@ class AlignmentComparer:
 
 class AlignmentRowComparer:
     def compare(self, alignment1: XmapAlignment, alignment2: XmapAlignment):
-        alignment1Coverage = self.__getCoverage(alignment1.alignedPairs, alignment2.alignedPairs)
-        alignment2Coverage = self.__getCoverage(alignment2.alignedPairs, alignment1.alignedPairs)
+        coverage1 = self.__getCoverage(alignment1.alignedPairs, alignment2.alignedPairs)
+        coverage2 = self.__getCoverage(alignment2.alignedPairs, alignment1.alignedPairs)
 
         ratio = self.__getIdentityRatio(alignment1, alignment2)
-        return AlignmentRowComparison(alignment1.queryId, alignment1.referenceId, AlignmentRowComparisonResultType.BOTH,
-                                      alignment1.alignedPairs, alignment1Coverage, alignment2.alignedPairs,
-                                      alignment2Coverage, ratio)
+        return AlignmentRowComparison(
+            AlignmentRowComparisonResultType.BOTH, alignment1, alignment2, coverage1, coverage2, ratio)
 
     @staticmethod
     def __getIdentityRatio(referenceAlignmentRow: XmapAlignment, actualAlignmentRow: XmapAlignment):

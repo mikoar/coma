@@ -53,7 +53,30 @@ class XmapAlignment(ABC):
     queryLength: int
     referenceLength: int
     alignedPairs: List[XmapAlignedPair]
+    null: XmapAlignment
 
     @property
     def orientation(self):
         return "-" if self.reverseStrand else "+"
+
+
+class _NullXmapAlignment(XmapAlignment):
+    queryId: int = 0
+    referenceId: int = 0
+    queryStartPosition: int = 0
+    queryEndPosition: int = 0
+    referenceStartPosition: int = 0
+    referenceEndPosition: int = 0
+    reverseStrand: bool = False
+    confidence: float = 0.
+    cigarString: str = ""
+    queryLength: int = 0
+    referenceLength: int = 0
+    alignedPairs: List[XmapAlignedPair] = []
+
+    @property
+    def orientation(self):
+        return "None"
+
+
+XmapAlignment.null = _NullXmapAlignment()
