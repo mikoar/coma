@@ -28,15 +28,20 @@ class Options:
 class AlignmentPlot:
     def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
                  correlation: InitialAlignment, benchmarkAlignment: XmapAlignment, options: Options = None):
+        self.reference = reference
+        self.query = query
+        self.alignment = alignment
+        self.correlation = correlation
+        self.benchmarkAlignment = benchmarkAlignment
         self.options = options or Options()
         self.__createFigure()
-        self.__setDimensions(alignment, benchmarkAlignment, query, correlation)
-        self.__plotReference(reference)
-        self.__plotQuery(query)
-        self.__drawPrimaryPeak(correlation)
-        self.__plotBenchmarkAlignment(benchmarkAlignment)
-        self.__plotSegments(alignment)
-        self.__drawGridForNotAlignedPositions(reference, query, alignment, benchmarkAlignment)
+        self.__setDimensions()
+        self.__plotReference()
+        self.__plotQuery()
+        self.__drawPrimaryPeak()
+        self.__plotBenchmarkAlignment()
+        self.__plotSegments()
+        self.__drawGridForNotAlignedPositions()
         self.axes.legend()
 
     def __createFigure(self):
@@ -48,42 +53,45 @@ class AlignmentPlot:
         self.axes.xaxis.set_major_formatter(formatter)
         self.axes.yaxis.set_major_formatter(formatter)
 
-    def __setDimensions(self, alignment: AlignmentResultRow, benchmarkAlignment: XmapAlignment, query: OpticalMap,
-                        correlation: InitialAlignment):
-        offset = alignment.queryLength / 10
-        drawPeakPositionsWithOffset = \
-            list(map(lambda s: s.peak.leftProminenceBasePosition - offset, alignment.segments)) \
-            + [correlation.maxPeak.leftProminenceBasePosition - offset]
+    def __setDimensions(self):
+        margin = self.alignment.queryLength / 10
+        drawPeakPositions = \
+            list(map(lambda s: s.peak.leftProminenceBasePosition, self.alignment.segments)) \
+            + [self.correlation.maxPeak.leftProminenceBasePosition]
 
         self.overlapsWithBenchmark = \
-            (not (benchmarkAlignment.referenceEndPosition < alignment.referenceStartPosition
-                  or alignment.referenceEndPosition <= benchmarkAlignment.referenceStartPosition)) \
-                if benchmarkAlignment else False
+            (not (self.benchmarkAlignment.referenceEndPosition < self.alignment.referenceStartPosition
+                  or self.alignment.referenceEndPosition <= self.benchmarkAlignment.referenceStartPosition)) \
+                if self.benchmarkAlignment else False
 
-        alignmentStartPositionsWithOffset = [alignment.referenceStartPosition - offset]
-        alignmentReferenceEndPositions = [alignment.referenceEndPosition]
+        alignmentStartPositions = [self.alignment.referenceStartPosition]
+        alignmentReferenceEndPositions = [self.alignment.referenceEndPosition]
 
-        self.yMin = (alignment.queryStartPosition if self.options.limitQueryToAlignedArea else 0) - offset
-        self.yMax = alignment.queryEndPosition if self.options.limitQueryToAlignedArea else query.length
+        self.yMinPlot = self.alignment.queryStartPosition if self.options.limitQueryToAlignedArea else 0
+        self.yMaxPlot = self.alignment.queryEndPosition if self.options.limitQueryToAlignedArea else self.query.length
 
-        self.yMinWithOffset = self.yMin - offset
-        self.yMaxWithOffset = self.yMax + offset
+        self.yMinAxis = self.yMinPlot - margin
+        self.yMinBorder = self.yMinAxis - margin
+        self.yMaxAxis = self.yMaxPlot + margin
 
         if self.overlapsWithBenchmark:
-            alignmentStartPositionsWithOffset.append(benchmarkAlignment.referenceStartPosition - offset)
-            alignmentReferenceEndPositions.append(benchmarkAlignment.referenceEndPosition)
+            alignmentStartPositions.append(self.benchmarkAlignment.referenceStartPosition)
+            alignmentReferenceEndPositions.append(self.benchmarkAlignment.referenceEndPosition)
 
-        self.xMin = min(alignmentStartPositionsWithOffset + drawPeakPositionsWithOffset)
-        self.xMax = max(alignmentReferenceEndPositions)
+        self.xMinPlot = min(alignmentStartPositions + drawPeakPositions)
+        self.xMaxPlot = max(alignmentReferenceEndPositions)
 
-        self.xMinWithOffset = self.xMin - offset
-        self.xMaxWithOffset = self.xMax + offset
-        self.axes.set_xlim(self.xMinWithOffset, self.xMaxWithOffset)
-        self.axes.set_ylim(self.yMinWithOffset, self.yMaxWithOffset)
-        self.plotAreaMask = Rectangle((self.xMin + offset, self.yMin + offset),
-                                      self.xMax - self.xMin - offset,
-                                      self.yMax - self.yMin - offset,
+        self.xMinAxis = self.xMinPlot - margin
+        self.xMinBorder = self.xMinAxis - margin
+        self.xMaxAxis = self.xMaxPlot + margin
+        self.axes.set_xlim(self.xMinBorder, self.xMaxAxis)
+        self.axes.set_ylim(self.yMinBorder, self.yMaxAxis)
+        self.axes.set_yticks([y for y in self.axes.get_yticks() if y >= 0])
+        self.plotAreaMask = Rectangle((self.xMinAxis, self.yMinAxis),
+                                      self.xMaxPlot - self.xMinAxis,
+                                      self.yMaxPlot - self.yMinAxis,
                                       facecolor='none', edgecolor='none')
+
         self.axes.add_patch(self.plotAreaMask)
         self.__setFigureSize()
 
@@ -91,37 +99,37 @@ class AlignmentPlot:
         scale = 45_000
         minSize = 10.
         maxSize = 60.
-        xSize = (self.xMaxWithOffset - self.xMinWithOffset) / scale
-        ySize = (self.yMaxWithOffset - self.yMinWithOffset) / scale
+        xSize = (self.xMaxAxis - self.xMinBorder) / scale
+        ySize = (self.yMaxAxis - self.yMinBorder) / scale
         xSizeClamped = min(max([xSize, minSize]), maxSize)
         ySizeClamped = min(max([ySize, minSize]), maxSize)
         self.figure.set_size_inches((xSizeClamped, ySizeClamped))
 
-    def __plotReference(self, reference: OpticalMap):
-        self.axes.set_xlabel(f"Reference {reference.moleculeId}")
-        refLabelsInScope = [p for p in reference.getPositionsWithSiteIds()
+    def __plotReference(self):
+        self.axes.set_xlabel(f"Reference {self.reference.moleculeId}")
+        refLabelsInScope = [p for p in self.reference.getPositionsWithSiteIds()
                             if self.__isReferencePositionInScope(p.position)]
         self.axes.plot([r.position for r in refLabelsInScope],
-                       np.repeat(self.yMin, len(refLabelsInScope)),
+                       np.repeat(self.yMinAxis, len(refLabelsInScope)),
                        marker="|",
                        markersize=16,
                        markeredgewidth="2", linewidth=16, markeredgecolor="black",
                        color="yellow")
 
         for r in self.__skipDensePositions(refLabelsInScope):
-            self.axes.annotate(r.siteId, (r.position, self.yMin),
+            self.axes.annotate(r.siteId, (r.position, self.yMinAxis),
                                textcoords="offset points",
                                xytext=(0, -10),
                                ha="center",
                                va="top",
                                rotation=90)
 
-    def __plotQuery(self, query: OpticalMap):
-        self.axes.set_ylabel(f"Query {query.moleculeId}")
-        queryLabelsInScope = [p for p in query.getPositionsWithSiteIds()
+    def __plotQuery(self):
+        self.axes.set_ylabel(f"Query {self.query.moleculeId}")
+        queryLabelsInScope = [p for p in self.query.getPositionsWithSiteIds()
                               if not self.options.limitQueryToAlignedArea or self.__isQueryPositionInScope(p.position)]
 
-        self.axes.plot(np.repeat(self.xMin, len(queryLabelsInScope)), [q.position for q in queryLabelsInScope],
+        self.axes.plot(np.repeat(self.xMinAxis, len(queryLabelsInScope)), [q.position for q in queryLabelsInScope],
                        marker="_",
                        markersize=16,
                        markeredgewidth="2",
@@ -130,15 +138,15 @@ class AlignmentPlot:
                        color="lime")
 
         for q in self.__skipDensePositions(queryLabelsInScope):
-            self.axes.annotate(q.siteId, (self.xMin, q.position),
+            self.axes.annotate(q.siteId, (self.xMinAxis, q.position),
                                textcoords="offset points",
                                xytext=(-15, 0),
                                ha="right",
                                va="center")
 
-    def __plotSegments(self, alignment: AlignmentResultRow):
-        groupedSegments = groupby(alignment.segments, lambda s: s.peak)
-        colors = self.__getContrastingColors(len(alignment.segments))
+    def __plotSegments(self):
+        groupedSegments = groupby(self.alignment.segments, lambda s: s.peak)
+        colors = self.__getContrastingColors(len(self.alignment.segments))
 
         for (peakNumber, (peak, segments)), color in zip(enumerate(groupedSegments), colors):
             self.__drawPeak(color, peak)
@@ -149,9 +157,9 @@ class AlignmentPlot:
                 self.__drawGrid(x, y)
 
     def __drawPeak(self, color, peak: Peak):
-        peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinWithOffset - 9999999999.),
+        peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinBorder - 9999999999.),
                                   peak.width,
-                                  self.yMaxWithOffset + 99999999999999.,
+                                  self.yMaxAxis + 99999999999999.,
                                   color=color,
                                   alpha=0.2,
                                   angle=-45.,
@@ -159,16 +167,16 @@ class AlignmentPlot:
         self.axes.add_patch(peakRectangle)
         peakRectangle.set_clip_path(self.plotAreaMask)
 
-    def __drawPrimaryPeak(self, correlation: InitialAlignment):
-        peak = correlation.maxPeak
-        self.axes.plot([peak.position, self.xMax], [0, self.xMax - peak.position],
+    def __drawPrimaryPeak(self):
+        peak = self.correlation.maxPeak
+        self.axes.plot([peak.position, self.xMaxPlot], [0, self.xMaxPlot - peak.position],
                        linestyle="dashdot",
                        marker=None,
                        color="black")
 
-        peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinWithOffset - 9999999999.),
+        peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinBorder - 9999999999.),
                                   peak.width,
-                                  self.yMaxWithOffset + 99999999999999.,
+                                  self.yMaxAxis + 99999999999999.,
                                   label="primary correlation",
                                   facecolor="wheat",
                                   edgecolor="black",
@@ -180,14 +188,14 @@ class AlignmentPlot:
         self.axes.add_patch(peakRectangle)
         peakRectangle.set_clip_path(self.plotAreaMask)
 
-    def __plotBenchmarkAlignment(self, benchmarkAlignment: XmapAlignment):
-        if not benchmarkAlignment:
+    def __plotBenchmarkAlignment(self):
+        if not self.benchmarkAlignment:
             return
 
-        x, y = list(zip(*map(lambda p: (p.reference.position, p.query.position), benchmarkAlignment.alignedPairs)))
+        x, y = list(zip(*map(lambda p: (p.reference.position, p.query.position), self.benchmarkAlignment.alignedPairs)))
         self.axes.plot(x, y,
-                       label=f"benchmark ({len(benchmarkAlignment.alignedPairs)} pairs, "
-                             f"confidence: {benchmarkAlignment.confidence})",
+                       label=f"benchmark ({len(self.benchmarkAlignment.alignedPairs)} pairs, "
+                             f"confidence: {self.benchmarkAlignment.confidence})",
                        color="gray",
                        markeredgecolor="gray",
                        fillstyle="none",
@@ -208,12 +216,13 @@ class AlignmentPlot:
                        linewidth=2,
                        color=color)
 
-    def __drawGrid(self, x, y, xHeights=None, yHeights=None, lineStyle: str | Tuple = "--", label: str = None):
-        self.axes.vlines(x, self.yMin, xHeights or y, linestyles=lineStyle, colors="gray", linewidth=0.5)
-        self.axes.hlines(y, self.xMin, yHeights or x, linestyles=lineStyle, colors="gray", linewidth=0.5, label=label)
+    def __drawGrid(self, x, y, xMax=None, yMax=None, lineStyle: str | Tuple = "--", label: str = None):
+        self.axes.vlines(x, self.yMinAxis, xMax or y, linestyles=lineStyle, colors="gray", linewidth=0.5)
+        self.axes.hlines(y, self.xMinAxis, yMax or x, linestyles=lineStyle, colors="gray", linewidth=0.5,
+                         label=label)
 
     def __skipDensePositions(self, positions: List[PositionWithSiteId]):
-        minDistance = (self.xMax - self.xMin) / 150
+        minDistance = (self.xMaxPlot - self.xMinPlot) / 150
         iterator = iter(positions)
         currentPosition = next(iterator, None)
         previousPosition: PositionWithSiteId | None = None
@@ -230,20 +239,19 @@ class AlignmentPlot:
                                        np.linspace(.5, 1, ceil(count / 2)))).flatten()
         return colorMap(contrasting)
 
-    def __drawGridForNotAlignedPositions(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
-                                         benchmarkAlignment: XmapAlignment):
+    def __drawGridForNotAlignedPositions(self):
         if not self.options.drawGridForNotAlignedPositions:
             return
 
         alignedPositions: List[XmapAlignedPair] = \
-            [position for segment in alignment.segments for position in segment.alignedPositions] \
-            + [pair for pair in benchmarkAlignment.alignedPairs]
+            [position for segment in self.alignment.segments for position in segment.alignedPositions] \
+            + [pair for pair in self.benchmarkAlignment.alignedPairs]
 
-        x = [p for p in reference.positions
+        x = [p for p in self.reference.positions
              if self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
-        y = [p for p in query.positions
+        y = [p for p in self.query.positions
              if self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
-        self.__drawGrid(x, y, self.yMax, self.xMax, lineStyle=(0, (5, 15)), label="not aligned positions")
+        self.__drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (5, 15)), label="not aligned positions")
 
     @staticmethod
     def __isNotAlignedReference(position: int, alignedPositions: List[XmapAlignedPair]):
@@ -254,7 +262,7 @@ class AlignmentPlot:
         return position not in [ap.query.position for ap in alignedPositions]
 
     def __isReferencePositionInScope(self, position: int):
-        return self.xMin <= position <= self.xMaxWithOffset
+        return self.xMinPlot <= position <= self.xMaxAxis
 
     def __isQueryPositionInScope(self, position: int):
-        return self.yMin <= position <= self.yMax
+        return self.yMinAxis <= position <= self.yMaxPlot
