@@ -3,8 +3,20 @@ from typing import List
 import numpy as np
 import pytest
 
-from src.correlation.optical_map import OpticalMap, adjustPeakPositions
+from src.correlation.optical_map import OpticalMap, adjustPeakPositions, PositionWithSiteId
 from src.correlation.sequence_generator import SequenceGenerator
+
+
+def test_getPositionsWithSiteIds():
+    opticalMap = OpticalMap(2, 101, [0, 10, 30, 100])
+    assert list(opticalMap.getPositionsWithSiteIds()) \
+           == [PositionWithSiteId(i, p) for i, p in [(1, 0), (2, 10), (3, 30), (4, 100)]]
+
+
+def test_getPositionsWithSiteIds_reverse():
+    opticalMap = OpticalMap(2, 101, [0, 10, 30, 100])
+    assert list(opticalMap.getPositionsWithSiteIds(True)) \
+           == [PositionWithSiteId(i, p) for i, p in [(4, 0), (3, 70), (2, 90), (1, 100)]]
 
 
 def test_refineAlignment_correctPeakPosition():
