@@ -152,7 +152,7 @@ class AlignmentPlot:
             self.__drawPeak(color, peak)
             for segmentNumber, segment in enumerate(segments):
                 x = list(map(lambda p: p.reference.position, segment.alignedPositions))
-                y = list(map(lambda p: p.query.position, segment.alignedPositions))
+                y = list(map(lambda p: self.__absoluteQueryPosition(p), segment.alignedPositions))
                 self.__plotSegment(color, peak, peakNumber, segment, segmentNumber, x, y)
                 self.__drawGrid(x, y)
 
@@ -162,14 +162,17 @@ class AlignmentPlot:
                                   self.yMaxAxis + 99999999999999.,
                                   color=color,
                                   alpha=0.2,
-                                  angle=-45.,
-                                  rotation_point=(peak.position, 0))  # type:ignore
+                                  angle=self.__drawPeakAngle,
+                                  rotation_point=self.__drawPeakRotationPoint(peak))
         self.axes.add_patch(peakRectangle)
         peakRectangle.set_clip_path(self.plotAreaMask)
 
     def __drawPrimaryPeak(self):
         peak = self.correlation.maxPeak
-        self.axes.plot([peak.position, self.xMaxPlot], [0, self.xMaxPlot - peak.position],
+        x = [peak.position, self.xMaxPlot]
+        y = [0, self.xMaxPlot - peak.position]
+        reverseY = [self.query.length, self.query.length - (self.xMaxPlot - peak.position)]
+        self.axes.plot(x, reverseY if self.alignment.reverseStrand else y,
                        linestyle="dashdot",
                        marker=None,
                        color="black")
@@ -183,8 +186,8 @@ class AlignmentPlot:
                                   linestyle="dashdot",
                                   linewidth=0.5,
                                   alpha=0.5,
-                                  angle=-45.,
-                                  rotation_point=(peak.position, 0))  # type:ignore
+                                  angle=self.__drawPeakAngle,
+                                  rotation_point=self.__drawPeakRotationPoint(peak))
         self.axes.add_patch(peakRectangle)
         peakRectangle.set_clip_path(self.plotAreaMask)
 
@@ -251,7 +254,7 @@ class AlignmentPlot:
              if self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
         y = [p for p in self.query.positions
              if self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
-        self.__drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (5, 15)), label="not aligned positions")
+        self.__drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (15, 3)), label="not aligned positions")
 
     @staticmethod
     def __isNotAlignedReference(position: int, alignedPositions: List[XmapAlignedPair]):
@@ -266,3 +269,13 @@ class AlignmentPlot:
 
     def __isQueryPositionInScope(self, position: int):
         return self.yMinAxis <= position <= self.yMaxPlot
+
+    def __absoluteQueryPosition(self, p: XmapAlignedPair):
+        return self.alignment.queryLength - p.query.position if self.alignment.reverseStrand else p.query.position
+
+    @property
+    def __drawPeakAngle(self):
+        return 45 if self.alignment.reverseStrand else -45.
+
+    def __drawPeakRotationPoint(self, peak: Peak) -> str:
+        return peak.position, self.query.length if self.alignment.reverseStrand else 0  # type: ignore
