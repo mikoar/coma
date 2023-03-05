@@ -167,14 +167,12 @@ class CorrelationResult:
 
 
 class InitialAlignment(CorrelationResult):
-    def refine(self, sequenceGenerator: SequenceGenerator, minAdjustment: int = 1024, peakHeightThreshold: float = 15.):
-        leftAdjustment = self.__getAdjustment(minAdjustment, self.maxPeak.leftProminenceBasePosition)
-        rightAdjustment = self.__getAdjustment(minAdjustment, self.maxPeak.rightProminenceBasePosition)
+    def refine(self, sequenceGenerator: SequenceGenerator, adjustment: int = 8000, peakHeightThreshold: float = 15.):
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
         peakPosition = self.maxPeak.position
         resolution = sequenceGenerator.resolution
-        referenceStart = peakPosition - leftAdjustment
-        referenceEnd = peakPosition + self.query.length + rightAdjustment
+        referenceStart = peakPosition - adjustment
+        referenceEnd = peakPosition + self.query.length + adjustment
         referenceSequence = self.reference.getSequence(sequenceGenerator, False, referenceStart, referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
         peakPositions, peakProperties = find_peaks(correlation, height=peakHeightThreshold,
@@ -186,11 +184,6 @@ class InitialAlignment(CorrelationResult):
                                  self.reverseStrand, resolution, sequenceGenerator.blurRadius,
                                  referenceStart,
                                  referenceStart + correlationLength)
-
-    def __getAdjustment(self, minAdjustment: int, peakProminenceBasePosition: int):
-        maxAdjustment = round(self.query.length / 2)
-        adjustment = abs(self.maxPeak.position - peakProminenceBasePosition)
-        return round(min(max(adjustment, minAdjustment), maxAdjustment))
 
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:

@@ -67,7 +67,7 @@ class Program:
         if not any(bestPrimaryCorrelation.peaks):
             return None
 
-        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.minAdjustment,
+        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.adjustment,
                                                              self.args.peakHeightThreshold)
         self.dispatcher.dispatch(CorrelationResultMessage(bestPrimaryCorrelation, secondaryCorrelation))
 

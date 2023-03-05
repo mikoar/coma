@@ -14,7 +14,7 @@ class Args(NamedTuple):
     primaryBlur: int
     secondaryResolution: int
     secondaryBlur: int
-    minAdjustment: int
+    adjustment: int
     referenceIds: List[int]
     queryIds: List[int]
     numberOfCpus: int | None
@@ -40,7 +40,7 @@ class Args(NamedTuple):
         parser.add_argument("-b1", "--primaryBlur", dest="primaryBlur", type=int, default=2)
         parser.add_argument("-r2", "--secondaryResolution", dest="secondaryResolution", type=int, default=200)
         parser.add_argument("-b2", "--secondaryBlur", dest="secondaryBlur", type=int, default=2)
-        parser.add_argument("-ma", "--minAdjustment", dest="minAdjustment", type=int, default=1024)
+        parser.add_argument("-ma", "--adjustment", dest="adjustment", type=int, default=8000)
         parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*")
         parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*")
         parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None)
