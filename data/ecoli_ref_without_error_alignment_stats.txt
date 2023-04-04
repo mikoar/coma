@@ -1,2 +1,0 @@
-#Name	ReferenceSize	TotalMolecules	AlignedMolecules	MappingRate	Accuracy	AccurateMappingRate	PartialMaps	TotalAlignedSize	Coverage	CoveredPercent-1	-3	-5	-10
-D:\Users\myyq\Documents\code\optical_maps\data\ecoli_ref_without_error_alignment.omd	4641652	236	234	0,991525	1,000000	0,991525	234	42867189	9,2353	0,9980	0,9852	0,9108	0,4327

@@ -1,3 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
-setup(name="correlation", packages=find_packages())
+if __name__ == "__main__":
+    setup()
