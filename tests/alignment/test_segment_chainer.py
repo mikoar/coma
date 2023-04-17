@@ -12,12 +12,17 @@ from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
         AlignmentSegmentStub.createFromPairs([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
         AlignmentSegmentStub.createFromPairs([(7, 7, 100.), (8, 8, 100.)]),
         AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
-    ], [1, 2, 0]),
+    ], [2, 3, 1]),
+    pytest.param([
+        AlignmentSegmentStub.createFromPairs([(3, (5, 300), 80.), (4, (4, 400), 100.), (5, (3, 500), 100.)]),
+        AlignmentSegmentStub.createFromPairs([(7, (2, 600), 100.), (8, (1, 700), 100.)]),
+        AlignmentSegmentStub.createFromPairs([(1, (8, 0), 100.), (2, (7, 100), 100.), (3, (6, 200), 100.)])
+    ], [2, 3, 1], id="reverse strand"),
     pytest.param([
         AlignmentSegmentStub.createFromPairs([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
         AlignmentSegmentStub.createFromPairs([(2, 3, 100.), (4, 3, 100.)]),
         AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
-    ], [2, 1, 0]),
+    ], [3, 2, 1]),
     pytest.param([
         AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (None, 3, 0.), (None, 4, 0.)]),
         AlignmentSegmentStub.createFromPairs([(None, 1, 0.), (None, 2, 0.), (3, 3, 100.), (4, 4, 100.)]),

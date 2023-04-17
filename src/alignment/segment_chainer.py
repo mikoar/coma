@@ -9,8 +9,8 @@ from src.alignment.segments import AlignmentSegment
 class SegmentChainer:
     def chain(self, segments: Iterable[AlignmentSegment]):
         def initialOrderingKey(segment: AlignmentSegment):
-            return segment.startPosition.reference.siteId + segment.endPosition.reference.siteId \
-                   + segment.startPosition.query.siteId + segment.endPosition.query.siteId
+            return segment.startPosition.reference.position + segment.endPosition.reference.position \
+                   + segment.startPosition.query.position + segment.endPosition.query.position
 
         segments = sorted(segments, key=initialOrderingKey)
         cumulatedScore = [-math.inf] * len(segments)
@@ -35,12 +35,12 @@ class SegmentChainer:
     @staticmethod
     def __consecutivenessScore(previousSegment: AlignmentSegment, currentSegment: AlignmentSegment):
         queryLength = min(currentSegment.endPosition.query.siteId - currentSegment.startPosition.query.siteId,
-                          previousSegment.endPosition.query.siteId - previousSegment.startPosition.query.siteId)
+                          abs(previousSegment.endPosition.query.siteId - previousSegment.startPosition.query.siteId))
         referenceDistance = currentSegment.startPosition.reference.siteId - previousSegment.endPosition.reference.siteId
         referenceLength = min(
             currentSegment.endPosition.reference.siteId - currentSegment.startPosition.reference.siteId,
             previousSegment.endPosition.reference.siteId - previousSegment.startPosition.reference.siteId)
-        queryDistance = currentSegment.startPosition.query.siteId - previousSegment.endPosition.query.siteId
+        queryDistance = abs(currentSegment.startPosition.query.siteId - previousSegment.endPosition.query.siteId)
         if min(referenceLength + 2 * referenceDistance, queryLength + 2 * queryDistance) < 0:
             return -math.inf
 
