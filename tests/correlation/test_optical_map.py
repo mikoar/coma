@@ -7,6 +7,19 @@ from src.correlation.optical_map import OpticalMap, adjustPeakPositions, Positio
 from src.correlation.sequence_generator import SequenceGenerator
 
 
+def test_trim():
+    opticalMap = OpticalMap(2, 130, [20, 50, 100])
+    trimmed = opticalMap.trim()
+    assert trimmed.length == 81
+    assert trimmed.positions == [0, 30, 80]
+
+
+def test_trim_empty():
+    opticalMap = OpticalMap(2, 20, [])
+    trimmed = opticalMap.trim()
+    assert trimmed.positions == []
+
+
 def test_getPositionsWithSiteIds():
     opticalMap = OpticalMap(2, 101, [0, 10, 30, 100])
     assert list(opticalMap.getPositionsWithSiteIds()) \
@@ -17,6 +30,12 @@ def test_getPositionsWithSiteIds_reverse():
     opticalMap = OpticalMap(2, 101, [0, 10, 30, 100])
     assert list(opticalMap.getPositionsWithSiteIds(True)) \
            == [PositionWithSiteId(i, p) for i, p in [(4, 0), (3, 70), (2, 90), (1, 100)]]
+
+
+@pytest.mark.parametrize("reverse", [True, False])
+def test_getPositionsWithSiteIds_empty(reverse: bool):
+    opticalMap = OpticalMap(2, 120, [])
+    assert list(opticalMap.getPositionsWithSiteIds(reverse)) == []
 
 
 def test_refineAlignment_correctPeakPosition():

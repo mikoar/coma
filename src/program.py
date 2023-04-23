@@ -82,7 +82,7 @@ class Program:
         with self.args.referenceFile:
             self.referenceMaps = cmapReader.readReferences(self.args.referenceFile, self.args.referenceIds)
         with self.args.queryFile:
-            self.queryMaps = cmapReader.readQueries(self.args.queryFile, self.args.queryIds)
+            self.queryMaps = list(map(lambda q: q.trim(), cmapReader.readQueries(self.args.queryFile, self.args.queryIds)))
 
 
 if __name__ == '__main__':

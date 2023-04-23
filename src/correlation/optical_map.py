@@ -33,6 +33,13 @@ class OpticalMap:
     length: int
     positions: List[int]
 
+    def trim(self):
+        if not self.positions:
+            return self
+        return OpticalMap(self.moleculeId,
+                          self.positions[-1] - self.positions[0] + 1,
+                          list(map(lambda p: p - self.positions[0], self.positions)))
+
     def getPositionsWithSiteIds(self, reverse: bool = False):
         if reverse:
             i = len(self.positions)
