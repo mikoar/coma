@@ -25,6 +25,10 @@ class AlignmentSegment:
     def endPosition(self):
         return self.alignedPositions[-1]
 
+    @property
+    def reverse(self):
+        return self.startPosition.query.siteId > self.endPosition.query.siteId
+
     def checkForConflicts(self, other: AlignmentSegment):
         if self.endOverlapsWithStartOf(other):
             return _SegmentPairWithConflict.create(self, other, other.startPosition, self.endPosition)

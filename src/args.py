@@ -49,7 +49,7 @@ class Args(NamedTuple):
         parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800)
         parser.add_argument("-sm", "--scoreMultiplier", dest="scoreMultiplier", type=float, default=1.)
         parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-100)
-        parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1600)
+        parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1000)
         parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=600)
         parser.add_argument("-D", "--diagnostics", dest="diagnosticsEnabled", action="store_true")
         args = parser.parse_args()
