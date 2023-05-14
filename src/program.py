@@ -34,7 +34,7 @@ class Program:
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
         self.primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
         self.secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
-        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.scoreMultiplier, args.unmatchedPenalty)
+        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
         segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
         alignerEngine = AlignerEngine(args.maxDistance)
         alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
@@ -67,7 +67,7 @@ class Program:
         if not any(bestPrimaryCorrelation.peaks):
             return None
 
-        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.adjustment,
+        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.secondaryMargin,
                                                              self.args.peakHeightThreshold)
         self.dispatcher.dispatch(CorrelationResultMessage(bestPrimaryCorrelation, secondaryCorrelation))
 
@@ -82,7 +82,8 @@ class Program:
         with self.args.referenceFile:
             self.referenceMaps = cmapReader.readReferences(self.args.referenceFile, self.args.referenceIds)
         with self.args.queryFile:
-            self.queryMaps = list(map(lambda q: q.trim(), cmapReader.readQueries(self.args.queryFile, self.args.queryIds)))
+            self.queryMaps = list(
+                map(lambda q: q.trim(), cmapReader.readQueries(self.args.queryFile, self.args.queryIds)))
 
 
 if __name__ == '__main__':

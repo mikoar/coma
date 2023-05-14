@@ -11,7 +11,7 @@ from tests.test_doubles.alignment_segment_stub import AlignedPairStub, ScoredAli
 
 
 def __scoredPositions(scores: List[float]):
-    return list(map(lambda score: ScoredAlignedPair(AlignedPairStub(0, 0), score), scores))
+    return list(map(lambda x: ScoredAlignedPair(AlignedPairStub(x[0], x[0]), x[1]), enumerate(scores)))
 
 
 def __peak(position: int = 0):
@@ -24,8 +24,8 @@ def test_fullAlignment():
     assert len(segments) == 1
     segment = segments[0]
     assert segment.segmentScore == 25.
-    assert segment.positions[0].score == positions[0].score
-    assert segment.positions[-1].score == positions[4].score
+    assert segment.positions[0] == positions[0]
+    assert segment.positions[-1] == positions[4]
     assert len(segment.positions) == 5
 
 
@@ -38,16 +38,16 @@ def test_partialAlignment():
     positions = __scoredPositions([-1., 5., 6., 7., 4., 3., -1])
     segment = AlignmentSegmentsFactory(5, 10).getSegments(positions, __peak())[0]
     assert segment.segmentScore == 25.
-    assert segment.positions[0].score == positions[1].score
-    assert segment.positions[-1].score == positions[5].score
+    assert segment.positions[0] == positions[1]
+    assert segment.positions[-1] == positions[5]
 
 
 def test_alignmentWithGap():
     positions = __scoredPositions([1., 1., -3., 2., 1., -3., 2.])
     segment = AlignmentSegmentsFactory(3, 1).getSegments(positions, __peak())[0]
     assert segment.segmentScore == 3.
-    assert segment.positions[0].score == positions[3].score
-    assert segment.positions[-1].score == positions[4].score
+    assert segment.positions[0] == positions[3]
+    assert segment.positions[-1] == positions[4]
 
 
 def test_setsPeakPosition():
@@ -57,18 +57,18 @@ def test_setsPeakPosition():
 
 
 def test_multipleSegments():
-    positions = __scoredPositions([1., 1., 1., 1., 1., -1., -1., -1., 1., 1.])
+    positions = __scoredPositions([1., 1., 1., 1., 1., -1., -1., -1., -1., -1., -1., -1., 1., 1.])
     minScore = 2
     threshold = 3
     segments = AlignmentSegmentsFactory(minScore, threshold).getSegments(positions, __peak())
 
     assert len(segments) == 2
     assert segments[0].segmentScore == 5.
-    assert segments[0].positions[0].score == positions[0].score
-    assert segments[0].positions[-1].score == positions[4].score
+    assert segments[0].positions[0] == positions[0]
+    assert segments[0].positions[-1] == positions[4]
     assert segments[1].segmentScore == 2.
-    assert segments[0].positions[0].score == positions[8].score
-    assert segments[0].positions[-1].score == positions[9].score
+    assert segments[1].positions[0] == positions[12]
+    assert segments[1].positions[-1] == positions[13]
 
 
 def test_filterSegment():

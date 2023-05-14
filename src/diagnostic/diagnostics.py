@@ -12,6 +12,8 @@ from src.parsers.xmap_reader import XmapReader
 
 class DiagnosticsWriter:
     def __init__(self, outputFile: TextIO):
+        if outputFile.name == '<stdout>':
+            raise ValueError("outputFile is required")
         self.outputDir = os.path.splitext(outputFile.name)[0] + "_diagnostics"
         os.makedirs(self.outputDir, exist_ok=True)
 
@@ -55,10 +57,15 @@ class AlignmentPlotter(MessageHandler):
         if not message.alignment.alignedPairs:
             return
 
-        benchmarkAlignment = next(iter(
-            self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))
+        benchmarkAlignment = self.getBenchmarkAlignment(message)
         plot = AlignmentPlot(message.reference, message.query, message.alignment, message.correlation,
                              benchmarkAlignment)
 
         self.writer.savePlot(plot.figure,
                              f"Alignment_ref_{message.reference.moleculeId}_query_{message.query.moleculeId}.svg")
+
+    def getBenchmarkAlignment(self, message):
+        if not self.benchmarkAlignmentFile:
+            return None
+        return next(
+            iter(self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))

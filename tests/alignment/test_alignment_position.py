@@ -19,15 +19,15 @@ def test_score_notAlignedPosition_returnsUnmatchedPenalty(position: NotAlignedPo
 def test_score_alignedPair_perfectMatch():
     position = AlignedPairStub(1, 1, 0)
     perfectMatchScore = 100
-    scoreMultiplier = 2
-    assert position.getScoredPosition(perfectMatchScore, scoreMultiplier, -123).score == 200
+    distancePenaltyMultiplier = 2
+    assert position.getScoredPosition(perfectMatchScore, distancePenaltyMultiplier, -123).score == 100
 
 
 def test_score_alignedPair_distancePenalty():
     position = AlignedPairStub(1, 1, 50)
     perfectMatchScore = 100
-    scoreMultiplier = 2
-    assert position.getScoredPosition(perfectMatchScore, scoreMultiplier, -123).score == 100
+    distancePenaltyMultiplier = 1.5
+    assert position.getScoredPosition(perfectMatchScore, distancePenaltyMultiplier, -123).score == 25
 
 
 if __name__ == '__main__':

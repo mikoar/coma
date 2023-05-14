@@ -174,12 +174,13 @@ class CorrelationResult:
 
 
 class InitialAlignment(CorrelationResult):
-    def refine(self, sequenceGenerator: SequenceGenerator, adjustment: int = 8000, peakHeightThreshold: float = 15.):
+    def refine(self, sequenceGenerator: SequenceGenerator, secondaryMargin: int = 8000,
+               peakHeightThreshold: float = 15.):
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
         peakPosition = self.maxPeak.position
         resolution = sequenceGenerator.resolution
-        referenceStart = peakPosition - adjustment
-        referenceEnd = peakPosition + self.query.length + adjustment
+        referenceStart = peakPosition - secondaryMargin
+        referenceEnd = peakPosition + self.query.length + secondaryMargin
         referenceSequence = self.reference.getSequence(sequenceGenerator, False, referenceStart, referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
         peakPositions, peakProperties = find_peaks(correlation, height=peakHeightThreshold,

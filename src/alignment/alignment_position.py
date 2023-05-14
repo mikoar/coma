@@ -10,7 +10,7 @@ from src.correlation.optical_map import PositionWithSiteId
 
 class AlignmentPosition(ABC):
     @abstractmethod
-    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
+    def getScoredPosition(self, perfectMatchScore: int, distancePenaltyMultiplier: float,
                           unmatchedPenalty: int) -> ScoredAlignmentPosition:
         pass
 
@@ -24,7 +24,7 @@ class AlignmentPosition(ABC):
 
 
 class NotAlignedPosition(AlignmentPosition, ABC):
-    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
+    def getScoredPosition(self, perfectMatchScore: int, distancePenaltyMultiplier: float,
                           unmatchedPenalty: int) -> ScoredAlignmentPosition:
         if unmatchedPenalty > 0:
             raise ValueError("penalty should be negative")
@@ -111,9 +111,9 @@ class AlignedPair(AlignmentPosition):
     def absolutePosition(self) -> int:
         return self.reference.position
 
-    def getScoredPosition(self, perfectMatchScore: int, scoreMultiplier: int,
+    def getScoredPosition(self, perfectMatchScore: int, distancePenaltyMultiplier: float,
                           unmatchedPenalty: int) -> ScoredAlignmentPosition:
-        score = scoreMultiplier * (perfectMatchScore - self.distance)
+        score = perfectMatchScore - distancePenaltyMultiplier * self.distance
         return ScoredAlignedPair(self, score)
 
     def lessOnBothSequences(self, other: AlignedPair):
