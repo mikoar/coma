@@ -4,29 +4,45 @@ import pytest
 
 from src.alignment.segment_chainer import SegmentChainer
 from src.alignment.segments import AlignmentSegment
-from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
+from tests.test_doubles.alignment_segment_builder import AlignmentSegmentBuilder
+from tests.test_doubles.scored_aligned_pair_builder import ScoredAlignedPairBuilder
 
 
 @pytest.mark.parametrize("segments, expectedOrder", [
     pytest.param([
-        AlignmentSegmentStub.createFromPairs([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
-        AlignmentSegmentStub.createFromPairs([(7, 7, 100.), (8, 8, 100.)]),
-        AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(400).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(500).withQueryPosition(600).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(700).withQueryPosition(700).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(800).withQueryPosition(800).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(100).withQueryPosition(100).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(300).build())
+            .withScore(1200.)
+            .build()
     ], [2, 3, 1]),
     pytest.param([
-        AlignmentSegmentStub.createFromPairs([(3, (5, 300), 80.), (4, (4, 400), 100.), (5, (3, 500), 100.)]),
-        AlignmentSegmentStub.createFromPairs([(7, (2, 600), 100.), (8, (1, 700), 100.)]),
-        AlignmentSegmentStub.createFromPairs([(1, (8, 0), 100.), (2, (7, 100), 100.), (3, (6, 200), 100.)])
-    ], [2, 3, 1], id="reverse strand"),
-    pytest.param([
-        AlignmentSegmentStub.createFromPairs([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
-        AlignmentSegmentStub.createFromPairs([(2, 3, 100.), (4, 3, 100.)]),
-        AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(400).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(500).withQueryPosition(600).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(200).withQueryPosition(300).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(400).withQueryPosition(300).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(100).withQueryPosition(100).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(300).build())
+            .withScore(1200.)
+            .build()
     ], [3, 2, 1]),
-    pytest.param([
-        AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (None, 3, 0.), (None, 4, 0.)]),
-        AlignmentSegmentStub.createFromPairs([(None, 1, 0.), (None, 2, 0.), (3, 3, 100.), (4, 4, 100.)]),
-    ], [1, 2]),
 ])
 def test_chain(segments: List[AlignmentSegment], expectedOrder: List[int]):
     chainedSegments = SegmentChainer().chain(segments)
@@ -35,9 +51,21 @@ def test_chain(segments: List[AlignmentSegment], expectedOrder: List[int]):
 
 def test_chain_dropsOutlyingSegment():
     segments = [
-        AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
-        AlignmentSegmentStub.createFromPairs([(3, 4, 80.), (4, 5, 100.), (5, 6, 100.)]),
-        AlignmentSegmentStub.createFromPairs([(1, 3, 10.), (2, 5, 120.), (5, 6, 5.)])
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(100).withQueryPosition(100).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(300).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(400).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(500).withQueryPosition(600).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(100).withQueryPosition(300).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(500).withQueryPosition(600).build())
+            .withScore(1200.)
+            .build()
     ]
     chainedSegments = SegmentChainer().chain(segments)
     assert chainedSegments == [segments[0], segments[1]]

@@ -7,6 +7,9 @@ from src.alignment.segments import AlignmentSegment
 
 
 class SegmentChainer:
+    def __init__(self, sequentialityScorer: SequentialityScorer = None):
+        self.sequentialityScorer = sequentialityScorer or SequentialityScorer()
+
     def chain(self, segments: Iterable[AlignmentSegment]):
         def initialOrderingKey(segment: AlignmentSegment):
             return segment.startPosition.reference.position + segment.endPosition.reference.position \
@@ -19,8 +22,8 @@ class SegmentChainer:
         for i, currentSegment in enumerate(segments):
             cumulatedScore[i] = 0
             for j, previousSegment in enumerate(segments[:i]):
-                currentScore = cumulatedScore[j] + self.__consecutivenessScore(previousSegment,
-                                                                               currentSegment)
+                currentScore = cumulatedScore[j] + self.sequentialityScorer.getScore(previousSegment,
+                                                                                     currentSegment)
                 if currentScore > cumulatedScore[i]:
                     cumulatedScore[i] = currentScore
                     previousSegmentIndexes[i] = j
@@ -32,18 +35,20 @@ class SegmentChainer:
             result.insert(0, segments[bestPreviousSegmentIndex])
         return result
 
-    @staticmethod
-    def __consecutivenessScore(previousSegment: AlignmentSegment, currentSegment: AlignmentSegment):
-        queryLength = min(abs(currentSegment.endPosition.query.siteId - currentSegment.startPosition.query.siteId),
-                          abs(previousSegment.endPosition.query.siteId - previousSegment.startPosition.query.siteId))
-        referenceDistance = currentSegment.startPosition.reference.siteId - previousSegment.endPosition.reference.siteId
-        referenceLength = min(
-            currentSegment.endPosition.reference.siteId - currentSegment.startPosition.reference.siteId,
-            previousSegment.endPosition.reference.siteId - previousSegment.startPosition.reference.siteId)
 
-        queryDistance = previousSegment.endPosition.query.siteId - currentSegment.startPosition.query.siteId \
+class SequentialityScorer:
+    @staticmethod
+    def getScore(previousSegment: AlignmentSegment, currentSegment: AlignmentSegment):
+        queryLength = min(abs(currentSegment.endPosition.query.position - currentSegment.startPosition.query.position),
+                          abs(previousSegment.endPosition.query.position - previousSegment.startPosition.query.position))
+        referenceDistance = currentSegment.startPosition.reference.position - previousSegment.endPosition.reference.position
+        referenceLength = min(
+            currentSegment.endPosition.reference.position - currentSegment.startPosition.reference.position,
+            previousSegment.endPosition.reference.position - previousSegment.startPosition.reference.position)
+
+        queryDistance = previousSegment.endPosition.query.position - currentSegment.startPosition.query.position \
             if currentSegment.reverse \
-            else currentSegment.startPosition.query.siteId - previousSegment.endPosition.query.siteId
+            else currentSegment.startPosition.query.position - previousSegment.endPosition.query.position
 
         if min(referenceLength + 2 * referenceDistance, queryLength + 2 * queryDistance) < 0:
             return -math.inf
