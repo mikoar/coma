@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import itertools
+import numpy as np
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 
-from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlignedPair, AlignedPair
+from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlignedPair, AlignedPair, NotAlignedQueryPosition
 from src.correlation.peak import Peak
 
 
@@ -35,30 +36,87 @@ class AlignmentSegment:
         return _SegmentPairWithNoConflict(self, other)
 
     def endOverlapsWithStartOf(self, other: AlignmentSegment):
-        return self.startPosition.lessOrEqualOnAnySequence(other.startPosition) or \
-               other.startPosition.lessOrEqualOnAnySequence(self.endPosition) or \
-               self.endPosition.lessOrEqualOnAnySequence(other.endPosition)
+        return other.startPosition.lessOrEqualOnAnySequence(self.startPosition) or \
+            other.startPosition.lessOrEqualOnAnySequence(self.endPosition) or \
+            self.endPosition.lessOrEqualOnAnySequence(other.endPosition)
 
     def slice(self, start: AlignedPair, end: AlignedPair) -> AlignmentSegment:
         slicedAtStart = itertools.dropwhile(
-            lambda p: not isinstance(p, AlignedPair) or p.lessOnBothSequences(start), self.positions)
+            lambda p: p.lessOnBothSequences(start), self.positions)
         positions = list(
             itertools.takewhile(
                 lambda p: not isinstance(p, AlignedPair) or p.lessOrEqualOnAnySequence(end),
                 slicedAtStart))
-        self.__trimNotAlignedPositionsFromEnd(positions)
+        self.__trimNotAlignedPositionsFromEnd(positions, end)
         return AlignmentSegment(positions, sum(p.score for p in positions), self.peak)
 
+    def get_reference_labels(self) -> Tuple[List, List, List]:
+        """Function used to get all of the reference labels,
+        scores and their indexes present in a segment
+
+        :return: Characteristics of Reference in a segment of alignment
+        :rtype: Tuple[List, List, List]
+        """
+        ref_pos, ref_scores, ref_index = [], [], []
+        sum_score = 0
+        for index, position in enumerate(self.positions):
+            if isinstance(position, ScoredAlignedPair):
+                ref_index.append(index)
+                ref_pos.append(position.reference)
+                ref_scores.append(position.score + sum_score)
+                sum_score = 0
+            else:
+                if not isinstance(position.position, NotAlignedQueryPosition):
+                    ref_index.append(index)
+                    ref_pos.append(position.position.reference)
+                    ref_scores.append(position.score + sum_score)
+                    sum_score = 0
+                else:
+                    sum_score += position.score
+        return (ref_pos, ref_scores, ref_index)
+
+    def get_query_labels(self) -> Tuple(List, List, List):
+        """Function used to get all of the query labels,
+        scores and their indexes present in a segment
+
+        :return: Characteristics of Query in a segment of alignment
+        :rtype: Tuple[List, List, List]
+        """
+        quer_pos, quer_scores, quer_index = [], [], []
+        sum_score = 0
+        for index, position in enumerate(self.positions):
+            if isinstance(position, ScoredAlignedPair):
+                quer_pos.append(position.query)
+                quer_scores.append(position.score + sum_score)
+                quer_index.append(index)
+                sum_score = 0
+            else:
+                if isinstance(position.position, NotAlignedQueryPosition):
+                    quer_pos.append(position.position.query)
+                    quer_scores.append(position.score + sum_score)
+                    quer_index.append(index)
+                    sum_score = 0
+                else:
+                    sum_score += position.score
+        return (quer_pos, quer_scores, quer_index)
+
     @staticmethod
-    def __trimNotAlignedPositionsFromEnd(positions):
+    def __trimNotAlignedPositionsFromEnd(positions, end=None):
         if positions:
-            while not isinstance(positions[-1], AlignedPair):
-                positions.pop()
+            if not end:
+                while not isinstance(positions[-1], AlignedPair):
+                    positions.pop()
+            else:
+                while not isinstance(positions[-1], AlignedPair):
+                    if not positions[-1].lessOrEqualOnAnySequence(end):
+                        positions.pop()
+                    else:
+                        break
 
     def __eq__(self, other):
         return isinstance(other, AlignmentSegment) \
-               and other.segmentScore == self.segmentScore \
-               and other.positions == self.positions
+            and other.segmentScore == self.segmentScore \
+            and other.positions == self.positions
 
     def __sub__(self, other: AlignmentSegment):
         positions = [p for p in self.positions if p not in other.positions]
@@ -121,8 +179,49 @@ class _SegmentPairWithConflict(_SegmentPair):
         conflictingSubsegment2 = segment2.slice(conflictStart, conflictEnd)
         return _SegmentPairWithConflict(segment1, conflictingSubsegment1, segment2, conflictingSubsegment2)
 
-    def resolveConflict(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
+    def findOptimaPlace(self, conf1, conf2) -> Tuple[AlignmentSegment, AlignmentSegment]:
+        if len(conf1[0]) == len(conf2[0]):
+            points_1_np = np.cumsum([0] + conf1[1])
+            # @todo
+            # Check if they should be reversed
+            points_2_np = np.cumsum([0] + conf2[1][::-1])[::-1]
+            scores_sum = np.add(points_1_np, points_2_np)
+            max_index = np.argmax(scores_sum)
+            if max_index == 0:
+                return self.segment1 - self.conflictingSubsegment1, self.segment2
+            elif max_index == len(conf1[0]):
+                return self.segment1, self.segment2 - self.conflictingSubsegment2
+            else:
+                new_seg1 = self.segment1 - \
+                    AlignmentSegment(self.conflictingSubsegment1.positions[conf1[2][max_index]:],
+                                     sum(p.score for p in
+                                         self.conflictingSubsegment1.positions[conf1[2][max_index]:]),
+                                     self.segment1.peak)
+                new_seg2 = self.segment2 - \
+                    AlignmentSegment(self.conflictingSubsegment2.positions[:conf2[2][max_index]],
+                                     sum(p.score for p in
+                                         self.conflictingSubsegment2.positions[:conf2[2][max_index]]),
+                                     self.segment2.peak)
+            return new_seg1, new_seg2
+        else:
+            self.resolveByTrimming()
+
+    def resolveByTrimming(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
+        """Function used to resolve conflicts
+        with uneven number of conflicting labels
+
+        :return: Two Segments without conflicts
+        :rtype: Tuple[AlignmentSegment, AlignmentSegment]
+        """
         if self.conflictingSubsegment1.segmentScore > self.conflictingSubsegment2.segmentScore:
             return self.segment1, self.segment2 - self.conflictingSubsegment2
         else:
             return self.segment1 - self.conflictingSubsegment1, self.segment2
+
+    def resolveConflict(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
+        if self.conflictingSubsegment1.peak.position > self.conflictingSubsegment2.peak.position:
+            return self.findOptimaPlace(self.conflictingSubsegment1.get_reference_labels(),
+                                        self.conflictingSubsegment2.get_reference_labels())
+        else:
+            return self.findOptimaPlace(self.conflictingSubsegment1.get_query_labels(),
+                                        self.conflictingSubsegment2.get_query_labels())
