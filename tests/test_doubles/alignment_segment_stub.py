@@ -6,6 +6,7 @@ from src.alignment.alignment_position import ScoredAlignedPair, AlignedPair, Sco
     NotAlignedReferencePosition, NotAlignedQueryPosition
 from src.alignment.segments import AlignmentSegment
 from src.correlation.optical_map import PositionWithSiteId
+from src.correlation.peak import Peak
 
 
 def createPositionWithSiteId(position: Tuple[int, int] | int):
@@ -16,7 +17,7 @@ def createPositionWithSiteId(position: Tuple[int, int] | int):
 
 class AlignmentSegmentStub(AlignmentSegment):
     def __init__(self, positions: List[ScoredAlignedPairStub], score: float = 0.):
-        super().__init__(positions, score, 0)
+        super().__init__(positions, score, Peak.null, positions)
 
     @staticmethod
     def createFromPairs(scoredPositionTuples: List[Tuple[int | None, int | None]
@@ -48,5 +49,3 @@ class AlignedPairStub(AlignedPair):
     def __init__(self, reference: Tuple[int, int] | int, query: Tuple[int, int] | int, queryShift: int = 0):
         super().__init__(createPositionWithSiteId(reference), createPositionWithSiteId(query),
                          queryShift)
-
-

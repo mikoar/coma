@@ -20,4 +20,4 @@ class AlignmentSegmentBuilder:
         return self
 
     def build(self):
-        return AlignmentSegment(self.positions, self.segmentScore, self.peak)
+        return AlignmentSegment(self.positions, self.segmentScore, self.peak, self.positions)

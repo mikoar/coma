@@ -125,6 +125,7 @@ def test_slice(start, stop):
 
     assert sliced.positions == [(12, 3), (None, 4), (13, 5)]
     assert sliced.segmentScore == 150.
+    assert len(sliced.allPeakPositions) == 9
 
 
 def test_subtract():
@@ -134,6 +135,7 @@ def test_subtract():
     result = segment0 - segment1
 
     assert result == AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (4, 4, 100.)])
+    assert len(result.allPeakPositions) == 4
 
 
 def test_subtract_noPositionsLeft_returnsEmptySegment():

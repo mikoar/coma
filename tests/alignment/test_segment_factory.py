@@ -27,6 +27,7 @@ def test_fullAlignment():
     assert segment.positions[0] == positions[0]
     assert segment.positions[-1] == positions[4]
     assert len(segment.positions) == 5
+    assert segment.allPeakPositions == positions
 
 
 def test_empty():
@@ -40,6 +41,7 @@ def test_partialAlignment():
     assert segment.segmentScore == 25.
     assert segment.positions[0] == positions[1]
     assert segment.positions[-1] == positions[5]
+    assert segment.allPeakPositions == positions
 
 
 def test_alignmentWithGap():
@@ -48,6 +50,7 @@ def test_alignmentWithGap():
     assert segment.segmentScore == 3.
     assert segment.positions[0] == positions[3]
     assert segment.positions[-1] == positions[4]
+    assert segment.allPeakPositions == positions
 
 
 def test_setsPeakPosition():
@@ -66,9 +69,11 @@ def test_multipleSegments():
     assert segments[0].segmentScore == 5.
     assert segments[0].positions[0] == positions[0]
     assert segments[0].positions[-1] == positions[4]
+    assert segments[0].allPeakPositions == positions
     assert segments[1].segmentScore == 2.
     assert segments[1].positions[0] == positions[12]
     assert segments[1].positions[-1] == positions[13]
+    assert segments[1].allPeakPositions == positions
 
 
 def test_filterSegment():
