@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import EngFormatter
 
+from src.alignment.alignment_position import AlignedPair
 from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segments import AlignmentSegment
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId, InitialAlignment
@@ -23,6 +24,7 @@ from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
 class Options:
     limitQueryToAlignedArea = False
     drawGridForNotAlignedPositions = True
+    drawRemovedAlignedPositions = True
 
 
 class AlignmentPlot:
@@ -42,6 +44,7 @@ class AlignmentPlot:
         self.__plotBenchmarkAlignment()
         self.__plotSegments()
         self.__drawGridForNotAlignedPositions()
+        self.__drawRemovedAlignedPositions()
         self.axes.legend()
 
     def __createFigure(self):
@@ -214,7 +217,7 @@ class AlignmentPlot:
                        label=f" peak {peakNumber + 1} (height: {peak.height:.0f}), segment {segmentNumber + 1} "
                              f"({len(segment.alignedPositions)} pairs, score: {segment.segmentScore:.1f})",
                        marker="+",
-                       markersize=8,
+                       markersize=16,
                        markeredgecolor=color,
                        linewidth=2,
                        color=color)
@@ -250,11 +253,42 @@ class AlignmentPlot:
             [position for segment in self.alignment.segments for position in segment.alignedPositions] \
             + [pair for pair in self.benchmarkAlignment.alignedPairs]
 
-        x = [p for p in self.reference.positions
-             if self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
-        y = [p for p in self.query.positions
-             if self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
+        x = [p for p in self.reference.positions if
+             self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
+        y = [p for p in self.query.positions if
+             self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
         self.__drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (15, 3)), label="not aligned positions")
+
+    def __drawRemovedAlignedPositions(self):
+        if not self.options.drawRemovedAlignedPositions:
+            return
+
+        segmentsAlignedPositions: List[XmapAlignedPair] = \
+            [position for segment in self.alignment.segments for position in segment.alignedPositions]
+
+        allAlignedPositions: List[AlignedPair] = \
+            list(set(position for segment in self.alignment.segments for position in segment.allPeakPositions if
+                     isinstance(position, AlignedPair)))
+
+        removedAlignedPositions = sorted([p for p in allAlignedPositions if p not in segmentsAlignedPositions])
+
+        self.axes.scatter(
+            [p.reference.position for p in removedAlignedPositions],
+            [self.__absoluteQueryPosition(p) for p in removedAlignedPositions],
+            label=f"aligned pairs removed from segments ({len(removedAlignedPositions)} pairs)",
+            marker="|",
+            s=16 ** 2,
+            c="orange")
+
+        self.__annotateSources(removedAlignedPositions)
+
+    def __annotateSources(self, positions):
+        for position, groups in groupby(positions):
+            samePositionsFromDifferentSources = list(groups)
+            position = samePositionsFromDifferentSources[0]
+            sources = map(str, sorted(map(lambda p: p.source, samePositionsFromDifferentSources)))
+            self.axes.annotate(f"peak:{','.join(sources)}",
+                               (position.reference.position, self.__absoluteQueryPosition(position)))
 
     @staticmethod
     def __isNotAlignedReference(position: int, alignedPositions: List[XmapAlignedPair]):
@@ -270,7 +304,7 @@ class AlignmentPlot:
     def __isQueryPositionInScope(self, position: int):
         return self.yMinAxis <= position <= self.yMaxPlot
 
-    def __absoluteQueryPosition(self, p: XmapAlignedPair):
+    def __absoluteQueryPosition(self, p: XmapAlignedPair | AlignedPair):
         return self.alignment.queryLength - p.query.position if self.alignment.reverseStrand else p.query.position
 
     @property

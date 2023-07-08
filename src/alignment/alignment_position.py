@@ -134,6 +134,9 @@ class AlignedPair(AlignmentPosition):
         return self.reference.siteId == other[0] and self.query.siteId == other[1] and (
                 len(other) == 2 or self.queryShift == other[2])
 
+    def __hash__(self):
+        return hash((self.reference, self.query, self.source))
+
 
 AlignedPair.null = AlignedPair(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
 
