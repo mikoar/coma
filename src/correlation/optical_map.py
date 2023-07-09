@@ -65,10 +65,13 @@ class OpticalMap:
             normalizingFactor = self.__getCorrelation(referenceSequence, np.ones(len(sequence))) + np.sum(sequence)
             correlation = correlation / normalizingFactor
 
-        correlation /= np.max(correlation)
+        peakPositions, peakProperties = find_peaks(
+            correlation,
+            height=0.75 * np.max(correlation),
+            width=(None, None),
+            rel_height=0.5,
+            distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
 
-        peakPositions, peakProperties = find_peaks(correlation, height=0.75, width=(None, None), rel_height=0.5,
-                                                   distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
         return InitialAlignment(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
                                 sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
                                 len(correlation) * sequenceGenerator.resolution)
@@ -101,9 +104,13 @@ class CorrelationResult:
                                                               self.correlationStart)
         self.peakProperties["right_ips"] = adjustPeakPositions(self.peakProperties["right_ips"], self.resolution,
                                                                self.correlationStart)
-
+        self.noiseLevel = self.__rootMeanSquare(self.correlation)
         if self.correlationEnd is None:
             self.correlationEnd = len(self.correlation) - 1
+
+    @staticmethod
+    def __rootMeanSquare(array: np.ndarray):
+        return np.sqrt(np.mean(array[array != 0] ** 2))
 
     def getRelativeScore(self, reference: BionanoAlignment, validator: Validator):
         maxPeak = self.maxPeak

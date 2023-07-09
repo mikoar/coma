@@ -60,6 +60,8 @@ def __plotCorrelation(correlationResult: CorrelationResult,
     ax.plot(x, correlationResult.correlation)
 
     __plotPeaks(correlationResult, ax)
+    __markNoiseLevel(ax, correlationResult)
+
     return fig, ax
 
 
@@ -78,6 +80,14 @@ def __plotPeaks(peaks: CorrelationResult, ax: Axes):
     for i, peak in enumerate(peaks.peaks):
         ax.annotate(f"({int(peak.position / 1000):,}K, {peak.height:.0f})",
                     (peak.position, peak.height), rotation=-45, ha="center", va="top")
+
+
+def __markNoiseLevel(ax, correlationResult):
+    ax.hlines(correlationResult.noiseLevel,
+              correlationResult.correlationStart,
+              correlationResult.correlationEnd,
+              linestyles="--",
+              colors="black")
 
 
 def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], peaks: CorrelationResult):
