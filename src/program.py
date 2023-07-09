@@ -2,21 +2,18 @@ from __future__ import annotations
 
 import sys
 
-from p_tqdm import p_imap
-
 from src.alignment.aligner import Aligner, AlignerEngine
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResults
 from src.alignment.segment_chainer import SegmentChainer
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
+from src.application_service import SimpleApplicationService
 from src.args import Args
-from src.correlation.optical_map import OpticalMap
 from src.correlation.sequence_generator import SequenceGenerator
 from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
     SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter
 from src.messaging.dispatcher import Dispatcher
-from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
@@ -45,37 +42,19 @@ class Program:
             self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
+        self.applicationService = SimpleApplicationService(args,
+                                                           self.primaryGenerator,
+                                                           self.secondaryGenerator,
+                                                           self.aligner,
+                                                           self.dispatcher)
 
     def run(self):
-        alignmentResultRows = [a for a in p_imap(lambda x: self.__align(*x),
-                                                 list((r, q) for r in self.referenceMaps for q in self.queryMaps),
-                                                 num_cpus=self.args.numberOfCpus) if a is not None and a.alignedPairs]
-
+        alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
         alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
                                                   alignmentResultRows)
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()
-
-    def __align(self, referenceMap: OpticalMap, queryMap: OpticalMap):
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator)
-        primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                                 reverseStrand=True)
-        bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
-        self.dispatcher.dispatch(InitialAlignmentMessage(bestPrimaryCorrelation))
-
-        if not any(bestPrimaryCorrelation.peaks):
-            return None
-
-        secondaryCorrelation = bestPrimaryCorrelation.refine(self.secondaryGenerator, self.args.secondaryMargin,
-                                                             self.args.peakHeightThreshold)
-        self.dispatcher.dispatch(CorrelationResultMessage(bestPrimaryCorrelation, secondaryCorrelation))
-
-        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peaks,
-                                                secondaryCorrelation.reverseStrand)
-        self.dispatcher.dispatch(
-            AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow, bestPrimaryCorrelation))
-        return alignmentResultRow
 
     def __readMaps(self):
         cmapReader = CmapReader()
