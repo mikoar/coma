@@ -162,9 +162,22 @@ class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
     def __init__(self, position: NotAlignedPosition, score: float):
         self.__position = position
         self.score = score
+        self.position = position
 
     def __repr__(self) -> str:
         return f"{self.__position}, score:{self.score:.2f}"
 
     def __eq__(self, other: NotAlignedPosition):
         return self.__position == other
+    
+    def lessOnBothSequences(self, other: AlignedPair) -> bool:
+        if isinstance(self.__position, NotAlignedReferencePosition):
+            return self.__position.reference.position  < other.reference.position
+        else:
+            return self.__position.query.position < other.query.position
+
+    def lessOrEqualOnAnySequence(self, other: AlignedPair) -> bool:
+        if isinstance(self.__position, NotAlignedReferencePosition):
+            return self.__position.reference.position  <= other.reference.position
+        else:
+            return self.__position.query.position <= other.query.position
