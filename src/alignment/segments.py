@@ -188,8 +188,6 @@ class _SegmentPairWithConflict(_SegmentPair):
     def findOptimaPlace(self, conf1, conf2) -> Tuple[AlignmentSegment, AlignmentSegment]:
         if len(conf1[0]) == len(conf2[0]):
             points_1_np = np.cumsum([0] + conf1[1])
-            # @todo
-            # Check if they should be reversed
             points_2_np = np.cumsum([0] + conf2[1][::-1])[::-1]
             scores_sum = np.add(points_1_np, points_2_np)
             max_index = np.argmax(scores_sum)
@@ -202,12 +200,14 @@ class _SegmentPairWithConflict(_SegmentPair):
                     AlignmentSegment(self.conflictingSubsegment1.positions[conf1[2][max_index]:],
                                      sum(p.score for p in
                                          self.conflictingSubsegment1.positions[conf1[2][max_index]:]),
-                                     self.segment1.peak)
+                                     self.segment1.peak,
+                                     self.conflictingSubsegment1.positions[conf1[2][max_index]:])
                 new_seg2 = self.segment2 - \
                     AlignmentSegment(self.conflictingSubsegment2.positions[:conf2[2][max_index]],
                                      sum(p.score for p in
                                          self.conflictingSubsegment2.positions[:conf2[2][max_index]]),
-                                     self.segment2.peak)
+                                     self.segment2.peak,
+                                     self.conflictingSubsegment2.positions[:conf2[2][max_index]])
             return new_seg1, new_seg2
         else:
             self.resolveByTrimming()
