@@ -41,9 +41,12 @@ class SimpleApplicationService(ApplicationService):
                 if a is not None and a.alignedPairs]
 
     def __align(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> AlignmentResultRow | None:
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator)
-        primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                                 reverseStrand=True)
+        primaryCorrelation = queryMap.getInitialAlignment(
+            referenceMap, self.primaryGenerator, self.args.minPeakDistance)
+
+        primaryCorrelationReverse = queryMap.getInitialAlignment(
+            referenceMap, self.primaryGenerator, self.args.minPeakDistance, reverseStrand=True)
+
         bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
         self.dispatcher.dispatch(InitialAlignmentMessage(bestPrimaryCorrelation))
 

@@ -17,6 +17,7 @@ class Args(NamedTuple):
     referenceIds: List[int]
     queryIds: List[int]
     numberOfCpus: int | None
+    minPeakDistance: int
     maxDistance: int
     peakHeightThreshold: float
     perfectMatchScore: int
@@ -74,6 +75,10 @@ class Args(NamedTuple):
 
         parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None,
                             help="Number of CPUs to use. The default is all CPUs.")
+
+        parser.add_argument("-md", "--minPeakDistance", dest="minPeakDistance", type=int, default=20000,
+                            help="Minimum distance between peaks identified in the initial cross-correlation. "
+                                 "For more details see parameter distance of scipy.signal._peak_finding.find_peaks.")
 
         parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=1000,
                             help="Maximum distance between aligned pairs relatively to the cross-correlation lag.")

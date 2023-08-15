@@ -51,7 +51,8 @@ class OpticalMap:
                 yield PositionWithSiteId(i, position)
                 i += 1
 
-    def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False):
+    def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, minPeakDistance: int,
+                            reverseStrand=False):
         if self.length > reference.length:
             return EmptyInitialAlignment(self, reference, sequenceGenerator.resolution, sequenceGenerator.blurRadius)
 
@@ -67,7 +68,7 @@ class OpticalMap:
             height=0.75 * np.max(correlation),
             width=(None, None),
             rel_height=0.5,
-            distance=((5 * 10 ** 6) / sequenceGenerator.resolution))
+            distance=(minPeakDistance / sequenceGenerator.resolution))
 
         return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
                                        sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
