@@ -46,7 +46,7 @@ def test_refineAlignment_correctPeakPosition():
     refineGenerator = SequenceGenerator(1, 1)
 
     initialAlignment = query.getInitialAlignment(reference, initialGenerator, 2)
-    refinedAlignment = initialAlignment.refine(refineGenerator, 10, 1)
+    refinedAlignment = initialAlignment.refine(300, refineGenerator, 10, 1)
 
     assert initialAlignment.maxPeak.position == 300
     assert refinedAlignment.maxPeak.position == 300

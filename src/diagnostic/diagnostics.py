@@ -31,7 +31,8 @@ class PrimaryCorrelationDiagnosticsHandler(MessageHandler):
 
     def handle(self, message: InitialAlignmentMessage):
         fig = plotCorrelation(message.data)
-        self.writer.savePlot(fig, f"primary_cor_{message.data.query.moleculeId}.svg")
+        self.writer.savePlot(fig, f"primary_cor_{message.data.query.moleculeId}"
+                                  f"{'_reverse' if message.data.reverseStrand else ''}.svg")
 
 
 class SecondaryCorrelationDiagnosticsHandler(MessageHandler):

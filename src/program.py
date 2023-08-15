@@ -8,7 +8,7 @@ from src.alignment.alignment_results import AlignmentResults
 from src.alignment.segment_chainer import SegmentChainer
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
-from src.application_service import SimpleApplicationService
+from src.application_service import OnePeakPerReferenceApplicationService
 from src.args import Args
 from src.correlation.sequence_generator import SequenceGenerator
 from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
@@ -42,11 +42,11 @@ class Program:
             self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
-        self.applicationService = SimpleApplicationService(args,
-                                                           self.primaryGenerator,
-                                                           self.secondaryGenerator,
-                                                           self.aligner,
-                                                           self.dispatcher)
+        self.applicationService = OnePeakPerReferenceApplicationService(args,
+                                                                        self.primaryGenerator,
+                                                                        self.secondaryGenerator,
+                                                                        self.aligner,
+                                                                        self.dispatcher)
 
     def run(self):
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
