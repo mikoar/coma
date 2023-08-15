@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 import pytest
 
-from src.correlation.optical_map import OpticalMap, adjustPeakPositions, PositionWithSiteId
+from src.correlation.optical_map import OpticalMap, toRelativeGenomicPositions, PositionWithSiteId
 from src.correlation.sequence_generator import SequenceGenerator
 
 
@@ -52,7 +52,7 @@ def test_refineAlignment_correctPeakPosition():
     assert refinedAlignment.maxPeak.position == 300
 
 
-@pytest.mark.parametrize("positions,resolution,adjustedPositions,start", [
+@pytest.mark.parametrize("positions,resolution,expected,start", [
     ([1, 3, 5], 1, [1, 3, 5], 0),
     ([1, 3, 5], 2, [2, 6, 10], 0),
     ([1, 3, 5], 3, [4, 10, 16], 0),
@@ -60,8 +60,8 @@ def test_refineAlignment_correctPeakPosition():
     ([1, 3, 5], 10, [14, 34, 54], 0),
     ([1, 3, 5], 10, [34, 54, 74], 20),
 ])
-def test_adjustPeakPositions(positions: List[int], resolution: int, adjustedPositions: List[int], start: int):
-    assert adjustPeakPositions(np.array(positions), resolution, start).tolist() == adjustedPositions
+def test_toRelativeGenomicPositions(positions: List[int], resolution: int, expected: List[int], start: int):
+    assert toRelativeGenomicPositions(np.array(positions), resolution, start).tolist() == expected
 
 
 def test_getInitialAlignment_whenQueryIsShorterThanReference_returnsEmptyResult():
