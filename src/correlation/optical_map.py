@@ -51,17 +51,16 @@ class OpticalMap:
                 yield PositionWithSiteId(i, position)
                 i += 1
 
-    def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False,
-                            flatten=True):
+    def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, reverseStrand=False):
         if self.length > reference.length:
             return EmptyInitialAlignment(self, reference, sequenceGenerator.resolution, sequenceGenerator.blurRadius)
 
         sequence = self.getSequence(sequenceGenerator, reverseStrand)
         referenceSequence = reference.getSequence(sequenceGenerator)
         correlation = self.__getCorrelation(referenceSequence, sequence)
-        if flatten:
-            normalizingFactor = self.__getCorrelation(referenceSequence, np.ones(len(sequence))) + np.sum(sequence)
-            correlation = correlation / normalizingFactor
+
+        normalizingFactor = (self.__getCorrelation(referenceSequence, np.ones(len(sequence))) + np.sum(sequence)) / 2
+        correlation = correlation / normalizingFactor
 
         peakPositions, peakProperties = find_peaks(
             correlation,
