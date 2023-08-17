@@ -6,7 +6,7 @@ import pytest
 
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments import AlignmentSegment
-from tests.test_doubles.alignment_segment_stub import AlignedPairStub, AlignmentSegmentStub
+from tests.test_doubles.alignment_segment_stub import AlignedPairStub, AlignmentSegmentStub, ScoredNotAlignedPositionStub
 from tests.test_doubles.mock_segment_chainer import MockSegmentChainer
 
 
@@ -124,6 +124,21 @@ def test_slice(start, stop):
     sliced = segment.slice(start, stop)
 
     assert sliced.positions == [(12, 3), (None, 4), (13, 5)]
+    assert sliced.segmentScore == 150.
+    assert len(sliced.allPeakPositions) == 9
+
+
+@pytest.mark.parametrize("start, stop", [
+    pytest.param(AlignedPairStub(12, 3), AlignedPairStub(13, 5)),
+])
+def test_slice_parameterEnd_keepsUnpaired(start, stop):
+    segment = AlignmentSegmentStub.createFromPairs(
+        [(10, 1, 100.), (11, None, -50.), (None, 2, -50.), (12, 3, 100.), (13, 4, -50.), (None, 5, 100.),
+         (None, 6, -50.), (None, 7, 100.), (None, 8, 100.)])
+
+    sliced = segment.slice(start, stop)
+
+    assert sliced.positions == [(12, 3), (13, 4), (None, 5)]
     assert sliced.segmentScore == 150.
     assert len(sliced.allPeakPositions) == 9
 
