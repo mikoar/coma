@@ -27,6 +27,8 @@ class Args(NamedTuple):
     breakSegmentThreshold: int
     diagnosticsEnabled: bool
     benchmarkAlignmentFile: TextIO
+    peaksCount: int
+    onePeakPerReference: bool
 
     @staticmethod
     def parse() -> Args:
@@ -112,6 +114,17 @@ class Args(NamedTuple):
                             default=None,
                             help="XMAP file containing alignments from other source, to be used with 'diagnostics' "
                                  "option.")
+
+        parser.add_argument("-p", "--peaksCount", dest="peaksCount", type=int, default=5,
+                            help="Number of peaks found for each query molecule against all reference molecules in the "
+                                 "first cross-correlation run that are selected for further steps - the second "
+                                 "cross-correlation run and alignment creation. Then the alignment with the highest "
+                                 "score is returned, one alignment record per query molecule at most.")
+
+        parser.add_argument("-1ppr", "--onePeakPerReference", dest="onePeakPerReference", action="store_true",
+                            help="Aligns each query molecule against each reference molecule independently. The output"
+                                 "may contain one alignment record per every possible query-reference pair "
+                                 "(not recommended).")
 
         args = parser.parse_args()
         return args  # type: ignore

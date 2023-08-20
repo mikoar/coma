@@ -2,15 +2,9 @@ from __future__ import annotations
 
 import sys
 
-from src.alignment.aligner import Aligner, AlignerEngine
-from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResults
-from src.alignment.segment_chainer import SegmentChainer
-from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
-from src.alignment.segments_factory import AlignmentSegmentsFactory
-from src.application_service import OnePeakPerReferenceApplicationService
+from src.application_service import ApplicationServiceFactory
 from src.args import Args
-from src.correlation.sequence_generator import SequenceGenerator
 from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
     SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter
 from src.messaging.dispatcher import Dispatcher
@@ -29,24 +23,13 @@ class Program:
         self.args = args
         self.__readMaps()
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
-        self.primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
-        self.secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
-        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
-        segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
-        alignerEngine = AlignerEngine(args.maxDistance)
-        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
-        self.aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
         self.dispatcher = Dispatcher([])
+        self.applicationService = ApplicationServiceFactory().create(args, self.dispatcher)
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
             self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
-        self.applicationService = OnePeakPerReferenceApplicationService(args,
-                                                                        self.primaryGenerator,
-                                                                        self.secondaryGenerator,
-                                                                        self.aligner,
-                                                                        self.dispatcher)
 
     def run(self):
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
