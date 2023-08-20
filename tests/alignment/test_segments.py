@@ -6,7 +6,7 @@ import pytest
 
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments import AlignmentSegment
-from tests.test_doubles.alignment_segment_stub import AlignedPairStub, AlignmentSegmentStub, ScoredNotAlignedPositionStub
+from tests.test_doubles.alignment_segment_stub import AlignedPairStub, AlignmentSegmentStub
 from tests.test_doubles.mock_segment_chainer import MockSegmentChainer
 
 
