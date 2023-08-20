@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import itertools
-import numpy as np
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 
-from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlignedPair, AlignedPair, NotAlignedQueryPosition
+import numpy as np
+
+from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlignedPair, AlignedPair, \
+    NotAlignedQueryPosition
 from src.correlation.peak import Peak
 
 
@@ -43,8 +45,8 @@ class AlignmentSegment:
 
     def endOverlapsWithStartOf(self, other: AlignmentSegment):
         return other.startPosition.lessOrEqualOnAnySequence(self.startPosition) or \
-            other.startPosition.lessOrEqualOnAnySequence(self.endPosition) or \
-            self.endPosition.lessOrEqualOnAnySequence(other.endPosition)
+               other.startPosition.lessOrEqualOnAnySequence(self.endPosition) or \
+               self.endPosition.lessOrEqualOnAnySequence(other.endPosition)
 
     def slice(self, start: AlignedPair, end: AlignedPair) -> AlignmentSegment:
         slicedAtStart = itertools.dropwhile(
@@ -110,13 +112,14 @@ class AlignmentSegment:
     @staticmethod
     def __trimNotAlignedPositionsFromEnd(positions, end=None):
         if positions:
-            while not isinstance(positions[-1], AlignedPair) and (not end or not positions[-1].lessOrEqualOnAnySequence(end)):
+            while not isinstance(positions[-1], AlignedPair) and (
+                    not end or not positions[-1].lessOrEqualOnAnySequence(end)):
                 positions.pop()
 
     def __eq__(self, other):
         return isinstance(other, AlignmentSegment) \
-            and other.segmentScore == self.segmentScore \
-            and other.positions == self.positions
+               and other.segmentScore == self.segmentScore \
+               and other.positions == self.positions
 
     def __sub__(self, other: AlignmentSegment):
         positions = [p for p in self.positions if p not in other.positions]
@@ -142,6 +145,9 @@ class __EmptyAlignmentSegment(AlignmentSegment):
 
     def checkForConflicts(self, other: AlignmentSegment):
         return _SegmentPairWithNoConflict(self, other)
+
+    def endOverlapsWithStartOf(self, other: AlignmentSegment):
+        return False
 
 
 AlignmentSegment.empty = __EmptyAlignmentSegment()
@@ -191,17 +197,17 @@ class _SegmentPairWithConflict(_SegmentPair):
                 return self.segment1, self.segment2 - self.conflictingSubsegment2
             else:
                 new_seg1 = self.segment1 - \
-                    AlignmentSegment(self.conflictingSubsegment1.positions[conf1.indexes[max_index]:],
-                                     sum(p.score for p in
-                                         self.conflictingSubsegment1.positions[conf1.indexes[max_index]:]),
-                                     self.segment1.peak,
-                                     self.conflictingSubsegment1.positions[conf1.indexes[max_index]:])
+                           AlignmentSegment(self.conflictingSubsegment1.positions[conf1.indexes[max_index]:],
+                                            sum(p.score for p in
+                                                self.conflictingSubsegment1.positions[conf1.indexes[max_index]:]),
+                                            self.segment1.peak,
+                                            self.conflictingSubsegment1.positions[conf1.indexes[max_index]:])
                 new_seg2 = self.segment2 - \
-                    AlignmentSegment(self.conflictingSubsegment2.positions[:conf2.indexes[max_index]],
-                                     sum(p.score for p in
-                                         self.conflictingSubsegment2.positions[:conf2.indexes[max_index]]),
-                                     self.segment2.peak,
-                                     self.conflictingSubsegment2.positions[:conf2.indexes[max_index]])
+                           AlignmentSegment(self.conflictingSubsegment2.positions[:conf2.indexes[max_index]],
+                                            sum(p.score for p in
+                                                self.conflictingSubsegment2.positions[:conf2.indexes[max_index]]),
+                                            self.segment2.peak,
+                                            self.conflictingSubsegment2.positions[:conf2.indexes[max_index]])
             return new_seg1, new_seg2
         else:
             self.resolveByTrimming()
@@ -221,17 +227,18 @@ class _SegmentPairWithConflict(_SegmentPair):
     def resolveConflict(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
         if self.conflictingSubsegment1.peak.position > self.conflictingSubsegment2.peak.position:
             return self.__findOptimaPlace(self.conflictingSubsegment1.getReferenceLabels(),
-                                        self.conflictingSubsegment2.getReferenceLabels())
+                                          self.conflictingSubsegment2.getReferenceLabels())
         else:
             return self.__findOptimaPlace(self.conflictingSubsegment1.getQueryLabels(),
-                                        self.conflictingSubsegment2.getQueryLabels())
+                                          self.conflictingSubsegment2.getQueryLabels())
+
 
 class _SegementMoleculeCharacteristics():
     def __init__(self, positions: List, scores: List, indexes: List):
         self.positions = positions
         self.scores = scores
         self.indexes = indexes
-    
+
     @staticmethod
     def create(positions: List, scores: List, indexes: List):
         return _SegementMoleculeCharacteristics(positions, scores, indexes)

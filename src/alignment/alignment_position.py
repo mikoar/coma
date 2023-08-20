@@ -138,7 +138,18 @@ class AlignedPair(AlignmentPosition):
         return hash((self.reference, self.query, self.source))
 
 
-AlignedPair.null = AlignedPair(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
+class _NullAlignedPair(AlignedPair):
+    def __init__(self):
+        super().__init__(PositionWithSiteId(0, 0), PositionWithSiteId(0, 0))
+
+    def lessOnBothSequences(self, other: AlignedPair):
+        return False
+
+    def lessOrEqualOnAnySequence(self, other: AlignedPair):
+        return False
+
+
+AlignedPair.null = _NullAlignedPair()
 
 
 class ScoredAlignmentPosition(AlignmentPosition, ABC):
@@ -157,7 +168,7 @@ class ScoredAlignedPair(AlignedPair, ScoredAlignmentPosition):
 class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
     @property
     def absolutePosition(self) -> int:
-        return self.__position.absolutePosition
+        return self.position.absolutePosition
 
     def __init__(self, position: NotAlignedPosition, score: float):
         self.score = score
@@ -168,15 +179,15 @@ class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
 
     def __eq__(self, other: NotAlignedPosition):
         return self.position == other
-    
+
     def lessOnBothSequences(self, other: AlignedPair) -> bool:
         if isinstance(self.position, NotAlignedReferencePosition):
-            return self.position.reference.position  < other.reference.position
+            return self.position.reference.position < other.reference.position
         else:
             return self.position.query.position < other.query.position
 
     def lessOrEqualOnAnySequence(self, other: AlignedPair) -> bool:
         if isinstance(self.position, NotAlignedReferencePosition):
-            return self.position.reference.position  <= other.reference.position
+            return self.position.reference.position <= other.reference.position
         else:
             return self.position.query.position <= other.query.position
