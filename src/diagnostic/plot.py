@@ -1,4 +1,3 @@
-from math import floor
 from typing import List, Tuple, Union
 
 import matplotlib.patches as patches
@@ -11,6 +10,7 @@ from matplotlib.ticker import FuncFormatter
 from scipy.interpolate import interp1d
 
 from src.correlation.optical_map import CorrelationResult
+from src.correlation.peak import Peak
 
 rcParams["lines.linewidth"] = 1
 rcParams['axes.prop_cycle'] = cycler(color=["#e74c3c"])
@@ -65,21 +65,26 @@ def __plotCorrelation(correlationResult: CorrelationResult,
     return fig, ax
 
 
-def __plotPeaks(peaks: CorrelationResult, ax: Axes):
-    maxPeak = peaks.maxPeak
-    if not maxPeak:
+def __plotPeaks(peaks: CorrelationResult, ax: Axes, maxAnnotations=5):
+    sortedPeaks = sorted([peak for peak in peaks.peaks], key=lambda p: p.score, reverse=True)
+    if not sortedPeaks:
         return
 
-    peaksExceptMax = [peak for peak in peaks.peaks if peak.position != maxPeak.position]
+    maxPeak = sortedPeaks[0]
     ax.plot(maxPeak.position, maxPeak.height, "x", markersize=24, markeredgewidth=4)
-    if peaksExceptMax:
-        ax.plot([p.position for p in peaksExceptMax], peaks.correlation[[
-            floor((p.position - peaks.correlationStart) / peaks.resolution) for p in peaksExceptMax]], "x",
-                markersize=16, markeredgewidth=4, alpha=0.5)
+    __plotSuboptimalPeaks(ax, sortedPeaks[1:maxAnnotations], 0.6)
+    __plotSuboptimalPeaks(ax, sortedPeaks[maxAnnotations:], 0.3)
 
-    for i, peak in enumerate(peaks.peaks):
-        ax.annotate(f"({int(peak.position / 1000):,}K, {peak.height:.0f})",
+    peaksToAnnotate = sortedPeaks[:maxAnnotations]
+    for i, peak in enumerate(peaksToAnnotate):
+        ax.annotate(f"({int(peak.position / 1000):,}K, {peak.height:.2f}), s:{peak.score:.3f}",
                     (peak.position, peak.height), rotation=-45, ha="center", va="top")
+
+
+def __plotSuboptimalPeaks(ax, peaks: List[Peak], alpha: float):
+    if peaks:
+        ax.plot([p.position for p in peaks], [p.height for p in peaks], "x",
+                markersize=16, markeredgewidth=4, alpha=alpha)
 
 
 def __markNoiseLevel(ax, correlationResult):

@@ -134,7 +134,7 @@ class CorrelationResult:
         return [Peak(position, height, leftBase, rightBase)
                 for position, height, leftBase, rightBase
                 in zip(toRelativeGenomicPositions(peakPositions, resolution, correlationStart),
-                       toRelativeGenomicPositions(peakProperties["peak_heights"], resolution, correlationStart),
+                       peakProperties["peak_heights"],
                        toRelativeGenomicPositions(peakProperties["left_ips"], resolution, correlationStart),
                        toRelativeGenomicPositions(peakProperties["right_ips"], resolution, correlationStart))]
 
