@@ -15,15 +15,17 @@ class InitialAlignmentMessage(Message):
 
 
 class CorrelationResultMessage(Message):
-    def __init__(self, initialAlignment: InitialAlignment, refinedAlignment: CorrelationResult):
+    def __init__(self, initialAlignment: InitialAlignment, refinedAlignment: CorrelationResult, index: int = 0):
         self.initialAlignment = initialAlignment
         self.refinedAlignment = refinedAlignment
+        self.index = index
 
 
 class AlignmentResultRowMessage(Message):
     def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
-                 correlation: InitialAlignment):
+                 correlation: InitialAlignment, index: int = 0):
         self.reference = reference
         self.query = query
         self.alignment = alignment
         self.correlation = correlation
+        self.index = index

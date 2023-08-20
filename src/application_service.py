@@ -6,14 +6,35 @@ from typing import List, Iterator
 
 from p_tqdm import p_imap
 
-from src.alignment.aligner import Aligner
+from src.alignment.aligner import Aligner, AlignerEngine
+from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
+from src.alignment.segment_chainer import SegmentChainer
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
+from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.args import Args
 from src.correlation.optical_map import OpticalMap, InitialAlignment, CorrelationResult
 from src.correlation.peaks_selector import PeaksSelector, SelectedPeak
 from src.correlation.sequence_generator import SequenceGenerator
 from src.messaging.dispatcher import Dispatcher
 from src.messaging.messages import CorrelationResultMessage, InitialAlignmentMessage, AlignmentResultRowMessage
+
+
+class ApplicationServiceFactory:
+    def create(self, args: Args, dispatcher: Dispatcher) -> ApplicationService:
+        primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
+        secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
+        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
+        segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
+        alignerEngine = AlignerEngine(args.maxDistance)
+        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
+        aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
+        if args.onePeakPerReference:
+            return OnePeakPerReferenceApplicationService(
+                args, primaryGenerator, secondaryGenerator, aligner, dispatcher)
+        else:
+            return MultiPeakApplicationService(
+                args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
 
 
 class ApplicationService(ABC):
@@ -86,9 +107,10 @@ class MultiPeakApplicationService(ApplicationService):
 
         bestPrimaryCorrelationPeaks = self.peaksSelector.selectPeaks(primaryCorrelations)
 
-        secondaryCorrelations = [self.__getSecondaryCorrelation(p) for p in bestPrimaryCorrelationPeaks]
+        secondaryCorrelations = [self.__getSecondaryCorrelation(p, i)
+                                 for i, p in enumerate(bestPrimaryCorrelationPeaks)]
 
-        alignmentResultRows = [self.__getAlignmentRow(pc, sc) for pc, sc in secondaryCorrelations]
+        alignmentResultRows = [self.__getAlignmentRow(pc, sc, i) for i, (pc, sc) in enumerate(secondaryCorrelations)]
         return self.__getBestAlignment(alignmentResultRows)
 
     def __getPrimaryCorrelations(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> Iterator[InitialAlignment]:
@@ -103,20 +125,20 @@ class MultiPeakApplicationService(ApplicationService):
         if any(primaryCorrelationReverse.peaks):
             yield primaryCorrelationReverse
 
-    def __getSecondaryCorrelation(self, selectedPeak: SelectedPeak):
+    def __getSecondaryCorrelation(self, selectedPeak: SelectedPeak, index: int):
         secondaryCorrelation = selectedPeak.primaryCorrelation.refine(selectedPeak.peak.position,
                                                                       self.secondaryGenerator,
                                                                       self.args.secondaryMargin,
                                                                       self.args.peakHeightThreshold)
 
-        self.dispatcher.dispatch(CorrelationResultMessage(selectedPeak.primaryCorrelation, secondaryCorrelation))
+        self.dispatcher.dispatch(CorrelationResultMessage(selectedPeak.primaryCorrelation, secondaryCorrelation, index))
         return selectedPeak.primaryCorrelation, secondaryCorrelation
 
-    def __getAlignmentRow(self, sc: CorrelationResult, ic: InitialAlignment):
+    def __getAlignmentRow(self, sc: CorrelationResult, ic: InitialAlignment, index: int):
         alignmentResultRow = self.aligner.align(sc.reference, sc.query, sc.peaks, sc.reverseStrand)
-        self.dispatcher.dispatch(AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic))
+        self.dispatcher.dispatch(AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic, index))
         return alignmentResultRow
 
     @staticmethod
-    def __getBestAlignment(alignmentResultRows):
-        return next(sorted(alignmentResultRows, key=lambda a: a.confidence, reverse=True), default=None)
+    def __getBestAlignment(alignmentResultRows: List[AlignmentResultRow]):
+        return next(iter(sorted(alignmentResultRows, key=lambda a: a.confidence, reverse=True)), None)

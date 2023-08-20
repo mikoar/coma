@@ -43,7 +43,7 @@ class SecondaryCorrelationDiagnosticsHandler(MessageHandler):
 
     def handle(self, message: CorrelationResultMessage):
         fig = plotRefinedCorrelation(message.initialAlignment, message.refinedAlignment)
-        self.writer.savePlot(fig, f"secondary_cor{message.refinedAlignment.query.moleculeId}.svg")
+        self.writer.savePlot(fig, f"secondary_cor{message.refinedAlignment.query.moleculeId}_{message.index}.svg")
 
 
 class AlignmentPlotter(MessageHandler):
@@ -62,8 +62,8 @@ class AlignmentPlotter(MessageHandler):
         plot = AlignmentPlot(message.reference, message.query, message.alignment, message.correlation,
                              benchmarkAlignment)
 
-        self.writer.savePlot(plot.figure,
-                             f"Alignment_ref_{message.reference.moleculeId}_query_{message.query.moleculeId}.svg")
+        self.writer.savePlot(plot.figure, f"Alignment_ref_{message.reference.moleculeId}_query"
+                                          f"_{message.query.moleculeId}_{message.index}.svg")
 
     def getBenchmarkAlignment(self, message):
         if not self.benchmarkAlignmentFile:
