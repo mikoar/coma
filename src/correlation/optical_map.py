@@ -95,13 +95,14 @@ class CorrelationResult:
                blur: int = 0,
                correlationStart: int = 0,
                correlationEnd: int = None):
+        noiseLevel = CorrelationResult.rootMeanSquare(correlation)
         return CorrelationResult(
             correlation,
             query,
             reference,
-            CorrelationResult.createPeaks(peakPositions, peakProperties, resolution, correlationStart),
+            CorrelationResult.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel),
             reverseStrand,
-            CorrelationResult.rootMeanSquare(correlation),
+            noiseLevel,
             resolution,
             blur,
             correlationStart,
@@ -130,8 +131,9 @@ class CorrelationResult:
         self.correlationEnd = correlationEnd
 
     @staticmethod
-    def createPeaks(peakPositions: np.ndarray, peakProperties: dict, resolution: int, correlationStart: int):
-        return [Peak(position, height, leftBase, rightBase)
+    def createPeaks(peakPositions: np.ndarray, peakProperties: dict, resolution: int, correlationStart: int,
+                    noiseLevel: float):
+        return [Peak(position, height, leftBase, rightBase, height - noiseLevel)
                 for position, height, leftBase, rightBase
                 in zip(toRelativeGenomicPositions(peakPositions, resolution, correlationStart),
                        peakProperties["peak_heights"],
@@ -139,11 +141,11 @@ class CorrelationResult:
                        toRelativeGenomicPositions(peakProperties["right_ips"], resolution, correlationStart))]
 
     @staticmethod
-    def rootMeanSquare(array: np.ndarray):
+    def rootMeanSquare(array: np.ndarray) -> float:
         return np.sqrt(np.mean(array[array != 0] ** 2))
 
     def getScore(self):
-        return self.maxPeak.height - self.correlation.mean() if self.maxPeak else 0
+        return self.maxPeak.score if self.maxPeak else 0
 
     @property
     def maxPeak(self):
@@ -162,13 +164,14 @@ class InitialAlignment(CorrelationResult):
                blur: int = 0,
                correlationStart: int = 0,
                correlationEnd: int = None):
+        noiseLevel = InitialAlignment.rootMeanSquare(correlation)
         return InitialAlignment(
             correlation,
             query,
             reference,
-            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart),
+            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel),
             reverseStrand,
-            InitialAlignment.rootMeanSquare(correlation),
+            noiseLevel,
             resolution,
             blur,
             correlationStart,
