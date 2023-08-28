@@ -1,12 +1,13 @@
 import os.path
-from typing import TextIO
+from typing import TextIO, List
 
 from matplotlib import pyplot as plt
 
 from src.diagnostic.alignment_plot import AlignmentPlot
 from src.diagnostic.plot import plotCorrelation, plotRefinedCorrelation
 from src.messaging.message_handler import MessageHandler
-from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage
+from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage, \
+    MultipleAlignmentResultRowsMessage
 from src.parsers.xmap_reader import XmapReader
 
 
@@ -70,3 +71,30 @@ class AlignmentPlotter(MessageHandler):
             return None
         return next(
             iter(self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))
+
+
+class MultipleAlignmentsPlotter(MessageHandler):
+    messageType = MultipleAlignmentResultRowsMessage
+
+    def __init__(self, writer: DiagnosticsWriter, xmapReader: XmapReader, benchmarkAlignmentFile: TextIO):
+        self.writer = writer
+        self.xmapReader = xmapReader
+        self.benchmarkAlignmentFile = benchmarkAlignmentFile
+
+    def handle(self, message: MultipleAlignmentResultRowsMessage):
+        aligned = [m for m in message.messages if m.alignment.alignedPairs]
+        if not aligned:
+            return
+
+        benchmarkAlignments = self.getBenchmarkAlignment([m.query.moleculeId for m in aligned])
+        for m in aligned:
+            plot = AlignmentPlot(m.reference, m.query, m.alignment, m.correlation,
+                                 next((a for a in benchmarkAlignments if a.queryId == m.query.moleculeId), None))
+
+            self.writer.savePlot(plot.figure, f"Alignment_ref_{m.reference.moleculeId}_query"
+                                              f"_{m.query.moleculeId}_{m.index}.svg")
+
+    def getBenchmarkAlignment(self, queryIds: List[int]):
+        if not self.benchmarkAlignmentFile:
+            return []
+        return self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=queryIds)

@@ -6,7 +6,7 @@ from src.alignment.alignment_results import AlignmentResults
 from src.application_service import ApplicationServiceFactory
 from src.args import Args
 from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
-    SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter
+    SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter, MultipleAlignmentsPlotter
 from src.messaging.dispatcher import Dispatcher
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
@@ -30,6 +30,7 @@ class Program:
             self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
             self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addHandler(MultipleAlignmentsPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
 
     def run(self):
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)

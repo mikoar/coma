@@ -17,7 +17,8 @@ from src.correlation.optical_map import OpticalMap, InitialAlignment, Correlatio
 from src.correlation.peaks_selector import PeaksSelector, SelectedPeak
 from src.correlation.sequence_generator import SequenceGenerator
 from src.messaging.dispatcher import Dispatcher
-from src.messaging.messages import CorrelationResultMessage, InitialAlignmentMessage, AlignmentResultRowMessage
+from src.messaging.messages import CorrelationResultMessage, InitialAlignmentMessage, AlignmentResultRowMessage, \
+    MultipleAlignmentResultRowsMessage
 
 
 class ApplicationServiceFactory:
@@ -110,15 +111,18 @@ class MultiPeakApplicationService(ApplicationService):
         secondaryCorrelations = [self.__getSecondaryCorrelation(p, i)
                                  for i, p in enumerate(bestPrimaryCorrelationPeaks)]
 
-        alignmentResultRows = [self.__getAlignmentRow(pc, sc, i) for i, (pc, sc) in enumerate(secondaryCorrelations)]
+        alignmentResultRows, messages = zip(*[self.__getAlignmentRow(pc, sc, i) for i, (pc, sc) in
+                                              enumerate(secondaryCorrelations)])
+        self.dispatcher.dispatch(MultipleAlignmentResultRowsMessage(messages))
         return self.__getBestAlignment(alignmentResultRows)
 
     def __getPrimaryCorrelations(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> Iterator[InitialAlignment]:
         primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
                                                           self.args.minPeakDistance)
+        self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
+
         primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
                                                                  self.args.minPeakDistance, reverseStrand=True)
-        self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelationReverse))
         if any(primaryCorrelation.peaks):
             yield primaryCorrelation
@@ -136,8 +140,8 @@ class MultiPeakApplicationService(ApplicationService):
 
     def __getAlignmentRow(self, sc: CorrelationResult, ic: InitialAlignment, index: int):
         alignmentResultRow = self.aligner.align(sc.reference, sc.query, sc.peaks, sc.reverseStrand)
-        self.dispatcher.dispatch(AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic, index))
-        return alignmentResultRow
+        message = AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic, index)
+        return alignmentResultRow, message
 
     @staticmethod
     def __getBestAlignment(alignmentResultRows: List[AlignmentResultRow]):
