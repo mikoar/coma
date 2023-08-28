@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import List
 
 from src.alignment.alignment_results import AlignmentResultRow
 from src.correlation.optical_map import InitialAlignment, CorrelationResult, OpticalMap
@@ -29,3 +30,8 @@ class AlignmentResultRowMessage(Message):
         self.alignment = alignment
         self.correlation = correlation
         self.index = index
+
+
+class MultipleAlignmentResultRowsMessage(Message):
+    def __init__(self, messages: List[AlignmentResultRowMessage]):
+        self.messages = messages
