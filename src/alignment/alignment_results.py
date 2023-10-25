@@ -169,7 +169,7 @@ class AlignmentResultRow(XmapAlignment):
                     positions = query.positions[: lastPair.query.siteId + 3]
                 return [OpticalMap(self.queryId, self.queryLength, positions)]
             else:
-                # Case where aligned fragments was in the middle
+                # Case where aligned fragment is in the middle
                 if self.orientation == '+':
                     positions1 = query.positions[: query.positions.index(self.queryStartPosition) + 3]
                     positions2 = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
