@@ -9,7 +9,7 @@ from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
 from src.diagnostic.xmap_alignment import XmapAlignment
-
+from src.correlation.optical_map import OpticalMap
 
 class HitEnum(Enum):
     MATCH = "M"
@@ -143,3 +143,48 @@ class AlignmentResultRow(XmapAlignment):
     def __hitToString(count, hit):
         x = f"{count}{hit.value}"
         return x
+
+    def getUnalignedFragments(self, queries:List[OpticalMap]) -> List[OpticalMap]:
+        """Function used to return unaligned fragments of the query
+        if those parts constitute more than 0.2 of the whole query
+
+        :param queries: whole query which is being currently aligned
+        :type queries: List[OpticalMap]
+        :return: Unaligned parts of query in question
+        :rtype: List[OpticalMap]
+        """
+        if abs(self.queryStartPosition - self.queryEndPosition) > 0.8  * self.queryLength:
+            return []
+        else:
+            query = next((opticMap for opticMap in queries if opticMap.moleculeId == self.queryId), None)
+            if self.queryStartPosition == 0.0 or self.queryEndPosition == 0.0:
+                # Aligned positions are at the end/start
+                if self.orientation == '+':
+                    positions = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
+                    if self.queryEndPosition == 0.0:
+                        return []
+                else:
+                    alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
+                    lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
+                    positions = query.positions[: lastPair.query.siteId + 3]
+                return [OpticalMap(self.queryId, self.queryLength, positions)]
+            else:
+                # Case where aligned fragments was in the middle
+                if self.orientation == '+':
+                    positions1 = query.positions[: query.positions.index(self.queryStartPosition) + 3]
+                    positions2 = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
+                else:
+                    alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
+                    firstPair = alignedPairs[0] if alignedPairs else AlignedPair.null
+                    lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
+                    positions1 = query.positions[: firstPair.query.siteId + 3]
+                    positions2 = query.positions[lastPair.query.siteId - 2 :]
+                if len(positions1) >= 7 and len(positions2) >= 7:
+                    return [OpticalMap(self.queryId, self.queryLength, positions1),
+                            OpticalMap(self.queryId, self.queryLength, positions2)]
+                elif len(positions1) >= 7:
+                    return [OpticalMap(self.queryId, self.queryLength, positions1)]
+                elif len(positions2) >= 7:
+                    return [OpticalMap(self.queryId, self.queryLength, positions2)]
+                else:
+                    return []

@@ -50,8 +50,12 @@ class Program:
 
     def run(self):
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
+        unalignedFragments = [alignmentResultRow.getUnalignedFragments(self.queryMaps) for alignmentResultRow in alignmentResultRows]
+        unalignedFragments = [item for row in unalignedFragments for item in row]
+        alignmentResultRowsSecondPass = self.applicationService.execute(self.referenceMaps, unalignedFragments)
         alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
-                                                  alignmentResultRows)
+                                                  alignmentResultRows + alignmentResultRowsSecondPass)
+
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()

@@ -5,6 +5,7 @@ from typing import List, Tuple
 import pytest
 
 from src.alignment.alignment_results import AlignmentResultRow, AlignmentResults
+from src.correlation.optical_map import OpticalMap
 from tests.test_doubles.alignment_segment_stub import AlignmentSegmentStub
 
 
@@ -70,6 +71,24 @@ def test_filtersOutSubsequentAlignmentsOfOneQuery():
     assert alignmentResults.rows[0].referenceId == 11
     assert alignmentResults.rows[1].queryId == 20
     assert alignmentResults.rows[1].referenceId == 12
+
+
+@pytest.mark.parametrize("queries, pairs, queryStart, queryEnd, queryLength, expectedLength, expectedPositions, reverse", [
+    ([OpticalMap(1, 100, [0, 1, 5, 10, 20, 30, 100])], [(20, 42), (21, 43), (22, 44), (23, 45)], 0, 10, 20, 1, [1, 5, 10, 20, 30, 100], False),
+    ([OpticalMap(1, 120, [0, 1, 5, 10, 20, 30, 100, 120])], [(0, 0), (1, 1)], 10, 0, 20, 1, [0, 1, 5, 10], True),
+    ([OpticalMap(1, 100, [0, 1, 5, 10, 20, 30, 100])], [(20, 42), (21, 43), (22, 44), (23, 45)], 5, 10, 20, 0, [1, 5, 10, 20, 30, 100], False),
+    ([OpticalMap(1, 140, [0, 1, 5, 10, 20, 30, 100, 120, 130, 140])], [(20, 42), (21, 43), (22, 44), (23, 45)], 20, 30, 20, 2, [0, 1, 5, 10, 20, 30, 100],
+     False)
+])
+def test_getUnalignedFragments(queries: List[OpticalMap], pairs: List[Tuple[int, int]], queryStart: int, queryEnd: int,
+                               queryLength: int, expectedLength: int, expectedPositions: List[Tuple[int, int]], reverse: bool):
+    row = AlignmentResultRow([AlignmentSegmentStub.createFromPairs(pairs)], queryId=queries[0].moleculeId,
+                             queryStartPosition=queryStart, queryEndPosition=queryEnd, queryLength=queryLength,
+                             reverseStrand=reverse)
+    assert len(row.getUnalignedFragments(queries)) == expectedLength
+    if len(row.getUnalignedFragments(queries)) != 0:
+        assert row.getUnalignedFragments(queries)[0].length == queryLength
+        assert row.getUnalignedFragments(queries)[0].positions == expectedPositions
 
 
 if __name__ == '__main__':
