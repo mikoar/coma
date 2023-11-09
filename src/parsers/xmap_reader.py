@@ -45,6 +45,7 @@ class XmapReader:
             "HitEnum": "string",
             "QryLen": "float",
             "RefLen": "float",
+            "AlignedRest" : "string",
             "LabelChannel": "int",
             "Alignment": "string"
         }
@@ -66,6 +67,7 @@ class XmapReader:
             "HitEnum": row.cigarString,
             "QryLen": "{:.1f}".format(row.queryLength),
             "RefLen": "{:.1f}".format(row.referenceLength),
+            "AlignedRest" : "{}".format(row.alignedRest),
             "LabelChannel": 1,
             "Alignment": "".join(
                 [f"({pair.reference.siteId},{pair.query.siteId})" for pair in row.alignedPairs]),

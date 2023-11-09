@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+warnings.simplefilter("ignore")
 from dataclasses import dataclass
 from math import ceil
 from typing import List

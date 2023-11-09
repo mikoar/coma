@@ -42,6 +42,13 @@ class Args(NamedTuple):
                             default=sys.stdout,
                             help="XMAP output file path. Stdout is used if omitted.")
 
+        parser.add_argument("-oM", "--outputMode", dest="outputMode", type=str,
+                            default="best", choices=["best", "separate", "joined"],
+                            help="Mode which should be used while creating output alignment file. There are 3 possible "
+                            "options: 'best'- choosing best alignment based on confidence, 'separate'- creates two "
+                            "separate files for alignments, 'joined'- joins alignments when it is possible and saves "
+                            "rest to separate file.")
+
         parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=460,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
                                  "in the initial cross-correlation seeding step.")

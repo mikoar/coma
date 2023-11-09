@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import itertools
+import argparse
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import List
@@ -26,12 +28,54 @@ class AlignmentResults:
     @staticmethod
     def create(referenceFilePath: str,
                queryFilePath: str,
-               rows: List[AlignmentResultRow]):
+               rows: List[AlignmentResultRow],
+               rows_rest: List[AlignmentResultRow],
+               mode: str,
+               out_file: argparse.FileType):
+        if mode == "best":
+            rows = rows + rows_rest
         rowsSortedByQueryIdThenByConfidence = \
             sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQuery = \
             [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
-        return AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)
+        if mode == 'best':
+            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery))]
+        new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),
+                        mode='w', encoding=out_file.encoding)
+        rowsSortedByQueryIdThenByConfidenceRest = \
+            sorted(sorted(rows_rest, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
+        rowsWithoutSubsequentAlignmentsForSingleQueryRest = \
+            [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidenceRest, lambda r: r.queryId)]
+        if mode == 'separate':
+            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
+                    (new_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
+        elif mode == "joined":
+            joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
+                                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest)
+            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
+                    (new_file, AlignmentResults(referenceFilePath, queryFilePath,  separateRows))]
+        
+
+    @staticmethod
+    def resolve(rows: List[AlignmentResultRow],
+                rows_rest: List[AlignmentResultRow]):
+        separate = []
+        joined = []
+        for _, queries in itertools.groupby(sorted(rows + rows_rest, key=lambda r: r.referenceId), lambda r: r.referenceId):
+            for _, group in itertools.groupby(sorted(list(queries), key=lambda r: r.queryId), lambda r: r.queryId):
+                group = list(group)
+                if len(group) == 1:
+                    separate.append(group[0])
+                else:
+                    if group[0].check_overlap(group[1]):
+                        resolved = group[0].resolve(group[1])
+                        if resolved:
+                            joined.append(resolved)
+                        else:
+                            separate.extend(group)
+                    else:
+                        separate.extend(group)
+        return joined, separate
 
 
 class AlignmentResultRow(XmapAlignment):
@@ -66,7 +110,8 @@ class AlignmentResultRow(XmapAlignment):
                  referenceStartPosition: int = 0,
                  referenceEndPosition: int = 0,
                  reverseStrand: bool = False,
-                 confidence: float = 0.):
+                 confidence: float = 0.,
+                 alignedRest: bool = False):
 
         self.queryId = queryId
         self.referenceId = referenceId
@@ -79,6 +124,7 @@ class AlignmentResultRow(XmapAlignment):
         self.queryLength = queryLength
         self.referenceLength = referenceLength
         self.segments = segments
+        self.alignedRest = alignedRest
 
     @property
     def positions(self):
@@ -167,7 +213,7 @@ class AlignmentResultRow(XmapAlignment):
                     alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
                     lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
                     positions = query.positions[: lastPair.query.siteId + 3]
-                return [OpticalMap(self.queryId, self.queryLength, positions)]
+                return [OpticalMap(self.queryId, positions[-1] - positions[0] + 1, positions)]
             else:
                 # Case where aligned fragment is in the middle
                 if self.orientation == '+':
@@ -177,14 +223,56 @@ class AlignmentResultRow(XmapAlignment):
                     alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
                     firstPair = alignedPairs[0] if alignedPairs else AlignedPair.null
                     lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
-                    positions1 = query.positions[: firstPair.query.siteId + 3]
-                    positions2 = query.positions[lastPair.query.siteId - 2 :]
+                    positions1 = query.positions[: lastPair.query.siteId + 3]
+                    positions2 = query.positions[firstPair.query.siteId - 2 :]
                 if len(positions1) >= 7 and len(positions2) >= 7:
-                    return [OpticalMap(self.queryId, self.queryLength, positions1),
-                            OpticalMap(self.queryId, self.queryLength, positions2)]
+                    return [OpticalMap(self.queryId, positions1[-1] - positions1[0] + 1, positions1),
+                            OpticalMap(self.queryId, positions2[-1] - positions2[0] + 1, positions2)]
                 elif len(positions1) >= 7:
-                    return [OpticalMap(self.queryId, self.queryLength, positions1)]
+                    return [OpticalMap(self.queryId, positions1[-1] - positions1[0] + 1, positions1)]
                 elif len(positions2) >= 7:
-                    return [OpticalMap(self.queryId, self.queryLength, positions2)]
+                    return [OpticalMap(self.queryId, positions2[-1] - positions2[0] + 1, positions2)]
                 else:
                     return []
+    
+    def setAlignedRest(self, alignedRest: bool):
+        self.alignedRest = alignedRest
+        return self
+    
+    def check_overlap(self, alignedRest: AlignmentResultRow) -> bool:
+        if self.orientation == alignedRest.orientation and self.referenceId == alignedRest.referenceId:
+            diff = min(self.referenceEndPosition, alignedRest.referenceEndPosition) - \
+                max(self.referenceStartPosition, alignedRest.referenceStartPosition)
+            # Max insertion size from benchmark dataset
+            if diff <= 34440:
+                if ((self.alignedPairs[0].reference.siteId < alignedRest.alignedPairs[0].reference.siteId) and \
+                    (self.alignedPairs[0].query.siteId < alignedRest.alignedPairs[0].query.siteId) and \
+                        (self.alignedPairs[-1].reference.siteId < alignedRest.alignedPairs[-1].reference.siteId)) or \
+                        ((self.alignedPairs[0].reference.siteId > alignedRest.alignedPairs[0].reference.siteId) and \
+                            (self.alignedPairs[0].query.siteId > alignedRest.alignedPairs[0].query.siteId) and \
+                                (alignedRest.alignedPairs[-1].reference.siteId < self.alignedPairs[-1].reference.siteId)):
+                    return True
+        return False
+    
+    def resolve(self, alignedRest: AlignmentResultRow) -> AlignmentResultRow:
+        if self.alignedPairs[0].reference.position < alignedRest.alignedPairs[0].reference.position:
+            pair = self.segments[0].checkForConflicts(alignedRest.segments[0])
+        else:
+            pair = alignedRest.segments[0].checkForConflicts(self.segments[0])
+
+        
+        if pair.resolveConflict():
+            seg1, seg2 = pair.resolveConflict()
+            notEmptySegments = [s for s in [seg1, seg2] if s != AlignmentSegment.empty]
+            return AlignmentResultRow.create(AlignmentSegmentsWithResolvedConflicts(notEmptySegments),
+                                      self.queryId, self.referenceId, self.queryLength, self.referenceLength,
+                                      self.reverseStrand)
+        
+        else:
+            # Consult on friday
+            print("!ERROR!")
+            print(len(self.segments), len(alignedRest.segments), self.segments,
+                  self.alignedPairs[0].reference, alignedRest.alignedPairs[0].reference.position)
+            print("PAIR", pair, pair.__dict__)
+            return
+                
