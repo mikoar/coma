@@ -31,7 +31,8 @@ class AlignmentResults:
                rows: List[AlignmentResultRow],
                rows_rest: List[AlignmentResultRow],
                mode: str,
-               out_file: argparse.FileType):
+               out_file: argparse.FileType,
+               maxDifference: int):
         if mode == "best":
             rows = rows + rows_rest
         rowsSortedByQueryIdThenByConfidence = \
@@ -51,14 +52,16 @@ class AlignmentResults:
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
         elif mode == "joined":
             joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
-                                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest)
+                                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest,
+                                                                maxDifference)
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath,  separateRows))]
         
 
     @staticmethod
     def resolve(rows: List[AlignmentResultRow],
-                rows_rest: List[AlignmentResultRow]):
+                rows_rest: List[AlignmentResultRow],
+                maxDifference: int):
         separate = []
         joined = []
         for _, queries in itertools.groupby(sorted(rows + rows_rest, key=lambda r: r.referenceId), lambda r: r.referenceId):
@@ -67,7 +70,7 @@ class AlignmentResults:
                 if len(group) == 1:
                     separate.append(group[0])
                 else:
-                    if group[0].check_overlap(group[1]):
+                    if group[0].check_overlap(group[1], maxDifference):
                         resolved = group[0].resolve(group[1])
                         if resolved:
                             joined.append(resolved)
@@ -234,17 +237,26 @@ class AlignmentResultRow(XmapAlignment):
                     return [OpticalMap(self.queryId, positions2[-1] - positions2[0] + 1, positions2)]
                 else:
                     return []
-    
+
     def setAlignedRest(self, alignedRest: bool):
         self.alignedRest = alignedRest
         return self
-    
-    def check_overlap(self, alignedRest: AlignmentResultRow) -> bool:
+
+    def check_overlap(self, alignedRest: AlignmentResultRow, maxDifference:int) -> bool:
+        """Function used to identify overlapping alignments of the same query
+
+        :param alignedRest: Other alignment of the same query
+        :type alignedRest: AlignmentResultRow
+        :param maxDifference: Maximum difference between reference positions of the
+        alignments if they are to be joint
+        :type maxDifference: int
+        :return: Whether those two alignments should be joint
+        :rtype: bool
+        """
         if self.orientation == alignedRest.orientation and self.referenceId == alignedRest.referenceId:
             diff = min(self.referenceEndPosition, alignedRest.referenceEndPosition) - \
                 max(self.referenceStartPosition, alignedRest.referenceStartPosition)
-            # Max insertion size from benchmark dataset
-            if diff <= 34440:
+            if diff <= maxDifference:
                 if ((self.alignedPairs[0].reference.siteId < alignedRest.alignedPairs[0].reference.siteId) and \
                     (self.alignedPairs[0].query.siteId < alignedRest.alignedPairs[0].query.siteId) and \
                         (self.alignedPairs[-1].reference.siteId < alignedRest.alignedPairs[-1].reference.siteId)) or \
@@ -253,26 +265,24 @@ class AlignmentResultRow(XmapAlignment):
                                 (alignedRest.alignedPairs[-1].reference.siteId < self.alignedPairs[-1].reference.siteId)):
                     return True
         return False
-    
+
     def resolve(self, alignedRest: AlignmentResultRow) -> AlignmentResultRow:
+        """Function used to resolve conflicts between two overlapping alignments of the same query
+
+        :param alignedRest: Other alignment of the same query
+        :type alignedRest: AlignmentResultRow
+        :return: Joint alignment with resolved conflicts
+        :rtype: AlignmentResultRow
+        """
         if self.alignedPairs[0].reference.position < alignedRest.alignedPairs[0].reference.position:
             pair = self.segments[0].checkForConflicts(alignedRest.segments[0])
         else:
             pair = alignedRest.segments[0].checkForConflicts(self.segments[0])
 
-        
         if pair.resolveConflict():
             seg1, seg2 = pair.resolveConflict()
             notEmptySegments = [s for s in [seg1, seg2] if s != AlignmentSegment.empty]
             return AlignmentResultRow.create(AlignmentSegmentsWithResolvedConflicts(notEmptySegments),
                                       self.queryId, self.referenceId, self.queryLength, self.referenceLength,
                                       self.reverseStrand)
-        
-        else:
-            # Consult on friday
-            print("!ERROR!")
-            print(len(self.segments), len(alignedRest.segments), self.segments,
-                  self.alignedPairs[0].reference, alignedRest.alignedPairs[0].reference.position)
-            print("PAIR", pair, pair.__dict__)
-            return
-                
+        return

@@ -25,6 +25,7 @@ class Args(NamedTuple):
     unmatchedPenalty: int
     minScore: int
     breakSegmentThreshold: int
+    maxDifference : int
     diagnosticsEnabled: bool
     benchmarkAlignmentFile: TextIO
 
@@ -109,6 +110,10 @@ class Args(NamedTuple):
 
         parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=1200,
                             help="Alignment segments can be split into two if their score drops below this threshold.")
+
+        parser.add_argument("-diff", "--maxDifference", dest="maxDifference", type=int, default=100000,
+                            help="Multiple alignments of the same query will be joined if difference between their "
+                            "reference positions is less or equal this parameter.")
 
         parser.add_argument("-D", "--diagnostics", dest="diagnosticsEnabled", action="store_true",
                             help="Draws cross-correlation and alignment plots. When used, 'outputFile' parameter "
