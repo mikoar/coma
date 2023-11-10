@@ -72,9 +72,12 @@ class OpticalMap:
             rel_height=0.5,
             distance=(minPeakDistance / sequenceGenerator.resolution))
 
-        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
-                                       sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
-                                       len(correlation) * sequenceGenerator.resolution)
+        if peakPositions.shape[0] < 500:
+            return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
+                                            sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
+                                            len(correlation) * sequenceGenerator.resolution)
+        else:
+            return EmptyInitialAlignment(self, reference, sequenceGenerator.resolution, sequenceGenerator.blurRadius)
 
     def getSequence(self, sequenceGenerator: SequenceGenerator, reverseStrand=False, start: int = 0, end: int = None):
         sequence = sequenceGenerator.positionsToSequence(self.positions, start, end)

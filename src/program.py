@@ -52,11 +52,15 @@ class Program:
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
         unalignedFragments = [alignmentResultRow.getUnalignedFragments(self.queryMaps) for alignmentResultRow in alignmentResultRows]
         unalignedFragments = [item for row in unalignedFragments for item in row]
+        
         alignmentResultRowsSecondPass = self.applicationService.execute(self.referenceMaps, unalignedFragments)
+        alignmentResultRowsSecondPass = [alignmentResultRowRest.setAlignedRest(True) for alignmentResultRowRest in alignmentResultRowsSecondPass]
         alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
-                                                  alignmentResultRows + alignmentResultRowsSecondPass)
-
-        self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
+                                                  alignmentResultRows, alignmentResultRowsSecondPass,
+                                                  self.args.outputMode, self.args.outputFile, self.args.maxDifference)
+        
+        for file_name, result in alignmentResult:
+            self.xmapReader.writeAlignments(file_name, result)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()
 
