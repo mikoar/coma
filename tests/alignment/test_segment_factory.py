@@ -30,9 +30,22 @@ def test_fullAlignment():
     assert segment.allPeakPositions == positions
 
 
-def test_empty():
+def test_noPositions_returnsEmptySegment():
     segments = AlignmentSegmentsFactory(5, 10).getSegments([], __peak())
-    assert len(segments) == 0
+    assert len(segments) == 1
+    emptySegment = segments[0]
+    assert len(emptySegment.positions) == 0
+    assert len(emptySegment.allPeakPositions) == 0
+
+
+def test_noQualifyingSegment_returnsEmptySegment():
+    positions = __scoredPositions([5., 6., 7., 4., 3.])
+    segments = AlignmentSegmentsFactory(99, 10).getSegments(positions, __peak())
+    assert len(segments) == 1
+    segment = segments[0]
+    assert segment.segmentScore == 0
+    assert len(segment.positions) == 0
+    assert len(segment.allPeakPositions) == 5
 
 
 def test_partialAlignment():

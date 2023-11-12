@@ -5,7 +5,7 @@ from typing import List
 import pytest
 
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
-from src.alignment.segments import AlignmentSegment
+from src.alignment.segments import AlignmentSegment, EmptyAlignmentSegment
 from tests.test_doubles.alignment_segment_stub import AlignedPairStub, AlignmentSegmentStub
 from tests.test_doubles.mock_segment_chainer import MockSegmentChainer
 
@@ -24,12 +24,14 @@ def test_conflicts_noConflicts_returnsUnchanged():
 @pytest.mark.parametrize("segment0, segment1, expectedSegments", [
     (
             AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
-            AlignmentSegment.empty,
-            [AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])]
+            EmptyAlignmentSegment(),
+            [AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
+             EmptyAlignmentSegment()]
     ), (
-            AlignmentSegment.empty,
+            EmptyAlignmentSegment(),
             AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)]),
-            [AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])]
+            [EmptyAlignmentSegment(),
+             AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 100.)])]
     ),
 ])
 def test_conflicts_withEmptySegment_returnsUnchanged(
@@ -43,7 +45,8 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
     pytest.param(
         AlignmentSegmentStub.createFromPairs([(1, 1, 101.)]),
         AlignmentSegmentStub.createFromPairs([(1, 2, 100.)]),
-        [AlignmentSegmentStub.createFromPairs([(1, 1, 101.)])],
+        [AlignmentSegmentStub.createFromPairs([(1, 1, 101.)]),
+         EmptyAlignmentSegment()],
         id="single position segments ref conflict"
     ),
     pytest.param(
@@ -56,7 +59,8 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
     pytest.param(
         AlignmentSegmentStub.createFromPairs([(1, 1, 100.)]),
         AlignmentSegmentStub.createFromPairs([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)]),
-        [AlignmentSegmentStub.createFromPairs([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)])],
+        [EmptyAlignmentSegment(),
+         AlignmentSegmentStub.createFromPairs([(1, 2, 101.), (2, 3, 100.), (3, 4, 100.)])],
         id="single position segment and a larger segment ref conflict at the start, "
            "single position segment gets dropped"
     ),
@@ -70,7 +74,8 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
     pytest.param(
         AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)]),
         AlignmentSegmentStub.createFromPairs([(3, 4, 100.)]),
-        [AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)])],
+        [AlignmentSegmentStub.createFromPairs([(1, 1, 100.), (2, 2, 100.), (3, 3, 101.)]),
+         EmptyAlignmentSegment()],
         id="single position segment and a larger segment ref conflict at the end, single position segment gets dropped"
     ),
     pytest.param(
@@ -159,7 +164,7 @@ def test_subtract_noPositionsLeft_returnsEmptySegment():
 
     result = segment0 - segment1
 
-    assert result == AlignmentSegment.empty
+    assert result == EmptyAlignmentSegment()
 
 
 if __name__ == '__main__':

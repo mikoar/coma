@@ -14,8 +14,7 @@ class AlignmentSegmentConflictResolver:
             return AlignmentSegmentsWithResolvedConflicts(segments)
 
         resolvedSegments = self.__pairAndResolveConflicts(segments)
-        notEmptySegments = [s for s in resolvedSegments if s != AlignmentSegment.empty]
-        return AlignmentSegmentsWithResolvedConflicts(notEmptySegments)
+        return AlignmentSegmentsWithResolvedConflicts(resolvedSegments)
 
     def __pairAndResolveConflicts(self, segments: Iterable[AlignmentSegment]):
         chainedSegments = self.segmentChainer.chain(segments)
