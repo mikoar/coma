@@ -214,7 +214,7 @@ class AlignmentPlot:
 
     def __plotSegment(self, color, peak: Peak, peakNumber: int, segment: AlignmentSegment, segmentNumber: int, x, y):
         self.axes.plot(x, y,
-                       label=f" peak {peakNumber + 1} (height: {peak.height:.0f}), segment {segmentNumber + 1} "
+                       label=f" peak {peakNumber + 1} (height: {peak.height:.2f}), segment {segmentNumber + 1} "
                              f"({len(segment.alignedPositions)} pairs, score: {segment.segmentScore:.1f})",
                        marker="+",
                        markersize=16,
