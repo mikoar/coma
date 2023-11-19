@@ -1,10 +1,10 @@
 from abc import abstractmethod
 from typing import Type
 
-from src.messaging.messages import Message
+from src.extensions.messages import Message
 
 
-class MessageHandler:
+class Extension:
     @property
     @abstractmethod
     def messageType(self) -> Type[Message]:

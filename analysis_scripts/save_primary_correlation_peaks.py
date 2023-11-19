@@ -1,12 +1,12 @@
 from tqdm import tqdm
 
 from src.args import Args
-from src.messaging.message_handler import MessageHandler
-from src.messaging.messages import CorrelationResultMessage
+from src.extensions.extension import Extension
+from src.extensions.messages import CorrelationResultMessage
 from src.program import Program
 
 
-class PeaksCatcher(MessageHandler):
+class PeaksCatcher(Extension):
     messageType = CorrelationResultMessage
 
     def __init__(self, filePath: str):

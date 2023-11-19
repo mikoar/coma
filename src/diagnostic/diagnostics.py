@@ -5,8 +5,8 @@ from matplotlib import pyplot as plt
 
 from src.diagnostic.alignment_plot import AlignmentPlot
 from src.diagnostic.plot import plotCorrelation, plotRefinedCorrelation
-from src.messaging.message_handler import MessageHandler
-from src.messaging.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage, \
+from src.extensions.extension import Extension
+from src.extensions.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage, \
     MultipleAlignmentResultRowsMessage
 from src.parsers.xmap_reader import XmapReader
 
@@ -24,7 +24,7 @@ class DiagnosticsWriter:
         plt.close(fig)
 
 
-class PrimaryCorrelationDiagnosticsHandler(MessageHandler):
+class PrimaryCorrelationPlotter(Extension):
     messageType = InitialAlignmentMessage
 
     def __init__(self, writer: DiagnosticsWriter):
@@ -36,7 +36,7 @@ class PrimaryCorrelationDiagnosticsHandler(MessageHandler):
                                   f"{'_reverse' if message.data.reverseStrand else ''}.svg")
 
 
-class SecondaryCorrelationDiagnosticsHandler(MessageHandler):
+class SecondaryCorrelationPlotter(Extension):
     messageType = CorrelationResultMessage
 
     def __init__(self, writer: DiagnosticsWriter):
@@ -47,7 +47,7 @@ class SecondaryCorrelationDiagnosticsHandler(MessageHandler):
         self.writer.savePlot(fig, f"secondary_cor{message.refinedAlignment.query.moleculeId}_{message.index}.svg")
 
 
-class AlignmentPlotter(MessageHandler):
+class AlignmentPlotter(Extension):
     messageType = AlignmentResultRowMessage
 
     def __init__(self, writer: DiagnosticsWriter, xmapReader: XmapReader, benchmarkAlignmentFile: TextIO):
@@ -73,7 +73,7 @@ class AlignmentPlotter(MessageHandler):
             iter(self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))
 
 
-class MultipleAlignmentsPlotter(MessageHandler):
+class MultipleAlignmentsPlotter(Extension):
     messageType = MultipleAlignmentResultRowsMessage
 
     def __init__(self, writer: DiagnosticsWriter, xmapReader: XmapReader, benchmarkAlignmentFile: TextIO):

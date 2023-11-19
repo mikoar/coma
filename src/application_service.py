@@ -16,8 +16,8 @@ from src.args import Args
 from src.correlation.optical_map import OpticalMap, InitialAlignment, CorrelationResult
 from src.correlation.peaks_selector import PeaksSelector, SelectedPeak
 from src.correlation.sequence_generator import SequenceGenerator
-from src.messaging.dispatcher import Dispatcher
-from src.messaging.messages import CorrelationResultMessage, InitialAlignmentMessage, AlignmentResultRowMessage, \
+from src.extensions.dispatcher import Dispatcher
+from src.extensions.messages import CorrelationResultMessage, InitialAlignmentMessage, AlignmentResultRowMessage, \
     MultipleAlignmentResultRowsMessage
 
 

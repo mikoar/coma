@@ -6,10 +6,10 @@ from typing import List
 from src.alignment.alignment_results import AlignmentResults
 from src.application_service import ApplicationServiceFactory
 from src.args import Args
-from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
-    SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter, MultipleAlignmentsPlotter
-from src.messaging.dispatcher import Dispatcher
-from src.messaging.message_handler import MessageHandler
+from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationPlotter, \
+    SecondaryCorrelationPlotter, AlignmentPlotter, MultipleAlignmentsPlotter
+from src.extensions.dispatcher import Dispatcher
+from src.extensions.extension import Extension
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
@@ -21,7 +21,7 @@ def main():
 
 
 class Program:
-    def __init__(self, args: Args, extensions: List[MessageHandler] = None):
+    def __init__(self, args: Args, extensions: List[Extension] = None):
         self.args = args
         self.__readMaps()
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
@@ -29,10 +29,10 @@ class Program:
         self.applicationService = ApplicationServiceFactory().create(args, self.dispatcher)
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
-            self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
-            self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
-            self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
-            self.dispatcher.addHandler(MultipleAlignmentsPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addExtension(PrimaryCorrelationPlotter(writer))
+            self.dispatcher.addExtension(SecondaryCorrelationPlotter(writer))
+            self.dispatcher.addExtension(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addExtension(MultipleAlignmentsPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
 
     def run(self):
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
