@@ -29,9 +29,10 @@ class Args(NamedTuple):
     benchmarkAlignmentFile: TextIO
     peaksCount: int
     onePeakPerReference: bool
+    disableProgressBar: bool
 
     @staticmethod
-    def parse() -> Args:
+    def parse(args: List[str] = None) -> Args:
         parser = argparse.ArgumentParser(description="Optical map aligner.")
 
         parser.add_argument("-r", "--reference", dest="referenceFile", type=argparse.FileType("r"), required=True,
@@ -126,5 +127,8 @@ class Args(NamedTuple):
                                  "may contain one alignment record per every possible query-reference pair "
                                  "(not recommended).")
 
-        args = parser.parse_args()
+        parser.add_argument("-pb", "--disableProgressBar", dest="disableProgressBar", action="store_true",
+                            help="Disables the progress bar.")
+
+        args = parser.parse_args(args)
         return args  # type: ignore

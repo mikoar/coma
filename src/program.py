@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from typing import List
 
 from src.alignment.alignment_results import AlignmentResults
 from src.application_service import ApplicationServiceFactory
@@ -8,6 +9,7 @@ from src.args import Args
 from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
     SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter, MultipleAlignmentsPlotter
 from src.messaging.dispatcher import Dispatcher
+from src.messaging.message_handler import MessageHandler
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
@@ -19,11 +21,11 @@ def main():
 
 
 class Program:
-    def __init__(self, args: Args):
+    def __init__(self, args: Args, extensions: List[MessageHandler] = None):
         self.args = args
         self.__readMaps()
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
-        self.dispatcher = Dispatcher([])
+        self.dispatcher = Dispatcher(extensions)
         self.applicationService = ApplicationServiceFactory().create(args, self.dispatcher)
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
@@ -39,6 +41,7 @@ class Program:
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()
+        return alignmentResult
 
     def __readMaps(self):
         cmapReader = CmapReader()
