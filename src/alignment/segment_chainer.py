@@ -17,6 +17,9 @@ class SegmentChainer:
 
         emptySegments = [s for s in segments if s.empty]
         preOrderedNonEmptySegments = sorted((s for s in segments if not s.empty), key=initialOrderingKey)
+        if not preOrderedNonEmptySegments:
+            return emptySegments
+
         cumulatedScore = [-math.inf] * len(preOrderedNonEmptySegments)
         previousSegmentIndexes: List[int | None] = [None] * len(preOrderedNonEmptySegments)
         bestPreviousSegmentIndex = 0

@@ -91,5 +91,15 @@ def test_chain_preservesEmptySegments():
     assert len(chainedSegments) == 3
 
 
+def test_chain_emptySegmentsOnly():
+    segments = [
+        AlignmentSegmentBuilder()
+            .withScore(0.)
+            .build()
+    ]
+    chainedSegments = SegmentChainer().chain(segments)
+    assert chainedSegments == segments
+
+
 if __name__ == '__main__':
     pytest.main(args=[__file__])
