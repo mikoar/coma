@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from math import ceil
 from typing import List
@@ -63,12 +64,14 @@ class OpticalMap:
         normalizingFactor = (self.__getCorrelation(referenceSequence, np.ones(len(sequence))) + np.sum(sequence)) / 2
         correlation = correlation / normalizingFactor
 
-        peakPositions, peakProperties = find_peaks(
-            correlation,
-            height=0.75 * np.max(correlation),
-            width=(None, None),
-            rel_height=0.5,
-            distance=(minPeakDistance / sequenceGenerator.resolution))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            peakPositions, peakProperties = find_peaks(
+                correlation,
+                height=0.75 * np.max(correlation),
+                width=(None, None),
+                rel_height=0.5,
+                distance=(minPeakDistance / sequenceGenerator.resolution))
 
         return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
                                        sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
@@ -185,8 +188,13 @@ class InitialAlignment(CorrelationResult):
         referenceEnd = peakPosition + self.query.length + secondaryMargin
         referenceSequence = self.reference.getSequence(sequenceGenerator, False, referenceStart, referenceEnd)
         correlation = self.__getCorrelation(referenceSequence, querySequence)
-        peakPositions, peakProperties = find_peaks(correlation, height=peakHeightThreshold,
-                                                   width=(None, None), prominence=0.05 * correlation.max())
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            peakPositions, peakProperties = find_peaks(
+                correlation,
+                height=peakHeightThreshold,
+                width=(None, None),
+                prominence=0.05 * correlation.max())
 
         correlationLength = len(correlation) * resolution
 
