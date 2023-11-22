@@ -1,6 +1,5 @@
-from collections import Iterator
 from dataclasses import dataclass
-from typing import List
+from typing import List, Iterator
 
 from src.correlation.optical_map import InitialAlignment
 from src.correlation.peak import Peak
