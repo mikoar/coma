@@ -53,7 +53,7 @@ class OpticalMap:
                 i += 1
 
     def getInitialAlignment(self, reference: OpticalMap, sequenceGenerator: SequenceGenerator, minPeakDistance: int,
-                            reverseStrand=False):
+                            peaksCount: int, reverseStrand=False):
         if self.length > reference.length:
             return EmptyInitialAlignment(self, reference, sequenceGenerator.resolution, sequenceGenerator.blurRadius)
 
@@ -73,7 +73,7 @@ class OpticalMap:
                 rel_height=0.5,
                 distance=(minPeakDistance / sequenceGenerator.resolution))
 
-        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, reverseStrand,
+        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, peaksCount, reverseStrand,
                                        sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
                                        len(correlation) * sequenceGenerator.resolution)
 
@@ -93,6 +93,7 @@ class CorrelationResult:
                reference: OpticalMap,
                peakPositions: np.ndarray,
                peakProperties: dict,
+               peaksCount: int,
                reverseStrand: bool,
                resolution: int = 1,
                blur: int = 0,
@@ -103,7 +104,7 @@ class CorrelationResult:
             correlation,
             query,
             reference,
-            CorrelationResult.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel),
+            CorrelationResult.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel, peaksCount),
             reverseStrand,
             noiseLevel,
             resolution,
@@ -135,13 +136,17 @@ class CorrelationResult:
 
     @staticmethod
     def createPeaks(peakPositions: np.ndarray, peakProperties: dict, resolution: int, correlationStart: int,
-                    noiseLevel: float):
+                    noiseLevel: float, peaksCount: int):
+        if peaksCount < peakPositions.size:
+            bestPeaksIndices = np.argpartition(-peakProperties["peak_heights"], peaksCount)[:peaksCount]
+        else:
+            bestPeaksIndices = np.arange(peakPositions.size)
         return [Peak(position, height, leftBase, rightBase, height - noiseLevel)
                 for position, height, leftBase, rightBase
-                in zip(toRelativeGenomicPositions(peakPositions, resolution, correlationStart),
-                       peakProperties["peak_heights"],
-                       toRelativeGenomicPositions(peakProperties["left_ips"], resolution, correlationStart),
-                       toRelativeGenomicPositions(peakProperties["right_ips"], resolution, correlationStart))]
+                in zip(toRelativeGenomicPositions(peakPositions[bestPeaksIndices], resolution, correlationStart),
+                       peakProperties["peak_heights"][bestPeaksIndices],
+                       toRelativeGenomicPositions(peakProperties["left_ips"][bestPeaksIndices], resolution, correlationStart),
+                       toRelativeGenomicPositions(peakProperties["right_ips"][bestPeaksIndices], resolution, correlationStart))]
 
     @staticmethod
     def rootMeanSquare(array: np.ndarray) -> float:
@@ -162,6 +167,7 @@ class InitialAlignment(CorrelationResult):
                reference: OpticalMap,
                peakPositions: np.ndarray,
                peakProperties: dict,
+               peaksCount: int,
                reverseStrand: bool,
                resolution: int = 1,
                blur: int = 0,
@@ -172,7 +178,7 @@ class InitialAlignment(CorrelationResult):
             correlation,
             query,
             reference,
-            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel),
+            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel, peaksCount),
             reverseStrand,
             noiseLevel,
             resolution,
@@ -199,7 +205,7 @@ class InitialAlignment(CorrelationResult):
         correlationLength = len(correlation) * resolution
 
         return CorrelationResult.create(correlation, self.query, self.reference, peakPositions, peakProperties,
-                                        self.reverseStrand, resolution, sequenceGenerator.blurRadius,
+                                        10, self.reverseStrand, resolution, sequenceGenerator.blurRadius,
                                         referenceStart,
                                         referenceStart + correlationLength)
 

@@ -62,8 +62,7 @@ class OnePeakPerReferenceApplicationService(ApplicationService):
             lambda x: self.__align(*x),
             list((r, q) for r in referenceMaps for q in queryMaps),
             num_cpus=self.args.numberOfCpus,
-            disable=self.args.disableProgressBar,
-            leave=False)
+            disable=self.args.disableProgressBar)
                 if a is not None and a.alignedPairs]
 
     def __align(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> AlignmentResultRow | None:
@@ -103,8 +102,7 @@ class MultiPeakApplicationService(ApplicationService):
             lambda x: self.__align(*x),
             list((referenceMaps, q) for q in queryMaps),
             num_cpus=self.args.numberOfCpus,
-            disable=self.args.disableProgressBar,
-            leave=False)
+            disable=self.args.disableProgressBar)
                 if a is not None and a.alignedPairs]
 
     def __align(self, referenceMaps: List[OpticalMap], queryMap: OpticalMap) -> AlignmentResultRow | None:
@@ -121,12 +119,12 @@ class MultiPeakApplicationService(ApplicationService):
         return self.__getBestAlignment(alignmentResultRows)
 
     def __getPrimaryCorrelations(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> Iterator[InitialAlignment]:
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                          self.args.minPeakDistance)
+        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator, self.args.minPeakDistance, self.args.peaksCount)
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
 
-        primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                                 self.args.minPeakDistance, reverseStrand=True)
+        primaryCorrelationReverse = queryMap.getInitialAlignment(
+            referenceMap, self.primaryGenerator, self.args.minPeakDistance, self.args.peaksCount, reverseStrand=True)
+
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelationReverse))
         if any(primaryCorrelation.peaks):
             yield primaryCorrelation

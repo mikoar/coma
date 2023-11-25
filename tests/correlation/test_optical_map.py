@@ -45,7 +45,7 @@ def test_refineAlignment_correctPeakPosition():
     initialGenerator = SequenceGenerator(2, 2)
     refineGenerator = SequenceGenerator(1, 1)
 
-    initialAlignment = query.getInitialAlignment(reference, initialGenerator, 2)
+    initialAlignment = query.getInitialAlignment(reference, initialGenerator, 2, 5)
     refinedAlignment = initialAlignment.refine(300, refineGenerator, 10, 1)
 
     assert initialAlignment.maxPeak.position == 300
@@ -68,7 +68,7 @@ def test_getInitialAlignment_whenQueryIsShorterThanReference_returnsEmptyResult(
     query = OpticalMap(1, 1000, [20, 100, 110, 300, 310, 330, 400, 1000])
     reference = OpticalMap(2, 100, [0, 10, 30, 100])
 
-    initialAlignment = query.getInitialAlignment(reference, SequenceGenerator(2, 2), 2)
+    initialAlignment = query.getInitialAlignment(reference, SequenceGenerator(2, 2), 2, 5)
 
     assert len(list(initialAlignment.peaks)) == 0
     assert initialAlignment.getScore() == 0
