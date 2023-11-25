@@ -25,31 +25,31 @@ class PeaksCatcher(Extension):
 
 
 if __name__ == '__main__':
-    queryName = "chr1_simulated_1T_200T_scale001_meas100_res600_changed"
-    referenceFile = "../.local_data/simulated/chr1_r_unchanged.cmap"
-    queryFile = f"../.local_data/simulated/{queryName}.cmap"
-    outputFile = f"../.local_data/simulated/output/{queryName}.xmap"
-    peaksOutputFile = f"../.local_data/simulated/output/{queryName}_peaks.csv"
+    fileDirectory = "../.local_data/simulated/"
+    referenceFile = fileDirectory + "chr1_r_unchanged.cmap"
+    resolutions = [500, 700, 1000, 1400, 2000]
+    blurs = [1, 2, 3, 4]
+    queryMeasurementErrors = ["100", "200", "500"]
+    with tqdm(total=len(queryMeasurementErrors) * len(resolutions) * len(blurs)) as progressBar:
+        for measurementError in queryMeasurementErrors:
+            queryName = f"query_meas{measurementError}"
+            queryFile = fileDirectory + f"{queryName}.cmap"
+            peaksOutputFile = fileDirectory + f"{queryName}_peaks.csv"
 
-    with open(peaksOutputFile, "w") as f:
-        f.write("resolution,blur,queryId,reverseStrand,score,peakPosition\n")
+            with open(peaksOutputFile, "w") as f:
+                f.write("resolution,blur,queryId,reverseStrand,score,peakPosition\n")
+                for resolution in resolutions:
+                    for blur in blurs:
+                        outputFile = fileDirectory + f"{queryName}_r1_{resolution}_b1{blur}.xmap"
+                        args = Args.parse([
+                            "-q", queryFile,
+                            "-r", referenceFile,
+                            "-o", outputFile,
+                            "--primaryResolution", str(resolution),
+                            "--primaryBlur", str(blur),
+                            "--peaksCount", "1"
+                        ])
 
-    resolutions = [460, 460 * 1.5, 460 * 2, 460 * 2.5, 460 * 3]
-    blurs = [2, 3, 4, 6, 8]
-
-    with tqdm(total=len(resolutions) * len(blurs)) as progressBar:
-        for resolution in resolutions:
-            for blur in blurs:
-                args = Args.parse([
-                    "-q", queryFile,
-                    "-r", referenceFile,
-                    "-o", outputFile,
-                    "--primaryResolution", str(resolution),
-                    "--primaryBlur", str(blur),
-                    "--peaksCount", "1",
-                    "--minPeakDistance", "50000000"
-                ])
-
-                coma = Program(args, [PeaksCatcher(peaksOutputFile)])
-                coma.run()
-                progressBar.update()
+                        coma = Program(args, [PeaksCatcher(peaksOutputFile)])
+                        coma.run()
+                        progressBar.update()
