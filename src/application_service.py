@@ -61,7 +61,9 @@ class OnePeakPerReferenceApplicationService(ApplicationService):
         return [a for a in p_imap(
             lambda x: self.__align(*x),
             list((r, q) for r in referenceMaps for q in queryMaps),
-            num_cpus=self.args.numberOfCpus)
+            num_cpus=self.args.numberOfCpus,
+            disable=self.args.disableProgressBar,
+            leave=False)
                 if a is not None and a.alignedPairs]
 
     def __align(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> AlignmentResultRow | None:
@@ -101,7 +103,8 @@ class MultiPeakApplicationService(ApplicationService):
             lambda x: self.__align(*x),
             list((referenceMaps, q) for q in queryMaps),
             num_cpus=self.args.numberOfCpus,
-            disable=self.args.disableProgressBar)
+            disable=self.args.disableProgressBar,
+            leave=False)
                 if a is not None and a.alignedPairs]
 
     def __align(self, referenceMaps: List[OpticalMap], queryMap: OpticalMap) -> AlignmentResultRow | None:
