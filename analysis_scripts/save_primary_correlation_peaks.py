@@ -38,18 +38,19 @@ if __name__ == '__main__':
 
             with open(peaksOutputFile, "w") as f:
                 f.write("resolution,blur,queryId,reverseStrand,score,peakPosition\n")
-                for resolution in resolutions:
-                    for blur in blurs:
-                        outputFile = fileDirectory + f"{queryName}_r1_{resolution}_b1{blur}.xmap"
-                        args = Args.parse([
-                            "-q", queryFile,
-                            "-r", referenceFile,
-                            "-o", outputFile,
-                            "--primaryResolution", str(resolution),
-                            "--primaryBlur", str(blur),
-                            "--peaksCount", "1"
-                        ])
 
-                        coma = Program(args, [PeaksCatcher(peaksOutputFile)])
-                        coma.run()
-                        progressBar.update()
+            for resolution in resolutions:
+                for blur in blurs:
+                    outputFile = fileDirectory + f"output/{queryName}_r1_{resolution}_b1{blur}.xmap"
+                    args = Args.parse([
+                        "-q", queryFile,
+                        "-r", referenceFile,
+                        "-o", outputFile,
+                        "--primaryResolution", str(resolution),
+                        "--primaryBlur", str(blur),
+                        "--peaksCount", "1"
+                    ])
+
+                    coma = Program(args, [PeaksCatcher(peaksOutputFile)])
+                    coma.run()
+                    progressBar.update()
