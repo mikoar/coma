@@ -3,15 +3,18 @@ from typing import List, TextIO, Iterable
 from pandas import Series
 
 from src.correlation.simulated_alignment import SimulatedAlignment
-from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
+from src.diagnostic.benchmark_alignment import BenchmarkAlignment
 from src.parsers.bionano_file_reader import BionanoFileReader
+from src.parsers.simulation_alignment_pair_parser import BaseSimulationAlignmentPairParser, \
+    SimulationAlignmentPairParser
 
 
 class SimulationDataAsXmapReader:
-    def __init__(self, reader: BionanoFileReader = None) -> None:
+    def __init__(self, pairParser: BaseSimulationAlignmentPairParser = None, reader: BionanoFileReader = None) -> None:
+        self.pairParser = pairParser or SimulationAlignmentPairParser()
         self.reader = reader or BionanoFileReader(headersLinePrefix="#Fragment")
 
-    def readAlignments(self, file: TextIO, queryIds: Iterable[int] = None) -> List[XmapAlignment]:
+    def readAlignments(self, file: TextIO, queryIds: Iterable[int] = None) -> List[BenchmarkAlignment]:
         alignments = self.reader.readFile(
             file,
             ["ID", "Reference", "Strand", "Start", "Stop", "SimuInfoDetail", "Size"])
@@ -29,23 +32,6 @@ class SimulationDataAsXmapReader:
             return SimulatedAlignment.parse(queryId, queryId, referenceId, 0,
                                             row["Size"], row["Start"], row["Stop"], reverseStrand,
                                             9999., "", row["Size"], row["Size"],
-                                            self.__parsePairs(row["SimuInfoDetail"], reverseStrand))
+                                            self.pairParser.parse(row["SimuInfoDetail"], queryId, referenceId, reverseStrand))
 
         return parseRow
-
-    @staticmethod
-    def __parsePairs(simulationDetail: str, reverseStrand: bool) -> List[XmapAlignedPair]:
-        pairs = [pair for pairs in
-                 [SimulationDataAsXmapReader.__parsePair(x, i + 1) for i, x in enumerate(simulationDetail.split(";")) if x != "FP"]
-                 for pair in pairs]
-        if reverseStrand:
-            pairs.reverse()
-        return pairs
-
-    @staticmethod
-    def __parsePair(positionString: str, queryId: int):
-        if "," in positionString:
-            splitPositionStrings = positionString.split(",")
-            return [XmapAlignedPair.create(s.split(":")[1], str(queryId)) for s in splitPositionStrings if s != "FP"]
-        else:
-            return [XmapAlignedPair.create(positionString.split(":")[1], str(queryId))]

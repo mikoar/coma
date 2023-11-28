@@ -8,7 +8,7 @@ from src.diagnostic.plot import plotCorrelation, plotRefinedCorrelation
 from src.extensions.extension import Extension
 from src.extensions.messages import InitialAlignmentMessage, CorrelationResultMessage, AlignmentResultRowMessage, \
     MultipleAlignmentResultRowsMessage
-from src.parsers.xmap_reader import XmapReader
+from src.parsers.alignment_benchmark_reader import AlignmentBenchmarkReader
 
 
 class DiagnosticsWriter:
@@ -50,10 +50,10 @@ class SecondaryCorrelationPlotter(Extension):
 class AlignmentPlotter(Extension):
     messageType = AlignmentResultRowMessage
 
-    def __init__(self, writer: DiagnosticsWriter, xmapReader: XmapReader, benchmarkAlignmentFile: TextIO):
+    def __init__(self, writer: DiagnosticsWriter, benchmarkReader: AlignmentBenchmarkReader, benchmarkFile: TextIO):
         self.writer = writer
-        self.xmapReader = xmapReader
-        self.benchmarkAlignmentFile = benchmarkAlignmentFile
+        self.benchmarkReader = benchmarkReader
+        self.benchmarkFile = benchmarkFile
 
     def handle(self, message: AlignmentResultRowMessage):
         if not message.alignment.alignedPairs:
@@ -67,19 +67,19 @@ class AlignmentPlotter(Extension):
                                           f"_{message.query.moleculeId}_{message.index}.svg")
 
     def getBenchmarkAlignment(self, message):
-        if not self.benchmarkAlignmentFile:
+        if not self.benchmarkFile:
             return None
         return next(
-            iter(self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=[message.query.moleculeId])))
+            iter(self.benchmarkReader.read(self.benchmarkFile, queryIds=[message.query.moleculeId])))
 
 
 class MultipleAlignmentsPlotter(Extension):
     messageType = MultipleAlignmentResultRowsMessage
 
-    def __init__(self, writer: DiagnosticsWriter, xmapReader: XmapReader, benchmarkAlignmentFile: TextIO):
+    def __init__(self, writer: DiagnosticsWriter, benchmarkReader: AlignmentBenchmarkReader, benchmarkFile: TextIO):
         self.writer = writer
-        self.xmapReader = xmapReader
-        self.benchmarkAlignmentFile = benchmarkAlignmentFile
+        self.benchmarkReader = benchmarkReader
+        self.benchmarkAlignmentFile = benchmarkFile
 
     def handle(self, message: MultipleAlignmentResultRowsMessage):
         aligned = [m for m in message.messages if m.alignment.alignedPairs]
@@ -97,4 +97,4 @@ class MultipleAlignmentsPlotter(Extension):
     def getBenchmarkAlignment(self, queryIds: List[int]):
         if not self.benchmarkAlignmentFile:
             return []
-        return self.xmapReader.readAlignments(self.benchmarkAlignmentFile, queryIds=queryIds)
+        return self.benchmarkReader.read(self.benchmarkAlignmentFile, queryIds=queryIds)

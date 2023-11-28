@@ -10,7 +10,10 @@ from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationPlot
     SecondaryCorrelationPlotter, AlignmentPlotter, MultipleAlignmentsPlotter
 from src.extensions.dispatcher import Dispatcher
 from src.extensions.extension import Extension
+from src.parsers.alignment_benchmark_reader import AlignmentBenchmarkReader
 from src.parsers.cmap_reader import CmapReader
+from src.parsers.simulation_alignment_pair_parser import SimulationAlignmentPairWithDistanceParser
+from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
 
@@ -29,10 +32,12 @@ class Program:
         self.applicationService = ApplicationServiceFactory().create(args, self.dispatcher)
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
+            simulationDataReader = SimulationDataAsXmapReader(SimulationAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
+            benchmarkReader = AlignmentBenchmarkReader(self.xmapReader, simulationDataReader)
             self.dispatcher.addExtension(PrimaryCorrelationPlotter(writer))
             self.dispatcher.addExtension(SecondaryCorrelationPlotter(writer))
-            self.dispatcher.addExtension(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
-            self.dispatcher.addExtension(MultipleAlignmentsPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addExtension(AlignmentPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addExtension(MultipleAlignmentsPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
 
     def run(self):
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)

@@ -17,7 +17,7 @@ from src.alignment.alignment_results import AlignmentResultRow
 from src.alignment.segments import AlignmentSegment
 from src.correlation.optical_map import OpticalMap, PositionWithSiteId, InitialAlignment
 from src.correlation.peak import Peak
-from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
+from src.diagnostic.benchmark_alignment import BenchmarkAlignment, BenchmarkAlignedPair
 
 
 @dataclass
@@ -29,7 +29,7 @@ class Options:
 
 class AlignmentPlot:
     def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
-                 correlation: InitialAlignment, benchmarkAlignment: XmapAlignment, options: Options = None):
+                 correlation: InitialAlignment, benchmarkAlignment: BenchmarkAlignment, options: Options = None):
         self.reference = reference
         self.query = query
         self.alignment = alignment
@@ -249,7 +249,7 @@ class AlignmentPlot:
         if not self.options.drawGridForNotAlignedPositions:
             return
 
-        alignedPositions: List[XmapAlignedPair] = \
+        alignedPositions: List[BenchmarkAlignedPair] = \
             [position for segment in self.alignment.segments for position in segment.alignedPositions] \
             + [pair for pair in self.benchmarkAlignment.alignedPairs]
 
@@ -263,7 +263,7 @@ class AlignmentPlot:
         if not self.options.drawRemovedAlignedPositions:
             return
 
-        segmentsAlignedPositions: List[XmapAlignedPair] = \
+        segmentsAlignedPositions: List[BenchmarkAlignedPair] = \
             [position for segment in self.alignment.segments for position in segment.alignedPositions]
 
         allAlignedPositions: List[AlignedPair] = \
@@ -291,11 +291,11 @@ class AlignmentPlot:
                                (position.reference.position, self.__absoluteQueryPosition(position)))
 
     @staticmethod
-    def __isNotAlignedReference(position: int, alignedPositions: List[XmapAlignedPair]):
+    def __isNotAlignedReference(position: int, alignedPositions: List[BenchmarkAlignedPair]):
         return position not in [ap.reference.position for ap in alignedPositions]
 
     @staticmethod
-    def __isNotAlignedQuery(position: int, alignedPositions: List[XmapAlignedPair]):
+    def __isNotAlignedQuery(position: int, alignedPositions: List[BenchmarkAlignedPair]):
         return position not in [ap.query.position for ap in alignedPositions]
 
     def __isReferencePositionInScope(self, position: int):
@@ -304,7 +304,7 @@ class AlignmentPlot:
     def __isQueryPositionInScope(self, position: int):
         return self.yMinAxis <= position <= self.yMaxPlot
 
-    def __absoluteQueryPosition(self, p: XmapAlignedPair | AlignedPair):
+    def __absoluteQueryPosition(self, p: BenchmarkAlignedPair | AlignedPair):
         return self.alignment.queryLength - p.query.position if self.alignment.reverseStrand else p.query.position
 
     @property

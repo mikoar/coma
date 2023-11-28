@@ -1,11 +1,11 @@
 from typing import List
 
-from src.diagnostic.xmap_alignment import XmapAlignment, XmapAlignedPair
+from src.diagnostic.benchmark_alignment import BenchmarkAlignment, BenchmarkAlignedPair
 
 
-class BionanoAlignment(XmapAlignment):
+class BionanoAlignment(BenchmarkAlignment):
     def __init__(self, alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, reverseStrand, confidence,
-                 cigarString, queryLength, referenceLength, alignedPairs: List[XmapAlignedPair]) -> None:
+                 cigarString, queryLength, referenceLength, alignedPairs: List[BenchmarkAlignedPair]) -> None:
         self.alignmentId = alignmentId
         self.queryId = queryId
         self.referenceId = refId
@@ -22,7 +22,7 @@ class BionanoAlignment(XmapAlignment):
 
     @staticmethod
     def parse(alignmentId, queryId, refId, queryStart, queryEnd, refStart, refEnd, reverseStrand, confidence,
-              cigarString, queryLength, referenceLength, alignment: List[XmapAlignedPair]):
+              cigarString, queryLength, referenceLength, alignment: List[BenchmarkAlignedPair]):
         return BionanoAlignment(
             alignmentId,
             int(queryId),

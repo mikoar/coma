@@ -5,42 +5,42 @@ from dataclasses import dataclass, field
 from typing import NamedTuple, List
 
 
-class XmapAlignmentPosition(NamedTuple):
+class BenchmarkAlignmentPosition(NamedTuple):
     siteId: int
     position: int
 
 
 @dataclass(frozen=True)
-class XmapAlignedPair:
-    reference: XmapAlignmentPosition
-    query: XmapAlignmentPosition
+class BenchmarkAlignedPair:
+    reference: BenchmarkAlignmentPosition
+    query: BenchmarkAlignmentPosition
 
     @staticmethod
     def create(reference: str, query: str):
-        return XmapAlignedPair(XmapAlignmentPosition(int(reference), 0), XmapAlignmentPosition(int(query), 0))
+        return BenchmarkAlignedPair(BenchmarkAlignmentPosition(int(reference), 0), BenchmarkAlignmentPosition(int(query), 0))
 
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId})"
 
 
 @dataclass(frozen=True)
-class XmapAlignedPairWithDistance(XmapAlignedPair):
+class BenchmarkAlignedPairWithDistance(BenchmarkAlignedPair):
     distance: int = field(compare=False)
 
     @staticmethod
-    def calculateDistance(pair: XmapAlignedPair, firstPair: XmapAlignedPair | None, reverseStrand: bool):
+    def calculateDistance(pair: BenchmarkAlignedPair, firstPair: BenchmarkAlignedPair | None, reverseStrand: bool):
         def queryDifference():
             return firstPair.query.position - pair.query.position if reverseStrand else pair.query.position - firstPair.query.position
 
         distance = queryDifference() - (pair.reference.position - firstPair.reference.position) if firstPair else 0
-        return XmapAlignedPairWithDistance(pair.reference, pair.query, distance)
+        return BenchmarkAlignedPairWithDistance(pair.reference, pair.query, distance)
 
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {int(self.reference.position)}, {self.query.siteId}, " \
                f"{int(self.reference.position)}, {round(self.distance)})"
 
 
-class XmapAlignment(ABC):
+class BenchmarkAlignment(ABC):
     queryId: int
     referenceId: int
     queryStartPosition: int
@@ -52,15 +52,15 @@ class XmapAlignment(ABC):
     cigarString: str
     queryLength: int
     referenceLength: int
-    alignedPairs: List[XmapAlignedPair]
-    null: XmapAlignment
+    alignedPairs: List[BenchmarkAlignedPair]
+    null: BenchmarkAlignment
 
     @property
     def orientation(self):
         return "-" if self.reverseStrand else "+"
 
 
-class _NullXmapAlignment(XmapAlignment):
+class _NullBenchmarkAlignment(BenchmarkAlignment):
     queryId: int = 0
     referenceId: int = 0
     queryStartPosition: int = 0
@@ -72,11 +72,11 @@ class _NullXmapAlignment(XmapAlignment):
     cigarString: str = ""
     queryLength: int = 0
     referenceLength: int = 0
-    alignedPairs: List[XmapAlignedPair] = []
+    alignedPairs: List[BenchmarkAlignedPair] = []
 
     @property
     def orientation(self):
         return "None"
 
 
-XmapAlignment.null = _NullXmapAlignment()
+BenchmarkAlignment.null = _NullBenchmarkAlignment()

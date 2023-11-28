@@ -1,9 +1,9 @@
 import argparse
-import itertools
 import sys
 from typing import NamedTuple, TextIO, List
 
 from src.diagnostic.alignment_comparer import AlignmentRowComparer, AlignmentComparer
+from src.parsers.alignment_benchmark_reader import AlignmentBenchmarkReader
 from src.parsers.cmap_reader import CmapReader
 from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser, XmapAlignmentPairParser
@@ -44,23 +44,11 @@ class Program:
             pairParser = XmapAlignmentPairWithDistanceParser(references, queries)
         else:
             pairParser = XmapAlignmentPairParser()
-        alignmentReader = XmapReader(pairParser)
-        simulatedAlignmentReader = SimulationDataAsXmapReader()
-        alignment1 = self.__read(self.args.alignmentFiles[0], alignmentReader, simulatedAlignmentReader)
-        alignment2 = self.__read(self.args.alignmentFiles[1], alignmentReader, simulatedAlignmentReader)
+        benchmarkReader = AlignmentBenchmarkReader(XmapReader(pairParser), SimulationDataAsXmapReader())
+        alignment1 = benchmarkReader.read(self.args.alignmentFiles[0])
+        alignment2 = benchmarkReader.read(self.args.alignmentFiles[1])
         result = self.comparer.compare(alignment1, alignment2)
-        result.write(self.args.outputFile)
-
-    @staticmethod
-    def __read(file: TextIO, alignmentReader: XmapReader, simulatedAlignmentReader: SimulationDataAsXmapReader):
-        headers = "\n".join(itertools.islice(itertools.takewhile(lambda line: line.startswith("#"), file), 10))
-        file.seek(0, 0)
-        if "XMAP" in headers:
-            return alignmentReader.readAlignments(file)
-        if "SimuInfoDetail" in headers:
-            return simulatedAlignmentReader.readAlignments(file)
-        else:
-            raise Exception(f"File {file.name} is in unknown format. Either XMAP or SDATA formats are supported.")
+        result.write(self.args.outputFile, self.args.includePositions)
 
 
 if __name__ == '__main__':

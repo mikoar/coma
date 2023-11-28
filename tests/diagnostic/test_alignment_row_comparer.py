@@ -5,13 +5,14 @@ import pytest
 
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.diagnostic.alignment_comparer import AlignmentRowComparer
-from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition, XmapAlignedPairWithDistance
+from src.diagnostic.benchmark_alignment import BenchmarkAlignedPair, BenchmarkAlignmentPosition, \
+    BenchmarkAlignedPairWithDistance
 from tests.test_doubles.alignment_segment_stub import ScoredAlignedPairStub
 
 
 def __pair(referenceSiteId: int, querySiteId: int):
-    return XmapAlignedPairWithDistance(XmapAlignmentPosition(referenceSiteId, 0), XmapAlignmentPosition(querySiteId, 0),
-                                       random.randint(0, 1000))
+    return BenchmarkAlignedPairWithDistance(BenchmarkAlignmentPosition(referenceSiteId, 0), BenchmarkAlignmentPosition(querySiteId, 0),
+                                            random.randint(0, 1000))
 
 
 @pytest.mark.parametrize("referencePairs, queryPairs, alignment1Coverage, alignment2Coverage", [
@@ -34,7 +35,7 @@ def __pair(referenceSiteId: int, querySiteId: int):
       __pair(4, 4)],
      1., 0.75),
 ], ids=["identical", "empty query2", "empty query1", "shifted", "one missing in query2", "one missing in query1"])
-def test_queryCoverage(referencePairs: List[XmapAlignedPair], queryPairs: List[XmapAlignedPair],
+def test_queryCoverage(referencePairs: List[BenchmarkAlignedPair], queryPairs: List[BenchmarkAlignedPair],
                        alignment1Coverage, alignment2Coverage):
     result = compare(queryPairs, referencePairs)
 
@@ -61,7 +62,7 @@ def compare(queryPairs, referencePairs):
      0.5),
 
 ], ids=["identical", "different", "half identical "])
-def test_identity(referencePairs: List[XmapAlignedPair], queryPairs: List[ScoredAlignedPairStub], identity):
+def test_identity(referencePairs: List[BenchmarkAlignedPair], queryPairs: List[ScoredAlignedPairStub], identity):
     result = compare(queryPairs, referencePairs)
     assert identity == result.identity
 

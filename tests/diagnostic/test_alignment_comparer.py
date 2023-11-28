@@ -5,10 +5,10 @@ import pytest
 
 from src.diagnostic.alignment_comparer import AlignmentRowComparer, AlignmentRowComparison, AlignmentComparer, \
     AlignmentRowComparisonResultType
-from src.diagnostic.xmap_alignment import XmapAlignment
+from src.diagnostic.benchmark_alignment import BenchmarkAlignment
 
 
-class __XmapAlignmentStub(XmapAlignment):
+class __BenchmarkAlignmentStub(BenchmarkAlignment):
     def __init__(self, queryId: int, referenceId: int):
         self.queryId = queryId
         self.referenceId = referenceId
@@ -18,14 +18,14 @@ class __XmapAlignmentStub(XmapAlignment):
 def __getSut() -> Tuple[AlignmentComparer, Mock]:
     rowComparer: AlignmentRowComparer = Mock(spec=AlignmentRowComparer)
     rowCompareMock = Mock(return_value=AlignmentRowComparison(
-        AlignmentRowComparisonResultType.BOTH, XmapAlignment.null, XmapAlignment.null, 0., 0., 0.))
+        AlignmentRowComparisonResultType.BOTH, BenchmarkAlignment.null, BenchmarkAlignment.null, 0., 0., 0.))
     rowComparer.compare = rowCompareMock
     return AlignmentComparer(rowComparer), rowCompareMock
 
 
 def test_matchesAlignmentsByQueryAndReferenceIds():
-    alignments1 = [__XmapAlignmentStub(1, 1), __XmapAlignmentStub(2, 1), __XmapAlignmentStub(3, 1)]
-    alignments2 = [__XmapAlignmentStub(2, 1), __XmapAlignmentStub(3, 1), __XmapAlignmentStub(4, 1)]
+    alignments1 = [__BenchmarkAlignmentStub(1, 1), __BenchmarkAlignmentStub(2, 1), __BenchmarkAlignmentStub(3, 1)]
+    alignments2 = [__BenchmarkAlignmentStub(2, 1), __BenchmarkAlignmentStub(3, 1), __BenchmarkAlignmentStub(4, 1)]
 
     sut, rowComparerMock = __getSut()
     result = sut.compare(alignments1, alignments2)

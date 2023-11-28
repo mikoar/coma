@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 from pandas import DataFrame
 
-from src.diagnostic.xmap_alignment import XmapAlignedPair
+from src.diagnostic.benchmark_alignment import BenchmarkAlignedPair
 from src.parsers.bionano_file_reader import BionanoFileReader
 from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 
@@ -33,7 +33,7 @@ def test_parsesMap():
     assert xmap1.queryLength == 199860
     assert xmap1.referenceStartPosition == 4147184
     assert xmap1.referenceEndPosition == 4347183
-    assert xmap1.alignedPairs == [XmapAlignedPair.create(str(r), str(q)) for r, q in [
+    assert xmap1.alignedPairs == [BenchmarkAlignedPair.create(str(r), str(q)) for r, q in [
         (657, 1), (658, 2), (659, 3), (660, 4), (661, 6), (662, 8), (663, 9), (664, 10), (665, 11), (666, 13), (667, 14), (669, 15), (670, 16), (671, 17),
         (672, 18), (673, 19)
     ]]
@@ -45,7 +45,7 @@ def test_parsesMap():
     assert xmap2.queryLength == 200048
     assert xmap2.referenceStartPosition == 105011676
     assert xmap2.referenceEndPosition == 105211675
-    assert xmap2.alignedPairs == [XmapAlignedPair.create(str(r), str(q)) for r, q in [
+    assert xmap2.alignedPairs == [BenchmarkAlignedPair.create(str(r), str(q)) for r, q in [
         (14641, 11), (14642, 10), (14643, 9), (14644, 7), (14645, 6), (14646, 5), (14647, 4), (14648, 3), (14650, 1), (14649, 1)
     ]]
 
@@ -53,7 +53,7 @@ def test_parsesMap():
 def __getSut(data: Dict[str, List[str]]):
     fileReaderMock: BionanoFileReader = Mock(spec=BionanoFileReader)
     fileReaderMock.readFile = lambda _, __: DataFrame(data=data)
-    return SimulationDataAsXmapReader(fileReaderMock)
+    return SimulationDataAsXmapReader(pairParser=None, reader=fileReaderMock)
 
 
 if __name__ == '__main__':
