@@ -20,47 +20,51 @@ from src.correlation.peak import Peak
 from src.diagnostic.benchmark_alignment import BenchmarkAlignment, BenchmarkAlignedPair
 
 
-@dataclass
+@dataclass(frozen=True)
 class Options:
-    limitQueryToAlignedArea = False
-    drawGridForNotAlignedPositions = True
-    drawRemovedAlignedPositions = True
+    limitQueryToAlignedArea: bool = False
+    drawGridForNotAlignedPositions: bool = True
+    drawRemovedAlignedPositions: bool = True
 
 
 class AlignmentPlot:
-    def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow,
-                 correlation: InitialAlignment, benchmarkAlignment: BenchmarkAlignment, options: Options = None):
+    def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: AlignmentResultRow | BenchmarkAlignment,
+                 correlation: InitialAlignment = None, benchmarkAlignment: BenchmarkAlignment = None, options: Options = None):
         self.reference = reference
         self.query = query
         self.alignment = alignment
         self.correlation = correlation
         self.benchmarkAlignment = benchmarkAlignment
         self.options = options or Options()
-        self.__createFigure()
-        self.__setDimensions()
-        self.__plotReference()
-        self.__plotQuery()
-        self.__drawPrimaryPeak()
-        self.__plotBenchmarkAlignment()
-        self.__plotSegments()
-        self.__drawGridForNotAlignedPositions()
-        self.__drawRemovedAlignedPositions()
+        self.create()
+
+    def create(self):
+        self._createFigure()
+        self._setDimensions()
+        self._plotReference()
+        self._plotQuery()
+        self._drawPrimaryPeak()
+        self._plotBenchmarkAlignment()
+        self._plotSegments()
+        self._drawGridForNotAlignedPositions()
+        self._drawRemovedAlignedPositions()
         self.axes.legend()
 
-    def __createFigure(self):
+    def _createFigure(self):
         self.figure: Figure = pyplot.figure()
-        self.axes: Axes = self.figure.add_axes([0, 0, 1, 1])
+        self.axes: Axes = self.figure.add_axes((0, 0, 1, 1))
         self.axes.set_aspect("equal")
         self.axes.ticklabel_format(style='plain')
         formatter = EngFormatter(unit="bp")
         self.axes.xaxis.set_major_formatter(formatter)
         self.axes.yaxis.set_major_formatter(formatter)
 
-    def __setDimensions(self):
+    def _setDimensions(self):
         margin = self.alignment.queryLength / 10
         drawPeakPositions = \
             list(map(lambda s: s.peak.leftProminenceBasePosition, self.alignment.segments)) \
-            + [self.correlation.maxPeak.leftProminenceBasePosition]
+            + [self.correlation.maxPeak.leftProminenceBasePosition] \
+                if self.correlation and hasattr(self.alignment, "segments") else []
 
         self.overlapsWithBenchmark = \
             (not (self.benchmarkAlignment.referenceEndPosition < self.alignment.referenceStartPosition
@@ -108,7 +112,7 @@ class AlignmentPlot:
         ySizeClamped = min(max([ySize, minSize]), maxSize)
         self.figure.set_size_inches((xSizeClamped, ySizeClamped))
 
-    def __plotReference(self):
+    def _plotReference(self):
         self.axes.set_xlabel(f"Reference {self.reference.moleculeId}")
         refLabelsInScope = [p for p in self.reference.getPositionsWithSiteIds()
                             if self.__isReferencePositionInScope(p.position)]
@@ -120,14 +124,14 @@ class AlignmentPlot:
                        color="yellow")
 
         for r in self.__skipDensePositions(refLabelsInScope):
-            self.axes.annotate(r.siteId, (r.position, self.yMinAxis),
+            self.axes.annotate(str(r.siteId), (r.position, self.yMinAxis),
                                textcoords="offset points",
                                xytext=(0, -10),
                                ha="center",
                                va="top",
                                rotation=90)
 
-    def __plotQuery(self):
+    def _plotQuery(self):
         self.axes.set_ylabel(f"Query {self.query.moleculeId}")
         queryLabelsInScope = [p for p in self.query.getPositionsWithSiteIds()
                               if not self.options.limitQueryToAlignedArea or self.__isQueryPositionInScope(p.position)]
@@ -141,13 +145,13 @@ class AlignmentPlot:
                        color="lime")
 
         for q in self.__skipDensePositions(queryLabelsInScope):
-            self.axes.annotate(q.siteId, (self.xMinAxis, q.position),
+            self.axes.annotate(str(q.siteId), (self.xMinAxis, q.position),
                                textcoords="offset points",
                                xytext=(-15, 0),
                                ha="right",
                                va="center")
 
-    def __plotSegments(self):
+    def _plotSegments(self):
         groupedSegments = groupby(self.alignment.segments, lambda s: s.peak)
         colors = self.__getContrastingColors(len(self.alignment.segments))
 
@@ -170,12 +174,18 @@ class AlignmentPlot:
         self.axes.add_patch(peakRectangle)
         peakRectangle.set_clip_path(self.plotAreaMask)
 
-    def __drawPrimaryPeak(self):
+    def _drawPrimaryPeak(self):
+        if not self.correlation:
+            return
+
         peak = self.correlation.maxPeak
         x = [peak.position, self.xMaxPlot]
         y = [0, self.xMaxPlot - peak.position]
-        reverseY = [self.query.length, self.query.length - (self.xMaxPlot - peak.position)]
-        self.axes.plot(x, reverseY if self.alignment.reverseStrand else y,
+
+        def reverseY():
+            return [self.query.length, self.query.length - (self.xMaxPlot - peak.position)]
+
+        self.axes.plot(x, reverseY() if self.alignment.reverseStrand else y,
                        linestyle="dashdot",
                        marker=None,
                        color="black")
@@ -194,7 +204,7 @@ class AlignmentPlot:
         self.axes.add_patch(peakRectangle)
         peakRectangle.set_clip_path(self.plotAreaMask)
 
-    def __plotBenchmarkAlignment(self):
+    def _plotBenchmarkAlignment(self):
         if not self.benchmarkAlignment:
             return
 
@@ -245,8 +255,8 @@ class AlignmentPlot:
                                        np.linspace(.5, 1, ceil(count / 2)))).flatten()
         return colorMap(contrasting)
 
-    def __drawGridForNotAlignedPositions(self):
-        if not self.options.drawGridForNotAlignedPositions:
+    def _drawGridForNotAlignedPositions(self):
+        if not self.options.drawGridForNotAlignedPositions or not hasattr(self.alignment, "segments"):
             return
 
         alignedPositions: List[BenchmarkAlignedPair] = \
@@ -259,8 +269,8 @@ class AlignmentPlot:
              self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
         self.__drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (15, 3)), label="not aligned positions")
 
-    def __drawRemovedAlignedPositions(self):
-        if not self.options.drawRemovedAlignedPositions:
+    def _drawRemovedAlignedPositions(self):
+        if not self.options.drawRemovedAlignedPositions or not hasattr(self.alignment, "segments"):
             return
 
         segmentsAlignedPositions: List[BenchmarkAlignedPair] = \
@@ -311,5 +321,30 @@ class AlignmentPlot:
     def __drawPeakAngle(self):
         return 45 if self.alignment.reverseStrand else -45.
 
-    def __drawPeakRotationPoint(self, peak: Peak) -> str:
-        return peak.position, self.query.length if self.alignment.reverseStrand else 0  # type: ignore
+    def __drawPeakRotationPoint(self, peak: Peak):
+        return peak.position, self.query.length if self.alignment.reverseStrand else 0
+
+
+class BenchmarkAlignmentPlot(AlignmentPlot):
+    def __init__(self, reference: OpticalMap, query: OpticalMap, alignment: BenchmarkAlignment, options: Options = None):
+        super().__init__(reference, query, alignment, None, None, options)
+
+    def create(self):
+        self._createFigure()
+        self._setDimensions()
+        self._plotReference()
+        self._plotQuery()
+        self._plotAlignment()
+        self.axes.legend()
+
+    def _plotAlignment(self):
+        x, y = list(zip(*map(lambda p: (p.reference.position, p.query.position), self.alignment.alignedPairs)))
+        self.axes.plot(x, y,
+                       label=f"({len(self.alignment.alignedPairs)} pairs, "
+                             f"confidence: {self.alignment.confidence})",
+                       color="red",
+                       markeredgecolor="red",
+                       fillstyle="none",
+                       marker="o",
+                       markersize=8,
+                       linewidth=2)

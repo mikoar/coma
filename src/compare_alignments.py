@@ -5,6 +5,8 @@ from typing import NamedTuple, TextIO, List
 from src.diagnostic.alignment_comparer import AlignmentRowComparer, AlignmentComparer
 from src.parsers.alignment_benchmark_reader import AlignmentBenchmarkReader
 from src.parsers.cmap_reader import CmapReader
+from src.parsers.simulation_alignment_pair_parser import SimulationAlignmentPairWithDistanceParser, \
+    SimulationAlignmentPairParser
 from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser, XmapAlignmentPairParser
 from src.parsers.xmap_reader import XmapReader
@@ -38,17 +40,23 @@ class Program:
         self.comparer = AlignmentComparer(AlignmentRowComparer())
 
     def run(self):
-        if self.args.includePositions:
-            references = self.sequenceReader.readReferences(self.args.referenceFile)
-            queries = self.sequenceReader.readQueries(self.args.queryFile)
-            pairParser = XmapAlignmentPairWithDistanceParser(references, queries)
-        else:
-            pairParser = XmapAlignmentPairParser()
-        benchmarkReader = AlignmentBenchmarkReader(XmapReader(pairParser), SimulationDataAsXmapReader())
+        benchmarkReader = self.__getBenchmarkReader()
         alignment1 = benchmarkReader.read(self.args.alignmentFiles[0])
         alignment2 = benchmarkReader.read(self.args.alignmentFiles[1])
         result = self.comparer.compare(alignment1, alignment2)
         result.write(self.args.outputFile, self.args.includePositions)
+
+    def __getBenchmarkReader(self):
+        if self.args.includePositions:
+            references = self.sequenceReader.readReferences(self.args.referenceFile)
+            queries = self.sequenceReader.readQueries(self.args.queryFile)
+            pairParser = XmapAlignmentPairWithDistanceParser(references, queries)
+            simulationPairParser = SimulationAlignmentPairWithDistanceParser(references, queries)
+        else:
+            pairParser = XmapAlignmentPairParser()
+            simulationPairParser = SimulationAlignmentPairParser()
+        benchmarkReader = AlignmentBenchmarkReader(XmapReader(pairParser), SimulationDataAsXmapReader(simulationPairParser))
+        return benchmarkReader
 
 
 if __name__ == '__main__':
