@@ -58,7 +58,7 @@ class SimulationAlignmentPairWithDistanceParser(BaseSimulationAlignmentPairParse
             return [self.__createPairWithDistance(int(simulationDetailOfPosition.split(":")[1]), querySiteId, reference, query)]
 
     @staticmethod
-    def __createPairWithDistance(referenceSiteId: int, querySiteId: int, reference: OpticalMap, query: OpticalMap):
+    def __createPairWithDistance(referenceSiteIdIndexedFrom0: int, querySiteId: int, reference: OpticalMap, query: OpticalMap):
         return BenchmarkAlignedPair(
-            BenchmarkAlignmentPosition(referenceSiteId, reference.positions[referenceSiteId - 1]),
+            BenchmarkAlignmentPosition(referenceSiteIdIndexedFrom0 + 1, reference.positions[referenceSiteIdIndexedFrom0]),
             BenchmarkAlignmentPosition(querySiteId, query.positions[querySiteId - 1]))
