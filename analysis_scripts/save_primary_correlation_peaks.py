@@ -29,26 +29,26 @@ if __name__ == '__main__':
     referenceFile = fileDirectory + "chr1_r_unchanged.cmap"
     resolutions = [500, 700, 1000, 1400, 2000]
     blurs = [1, 2, 3, 4]
-    queryMeasurementErrors = ["100", "200", "500"]
+    queryMeasurementErrors = ["100", "200", "500", "1000"]
     with tqdm(total=len(queryMeasurementErrors) * len(resolutions) * len(blurs)) as progressBar:
         for measurementError in queryMeasurementErrors:
             queryName = f"query_meas{measurementError}"
             queryFile = fileDirectory + f"{queryName}.cmap"
-            peaksOutputFile = fileDirectory + f"{queryName}_peaks.csv"
+            peaksOutputFile = fileDirectory + f"output/{queryName}_peaks.csv"
 
             with open(peaksOutputFile, "w") as f:
                 f.write("resolution,blur,queryId,reverseStrand,score,peakPosition\n")
 
             for resolution in resolutions:
                 for blur in blurs:
-                    outputFile = fileDirectory + f"output/{queryName}_r1_{resolution}_b1{blur}.xmap"
+                    outputFile = fileDirectory + f"output/{queryName}_r1_{resolution}_b1_{blur}.xmap"
                     args = Args.parse([
                         "-q", queryFile,
                         "-r", referenceFile,
                         "-o", outputFile,
                         "--primaryResolution", str(resolution),
                         "--primaryBlur", str(blur),
-                        "--peaksCount", "1"
+                        "--peaksCount", "3"
                     ])
 
                     coma = Program(args, [PeaksCatcher(peaksOutputFile)])
