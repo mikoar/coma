@@ -43,7 +43,7 @@ class Program:
         alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
         alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
                                                   alignmentResultRows)
-        self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult)
+        self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult, self.args)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()
         return alignmentResult
