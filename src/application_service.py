@@ -140,7 +140,7 @@ class MultiPeakApplicationService(ApplicationService):
         self.dispatcher.dispatch(CorrelationResultMessage(selectedPeak.primaryCorrelation, secondaryCorrelation, index))
         return selectedPeak.primaryCorrelation, secondaryCorrelation
 
-    def __getAlignmentRow(self, sc: CorrelationResult, ic: InitialAlignment, index: int):
+    def __getAlignmentRow(self, ic: InitialAlignment, sc: CorrelationResult, index: int):
         alignmentResultRow = self.aligner.align(sc.reference, sc.query, sc.peaks, sc.reverseStrand)
         message = AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic, index)
         return alignmentResultRow, message

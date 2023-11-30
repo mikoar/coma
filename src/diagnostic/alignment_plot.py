@@ -64,7 +64,7 @@ class AlignmentPlot:
         drawPeakPositions = \
             list(map(lambda s: s.peak.leftProminenceBasePosition, self.alignment.segments)) \
             + [self.correlation.maxPeak.leftProminenceBasePosition] \
-                if self.correlation and hasattr(self.alignment, "segments") else []
+                if self.correlation and self.correlation.maxPeak and hasattr(self.alignment, "segments") else []
 
         self.overlapsWithBenchmark = \
             (not (self.benchmarkAlignment.referenceEndPosition < self.alignment.referenceStartPosition
@@ -175,7 +175,7 @@ class AlignmentPlot:
         peakRectangle.set_clip_path(self.plotAreaMask)
 
     def _drawPrimaryPeak(self):
-        if not self.correlation:
+        if not self.correlation and self.correlation.maxPeak:
             return
 
         peak = self.correlation.maxPeak
