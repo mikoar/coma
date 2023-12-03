@@ -18,7 +18,7 @@ class __BenchmarkAlignmentStub(BenchmarkAlignment):
 def __getSut() -> Tuple[AlignmentComparer, Mock]:
     rowComparer: AlignmentRowComparer = Mock(spec=AlignmentRowComparer)
     rowCompareMock = Mock(return_value=AlignmentRowComparison(
-        AlignmentRowComparisonResultType.BOTH, BenchmarkAlignment.null, BenchmarkAlignment.null, 0., 0., 0.))
+        AlignmentRowComparisonResultType.BOTH, BenchmarkAlignment.null, BenchmarkAlignment.null, [], [], 0., 0., 0.))
     rowComparer.compare = rowCompareMock
     return AlignmentComparer(rowComparer), rowCompareMock
 

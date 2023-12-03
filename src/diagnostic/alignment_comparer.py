@@ -4,6 +4,7 @@ import statistics
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from enum import Enum
+from itertools import groupby
 from typing import List, Dict, TextIO
 
 import pandas as pd
@@ -78,6 +79,8 @@ class AlignmentComparison:
             "Alignment1Coverage",
             "Alignment2Coverage",
             "Orientation",
+            f"Alignment1Diff {alignmentHeaderDescription}",
+            f"Alignment2Diff {alignmentHeaderDescription}",
             f"Alignment1 {alignmentHeaderDescription}",
             f"Alignment2 {alignmentHeaderDescription}"
         ]
@@ -91,8 +94,10 @@ class AlignmentComparison:
             "{:.3f}".format(row.alignment1Coverage),
             "{:.3f}".format(row.alignment2Coverage),
             row.orientation,
-            "".join(str(row.alignment1.alignedPairs)),
-            "".join(str(row.alignment2.alignedPairs))
+            "".join([r.toString(includePositions) for r in row.alignment1ExclusivePairs]) if row.overlapping else "",
+            "".join([r.toString(includePositions) for r in row.alignment2ExclusivePairs]) if row.overlapping else "",
+            "".join([r.toString(includePositions) for r in row.alignment1.alignedPairs]),
+            "".join([r.toString(includePositions) for r in row.alignment2.alignedPairs])
         ] for row in self.rows]
 
         dataFrame = DataFrame(data, columns=headers, index=pd.RangeIndex(start=1, stop=len(self.rows) + 1))
@@ -121,6 +126,8 @@ class AlignmentRowComparison:
     type: AlignmentRowComparisonResultType
     alignment1: BenchmarkAlignment
     alignment2: BenchmarkAlignment
+    alignment1ExclusivePairs: List[BenchmarkAlignedPair]
+    alignment2ExclusivePairs: List[BenchmarkAlignedPair]
     alignment1Coverage: float
     alignment2Coverage: float
     identity: float
@@ -146,12 +153,12 @@ class AlignmentRowComparison:
     @staticmethod
     def alignment1Only(alignment1: BenchmarkAlignment):
         return AlignmentRowComparison(
-            AlignmentRowComparisonResultType.FIRST_ONLY, alignment1, BenchmarkAlignment.null, 0., 0., 0.)
+            AlignmentRowComparisonResultType.FIRST_ONLY, alignment1, BenchmarkAlignment.null, [], [], 0., 0., 0.)
 
     @staticmethod
     def alignment2Only(alignment2: BenchmarkAlignment):
         return AlignmentRowComparison(
-            AlignmentRowComparisonResultType.SECOND_ONLY, BenchmarkAlignment.null, alignment2, 0., 0., 0.)
+            AlignmentRowComparisonResultType.SECOND_ONLY, BenchmarkAlignment.null, alignment2, [], [], 0., 0., 0.)
 
 
 class AlignmentComparer:
@@ -179,21 +186,45 @@ class AlignmentComparer:
 
 
 class AlignmentRowComparer:
-    def compare(self, alignment1: BenchmarkAlignment, alignment2: BenchmarkAlignment):
-        coverage1 = self.__getCoverage(alignment1.alignedPairs, alignment2.alignedPairs)
-        coverage2 = self.__getCoverage(alignment2.alignedPairs, alignment1.alignedPairs)
+    def __init__(self, combineMultipleQuerySources: bool):
+        self.combineMultipleQuerySources = combineMultipleQuerySources
 
-        ratio = self.__getIdentityRatio(alignment1, alignment2)
+    def compare(self, alignment1: BenchmarkAlignment, alignment2: BenchmarkAlignment):
+        alignment1Pairs = self.__combineMultipleQuerySources(alignment1.alignedPairs, alignment2.alignedPairs)
+        alignment2Pairs = self.__combineMultipleQuerySources(alignment2.alignedPairs, alignment1.alignedPairs)
+        difference1 = self.__getDifference(alignment1Pairs, alignment2Pairs)
+        coverage1 = self.__getCoverage(alignment1Pairs, difference1)
+        difference2 = self.__getDifference(alignment2Pairs, alignment1Pairs)
+        coverage2 = self.__getCoverage(alignment2Pairs, difference2)
+
+        ratio = self.__getIdentityRatio(alignment1Pairs, alignment2Pairs)
         return AlignmentRowComparison(
-            AlignmentRowComparisonResultType.BOTH, alignment1, alignment2, coverage1, coverage2, ratio)
+            AlignmentRowComparisonResultType.BOTH, alignment1, alignment2, difference1, difference2, coverage1, coverage2, ratio)
+
+    def __combineMultipleQuerySources(self, pairs: List[BenchmarkAlignedPair], otherPairs: List[BenchmarkAlignedPair]):
+        if not self.combineMultipleQuerySources:
+            return pairs
+
+        alignmentsPerQuery = [self.__removeExtraAlignmentsWithSameQueryIfOneOfThemIsInOtherList(list(alignmentsWithSameQuery), otherPairs)
+                              for _, alignmentsWithSameQuery in groupby(pairs, BenchmarkAlignedPair.querySiteIdSelector)]
+        return [a for alignments in alignmentsPerQuery for a in alignments]
 
     @staticmethod
-    def __getIdentityRatio(referenceAlignmentRow: BenchmarkAlignment, actualAlignmentRow: BenchmarkAlignment):
-        matcher = SequenceMatcher(None, referenceAlignmentRow.alignedPairs, actualAlignmentRow.alignedPairs)
+    def __getIdentityRatio(alignment1Pairs: List[BenchmarkAlignedPair], alignment2Pairs: List[BenchmarkAlignedPair]):
+        matcher = SequenceMatcher(None, alignment1Pairs, alignment2Pairs)
         ratio = matcher.ratio()
         return ratio
 
     @staticmethod
-    def __getCoverage(pairs: List[BenchmarkAlignedPair], otherPairs: List[BenchmarkAlignedPair]):
+    def __getDifference(pairs: List[BenchmarkAlignedPair], otherPairs: List[BenchmarkAlignedPair]):
+        return sorted(set(pairs).difference(set(otherPairs)), key=BenchmarkAlignedPair.referenceSiteIdSelector)
+
+    @staticmethod
+    def __removeExtraAlignmentsWithSameQueryIfOneOfThemIsInOtherList(
+            alignmentsWithSameQuery: List[BenchmarkAlignedPair], otherPairs: List[BenchmarkAlignedPair]):
+        return [a for a in alignmentsWithSameQuery if a in otherPairs] or alignmentsWithSameQuery
+
+    @staticmethod
+    def __getCoverage(pairs: List[BenchmarkAlignedPair], difference: List[BenchmarkAlignedPair]):
         pairsLength = len(pairs)
-        return (pairsLength - len(set(pairs).difference(set(otherPairs)))) / pairsLength if pairsLength > 0 else 1.
+        return (pairsLength - len(difference)) / pairsLength if pairsLength > 0 else 1.

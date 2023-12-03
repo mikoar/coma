@@ -19,6 +19,17 @@ class BenchmarkAlignedPair:
     def create(reference: str, query: str):
         return BenchmarkAlignedPair(BenchmarkAlignmentPosition(int(reference), 0), BenchmarkAlignmentPosition(int(query), 0))
 
+    @staticmethod
+    def referenceSiteIdSelector(pair: BenchmarkAlignedPair):
+        return pair.reference.siteId
+
+    @staticmethod
+    def querySiteIdSelector(pair: BenchmarkAlignedPair):
+        return pair.query.siteId
+
+    def toString(self, includePositions: bool):
+        return self.__repr__()
+
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {self.query.siteId})"
 
@@ -34,6 +45,9 @@ class BenchmarkAlignedPairWithDistance(BenchmarkAlignedPair):
 
         distance = queryDifference() - (pair.reference.position - firstPair.reference.position) if firstPair else 0
         return BenchmarkAlignedPairWithDistance(pair.reference, pair.query, distance)
+
+    def toString(self, includePositions: bool):
+        return self.__repr__() if includePositions else super().__repr__()
 
     def __repr__(self) -> str:
         return f"({self.reference.siteId}, {int(self.reference.position)}, {self.query.siteId}, " \
