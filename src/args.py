@@ -28,7 +28,6 @@ class Args(NamedTuple):
     diagnosticsEnabled: bool
     benchmarkAlignmentFile: TextIO
     peaksCount: int
-    onePeakPerReference: bool
     disableProgressBar: bool
 
     @staticmethod
@@ -121,11 +120,6 @@ class Args(NamedTuple):
                                  "first cross-correlation run that are selected for further steps - the second "
                                  "cross-correlation run and alignment creation. Then the alignment with the highest "
                                  "score is returned, one alignment record per query molecule at most.")
-
-        parser.add_argument("-1ppr", "--onePeakPerReference", dest="onePeakPerReference", action="store_true",
-                            help="Aligns each query molecule against each reference molecule independently. The output"
-                                 "may contain one alignment record per every possible query-reference pair "
-                                 "(not recommended).")
 
         parser.add_argument("-pb", "--disableProgressBar", dest="disableProgressBar", action="store_true",
                             help="Disables the progress bar.")

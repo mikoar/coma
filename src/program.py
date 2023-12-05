@@ -4,7 +4,6 @@ import sys
 from typing import List
 
 from src.alignment.alignment_results import AlignmentResults
-from src.application_service import ApplicationServiceFactory
 from src.args import Args
 from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationPlotter, \
     SecondaryCorrelationPlotter, AlignmentPlotter, MultipleAlignmentsPlotter
@@ -16,6 +15,7 @@ from src.parsers.simulation_alignment_pair_parser import SimulationAlignmentPair
 from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
+from src.workflow_coordinator import WorkflowCoordinator
 
 
 def main():
@@ -29,7 +29,7 @@ class Program:
         self.__readMaps()
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
         self.dispatcher = Dispatcher(extensions)
-        self.applicationService = ApplicationServiceFactory().create(args, self.dispatcher)
+        self.workflowCoordinator = WorkflowCoordinator.create(args, self.dispatcher)
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
             simulationDataReader = SimulationDataAsXmapReader(SimulationAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
@@ -40,7 +40,7 @@ class Program:
             self.dispatcher.addExtension(MultipleAlignmentsPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
 
     def run(self):
-        alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
+        alignmentResultRows = self.workflowCoordinator.execute(self.referenceMaps, self.queryMaps)
         alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
                                                   alignmentResultRows)
         self.xmapReader.writeAlignments(self.args.outputFile, alignmentResult, self.args)

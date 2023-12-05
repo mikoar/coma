@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from itertools import chain
 from typing import List, Iterator
 
@@ -21,8 +20,18 @@ from src.extensions.messages import CorrelationResultMessage, InitialAlignmentMe
     MultipleAlignmentResultRowsMessage
 
 
-class ApplicationServiceFactory:
-    def create(self, args: Args, dispatcher: Dispatcher) -> ApplicationService:
+class WorkflowCoordinator:
+    def __init__(self, args: Args, primaryGenerator: SequenceGenerator, secondaryGenerator: SequenceGenerator,
+                 aligner: Aligner, dispatcher: Dispatcher, peaksSelector: PeaksSelector):
+        self.args = args
+        self.primaryGenerator = primaryGenerator
+        self.secondaryGenerator = secondaryGenerator
+        self.aligner = aligner
+        self.dispatcher = dispatcher
+        self.peaksSelector = peaksSelector
+
+    @staticmethod
+    def create(args: Args, dispatcher: Dispatcher):
         primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
         secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
         scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
@@ -30,72 +39,8 @@ class ApplicationServiceFactory:
         alignerEngine = AlignerEngine(args.maxDistance)
         alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
         aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-        if args.onePeakPerReference:
-            return OnePeakPerReferenceApplicationService(
-                args, primaryGenerator, secondaryGenerator, aligner, dispatcher)
-        else:
-            return MultiPeakApplicationService(
-                args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
-
-
-class ApplicationService(ABC):
-    def __init__(self,
-                 args: Args,
-                 primaryGenerator: SequenceGenerator,
-                 secondaryGenerator: SequenceGenerator,
-                 aligner: Aligner,
-                 dispatcher: Dispatcher):
-        self.args = args
-        self.primaryGenerator = primaryGenerator
-        self.secondaryGenerator = secondaryGenerator
-        self.aligner = aligner
-        self.dispatcher = dispatcher
-
-    @abstractmethod
-    def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
-        pass
-
-
-class OnePeakPerReferenceApplicationService(ApplicationService):
-    def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
-        return [a for a in p_imap(
-            lambda x: self.__align(*x),
-            list((r, q) for r in referenceMaps for q in queryMaps),
-            num_cpus=self.args.numberOfCpus,
-            disable=self.args.disableProgressBar)
-                if a is not None and a.alignedPairs]
-
-    def __align(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> AlignmentResultRow | None:
-        primaryCorrelation = self.__getPrimaryCorrelation(referenceMap, queryMap)
-        if not any(primaryCorrelation.peaks):
-            return None
-
-        secondaryCorrelation = primaryCorrelation.refine(primaryCorrelation.maxPeak.position, self.secondaryGenerator,
-                                                         self.args.secondaryMargin, self.args.peakHeightThreshold)
-        self.dispatcher.dispatch(CorrelationResultMessage(primaryCorrelation, secondaryCorrelation))
-
-        alignmentResultRow = self.aligner.align(referenceMap, queryMap, secondaryCorrelation.peaks,
-                                                secondaryCorrelation.reverseStrand)
-        self.dispatcher.dispatch(
-            AlignmentResultRowMessage(referenceMap, queryMap, alignmentResultRow, primaryCorrelation))
-        return alignmentResultRow
-
-    def __getPrimaryCorrelation(self, referenceMap: OpticalMap, queryMap: OpticalMap):
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                          self.args.minPeakDistance)
-        self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
-        primaryCorrelationReverse = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                                 self.args.minPeakDistance, reverseStrand=True)
-        self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelationReverse))
-        bestPrimaryCorrelation = sorted([primaryCorrelation, primaryCorrelationReverse], key=lambda c: c.getScore())[-1]
-        return bestPrimaryCorrelation
-
-
-class MultiPeakApplicationService(ApplicationService):
-    def __init__(self, args: Args, primaryGenerator: SequenceGenerator, secondaryGenerator: SequenceGenerator,
-                 aligner: Aligner, dispatcher: Dispatcher, peaksSelector: PeaksSelector):
-        super().__init__(args, primaryGenerator, secondaryGenerator, aligner, dispatcher)
-        self.peaksSelector = peaksSelector
+        return WorkflowCoordinator(
+            args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
 
     def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
         return [a for a in p_imap(
