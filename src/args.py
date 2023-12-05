@@ -40,11 +40,17 @@ class Args(NamedTuple):
         parser.add_argument("-q", "--query", dest="queryFile", type=argparse.FileType("r"), required=True,
                             help="Query optical map in CMAP format file path.")
 
+        parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*",
+                            help="CMapId(s) of reference molecules to be used. Takes all if omitted.")
+
+        parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*",
+                            help="CMapId(s) of query molecules to be used. Takes all if omitted.")
+
         parser.add_argument("-o", "--output", dest="outputFile", nargs="?", type=argparse.FileType("w"),
                             default=sys.stdout,
                             help="XMAP output file path. Stdout is used if omitted.")
 
-        parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=460,
+        parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=1400,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
                                  "in the initial cross-correlation seeding step.")
 
@@ -53,6 +59,16 @@ class Args(NamedTuple):
                                  "by given number of positions in the initial cross-correlation seeding step "
                                  "in order to increase the chance of overlap. "
                                  "Final width of each label is equal to 2b + 1.")
+
+        parser.add_argument("-p", "--peaksCount", dest="peaksCount", type=int, default=5,
+                            help="Number of peaks found for each query molecule against all reference molecules in the "
+                                 "first cross-correlation run that are selected for further steps - the second "
+                                 "cross-correlation run and alignment creation. Then the alignment with the highest "
+                                 "score is returned, one alignment record per query molecule at most.")
+
+        parser.add_argument("-md", "--minPeakDistance", dest="minPeakDistance", type=int, default=20000,
+                            help="Minimum distance between peaks identified in the initial cross-correlation. "
+                                 "For more details see parameter distance of scipy.signal._peak_finding.find_peaks.")
 
         parser.add_argument("-r2", "--secondaryResolution", dest="secondaryResolution", type=int, default=200,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
@@ -64,29 +80,16 @@ class Args(NamedTuple):
                                  "in order to increase the chance of overlap. "
                                  "Final width of each label is equal to 2b + 1.")
 
-        parser.add_argument("-ma", "--secondaryMargin", dest="secondaryMargin", type=int, default=8000,
+        parser.add_argument("-ma", "--secondaryMargin", dest="secondaryMargin", type=int, default=16000,
                             help="The number of base pairs by which the peak from initial cross-correlation "
                                  "seeding is extended in both directions to serve as an input "
                                  "for the second cross-correlation run.")
 
-        parser.add_argument("-rId", "--referenceIDs", dest="referenceIds", type=int, nargs="*",
-                            help="CMapId(s) of reference molecules to be used. Takes all if omitted.")
-
-        parser.add_argument("-qId", "--queryIDs", dest="queryIds", type=int, nargs="*",
-                            help="CMapId(s) of query molecules to be used. Takes all if omitted.")
-
-        parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None,
-                            help="Number of CPUs to use. The default is all CPUs.")
-
-        parser.add_argument("-md", "--minPeakDistance", dest="minPeakDistance", type=int, default=20000,
-                            help="Minimum distance between peaks identified in the initial cross-correlation. "
-                                 "For more details see parameter distance of scipy.signal._peak_finding.find_peaks.")
+        parser.add_argument("-pt", "--peakHeightThreshold", dest="peakHeightThreshold", type=float, default=15,
+                            help="Minimum second cross-correlation peak height to qualify for aligned pairs search.")
 
         parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=1000,
                             help="Maximum distance between aligned pairs relatively to the cross-correlation lag.")
-
-        parser.add_argument("-pt", "--peakHeightThreshold", dest="peakHeightThreshold", type=float, default=15,
-                            help="Minimum second cross-correlation peak height to qualify for aligned pairs search.")
 
         parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800,
                             help="Score value given to an aligned pair with 0 distance between reference and query "
@@ -115,11 +118,8 @@ class Args(NamedTuple):
                             help="XMAP file containing alignments from other source, to be used with 'diagnostics' "
                                  "option.")
 
-        parser.add_argument("-p", "--peaksCount", dest="peaksCount", type=int, default=5,
-                            help="Number of peaks found for each query molecule against all reference molecules in the "
-                                 "first cross-correlation run that are selected for further steps - the second "
-                                 "cross-correlation run and alignment creation. Then the alignment with the highest "
-                                 "score is returned, one alignment record per query molecule at most.")
+        parser.add_argument("-c", "--cpus", dest="numberOfCpus", type=int, default=None,
+                            help="Number of CPUs to use. The default is all available CPUs.")
 
         parser.add_argument("-pb", "--disableProgressBar", dest="disableProgressBar", action="store_true",
                             help="Disables the progress bar.")
