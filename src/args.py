@@ -18,7 +18,7 @@ class Args(NamedTuple):
     queryIds: List[int]
     numberOfCpus: int | None
     minPeakDistance: int
-    maxDistance: int
+    maxPairDistance: int
     peakHeightThreshold: float
     perfectMatchScore: int
     distancePenaltyMultiplier: int
@@ -88,7 +88,7 @@ class Args(NamedTuple):
         parser.add_argument("-pt", "--peakHeightThreshold", dest="peakHeightThreshold", type=float, default=15,
                             help="Minimum second cross-correlation peak height to qualify for aligned pairs search.")
 
-        parser.add_argument("-d", "--maxDistance", dest="maxDistance", type=int, default=1000,
+        parser.add_argument("-d", "--maxPairDistance", dest="maxPairDistance", type=int, default=1000,
                             help="Maximum distance between aligned pairs relatively to the cross-correlation lag.")
 
         parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800,
