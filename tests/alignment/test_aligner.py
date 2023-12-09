@@ -16,7 +16,7 @@ from src.correlation.peak import Peak
 
 def getSut(maxDistance=0):
     segmentsFactoryMock: AlignmentSegmentsFactory = Mock(spec=AlignmentSegmentsFactory)
-    segmentsFactoryMock.getSegments = lambda positions, peak: [AlignmentSegment(positions, 300, peak, positions)]
+    segmentsFactoryMock.getSegments = lambda positions, peak: [AlignmentSegment.create(positions, 300, peak, positions)]
     segmentConflictResolverMock: AlignmentSegmentConflictResolver = Mock(spec=AlignmentSegmentConflictResolver)
     segmentConflictResolverMock.resolveConflicts = lambda segments: AlignmentSegmentsWithResolvedConflicts(segments)
     return Aligner(AlignmentPositionScorer(100, 1, 0),

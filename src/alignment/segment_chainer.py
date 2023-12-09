@@ -15,13 +15,17 @@ class SegmentChainer:
             return segment.startPosition.reference.position + segment.endPosition.reference.position \
                    + segment.startPosition.query.position + segment.endPosition.query.position
 
-        segments = sorted(segments, key=initialOrderingKey)
-        cumulatedScore = [-math.inf] * len(segments)
-        previousSegmentIndexes: List[int | None] = [None] * len(segments)
+        emptySegments = [s for s in segments if s.empty]
+        preOrderedNonEmptySegments = sorted((s for s in segments if not s.empty), key=initialOrderingKey)
+        if not preOrderedNonEmptySegments:
+            return emptySegments
+
+        cumulatedScore = [-math.inf] * len(preOrderedNonEmptySegments)
+        previousSegmentIndexes: List[int | None] = [None] * len(preOrderedNonEmptySegments)
         bestPreviousSegmentIndex = 0
-        for i, currentSegment in enumerate(segments):
+        for i, currentSegment in enumerate(preOrderedNonEmptySegments):
             cumulatedScore[i] = 0
-            for j, previousSegment in enumerate(segments[:i]):
+            for j, previousSegment in enumerate(preOrderedNonEmptySegments[:i]):
                 currentScore = cumulatedScore[j] + self.sequentialityScorer.getScore(previousSegment,
                                                                                      currentSegment)
                 if currentScore > cumulatedScore[i]:
@@ -30,10 +34,10 @@ class SegmentChainer:
             cumulatedScore[i] += currentSegment.segmentScore
             if cumulatedScore[i] > cumulatedScore[bestPreviousSegmentIndex]:
                 bestPreviousSegmentIndex = i
-        result = [segments[bestPreviousSegmentIndex]]
+        result = [preOrderedNonEmptySegments[bestPreviousSegmentIndex]]
         while (bestPreviousSegmentIndex := previousSegmentIndexes[bestPreviousSegmentIndex]) is not None:
-            result.insert(0, segments[bestPreviousSegmentIndex])
-        return result
+            result.insert(0, preOrderedNonEmptySegments[bestPreviousSegmentIndex])
+        return result + emptySegments
 
 
 class SequentialityScorer:

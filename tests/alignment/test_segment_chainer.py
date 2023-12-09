@@ -71,5 +71,35 @@ def test_chain_dropsOutlyingSegment():
     assert chainedSegments == [segments[0], segments[1]]
 
 
+def test_chain_preservesEmptySegments():
+    segments = [
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(100).withQueryPosition(100).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(300).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(300).withQueryPosition(400).build())
+            .withPosition(ScoredAlignedPairBuilder().withReferencePosition(500).withQueryPosition(600).build())
+            .withScore(1200.)
+            .build(),
+        AlignmentSegmentBuilder()
+            .withScore(0.)
+            .build()
+    ]
+    chainedSegments = SegmentChainer().chain(segments)
+    assert len(chainedSegments) == 3
+
+
+def test_chain_emptySegmentsOnly():
+    segments = [
+        AlignmentSegmentBuilder()
+            .withScore(0.)
+            .build()
+    ]
+    chainedSegments = SegmentChainer().chain(segments)
+    assert chainedSegments == segments
+
+
 if __name__ == '__main__':
     pytest.main(args=[__file__])

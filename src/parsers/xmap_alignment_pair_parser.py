@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from src.correlation.optical_map import OpticalMap
-from src.diagnostic.xmap_alignment import XmapAlignedPair, XmapAlignmentPosition, XmapAlignedPairWithDistance
+from src.diagnostic.benchmark_alignment import BenchmarkAlignedPair, BenchmarkAlignmentPosition, \
+    BenchmarkAlignedPairWithDistance
 
 
 class BaseXmapAlignmentPairParser(ABC):
@@ -14,7 +15,7 @@ class BaseXmapAlignmentPairParser(ABC):
 class XmapAlignmentPairParser(BaseXmapAlignmentPairParser):
     def parse(self, alignment: str, queryId: int, referenceId: int, reverseStrand: bool):
         alignmentPairStrings = alignment[:-1].replace('(', '').split(')')
-        return list(map(lambda pair: XmapAlignedPair.create(*pair.split(',')), alignmentPairStrings))
+        return list(map(lambda pair: BenchmarkAlignedPair.create(*pair.split(',')), alignmentPairStrings))
 
 
 class XmapAlignmentPairWithDistanceParser(BaseXmapAlignmentPairParser):
@@ -29,12 +30,12 @@ class XmapAlignmentPairWithDistanceParser(BaseXmapAlignmentPairParser):
 
         def createAlignedPair(pair: str):
             referenceSiteId, querySiteId = map(lambda siteId: int(siteId), pair.split(','))
-            referencePosition = XmapAlignmentPosition(referenceSiteId, reference.positions[referenceSiteId - 1])
-            queryPosition = XmapAlignmentPosition(querySiteId, query.positions[querySiteId - 1])
-            return XmapAlignedPair(referencePosition, queryPosition)
+            referencePosition = BenchmarkAlignmentPosition(referenceSiteId, reference.positions[referenceSiteId - 1])
+            queryPosition = BenchmarkAlignmentPosition(querySiteId, query.positions[querySiteId - 1])
+            return BenchmarkAlignedPair(referencePosition, queryPosition)
 
         alignedPairs = list(map(lambda pair: createAlignedPair(pair), alignmentPairStrings))
         alignedPairsWithDistances = map(
-            lambda pair: XmapAlignedPairWithDistance.calculateDistance(pair, alignedPairs[0], reverseStrand),
+            lambda pair: BenchmarkAlignedPairWithDistance.calculateDistance(pair, alignedPairs[0], reverseStrand),
             alignedPairs)
         return list(alignedPairsWithDistances) if alignedPairs else []

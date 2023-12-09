@@ -1,8 +1,8 @@
 import pytest
 
-from src.messaging.dispatcher import Dispatcher
-from src.messaging.message_handler import MessageHandler
-from src.messaging.messages import Message
+from src.extensions.dispatcher import Dispatcher
+from src.extensions.extension import Extension
+from src.extensions.messages import Message
 
 
 class _TestMessage1(Message):
@@ -13,7 +13,7 @@ class _TestMessage2(Message):
     pass
 
 
-class _TestHandler1(MessageHandler):
+class _TestHandler1(Extension):
     messageType = _TestMessage1
     handledMessages = []
 
@@ -21,7 +21,7 @@ class _TestHandler1(MessageHandler):
         self.handledMessages.append(message)
 
 
-class _TestHandler2(MessageHandler):
+class _TestHandler2(Extension):
     messageType = _TestMessage2
     handledMessages = []
 

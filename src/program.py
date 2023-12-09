@@ -1,22 +1,21 @@
 from __future__ import annotations
 
 import sys
+from typing import List
 
-from src.alignment.aligner import Aligner, AlignerEngine
-from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResults
-from src.alignment.segment_chainer import SegmentChainer
-from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
-from src.alignment.segments_factory import AlignmentSegmentsFactory
-from src.application_service import OnePeakPerReferenceApplicationService
 from src.args import Args
-from src.correlation.sequence_generator import SequenceGenerator
-from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationDiagnosticsHandler, \
-    SecondaryCorrelationDiagnosticsHandler, AlignmentPlotter
-from src.messaging.dispatcher import Dispatcher
+from src.diagnostic.diagnostics import DiagnosticsWriter, PrimaryCorrelationPlotter, \
+    SecondaryCorrelationPlotter, AlignmentPlotter, MultipleAlignmentsPlotter
+from src.extensions.dispatcher import Dispatcher
+from src.extensions.extension import Extension
+from src.parsers.alignment_benchmark_reader import AlignmentBenchmarkReader
 from src.parsers.cmap_reader import CmapReader
+from src.parsers.simulation_alignment_pair_parser import SimulationAlignmentPairWithDistanceParser
+from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
+from src.workflow_coordinator import WorkflowCoordinator
 
 
 def main():
@@ -25,44 +24,37 @@ def main():
 
 
 class Program:
-    def __init__(self, args: Args):
+    def __init__(self, args: Args, extensions: List[Extension] = None):
         self.args = args
         self.__readMaps()
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
-        self.primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
-        self.secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
-        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
-        segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
-        alignerEngine = AlignerEngine(args.maxDistance)
-        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
-        self.aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-        self.dispatcher = Dispatcher([])
+        self.dispatcher = Dispatcher(extensions)
+        self.workflowCoordinator = WorkflowCoordinator.create(args, self.dispatcher)
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
-            self.dispatcher.addHandler(PrimaryCorrelationDiagnosticsHandler(writer))
-            self.dispatcher.addHandler(SecondaryCorrelationDiagnosticsHandler(writer))
-            self.dispatcher.addHandler(AlignmentPlotter(writer, self.xmapReader, args.benchmarkAlignmentFile))
-        self.applicationService = OnePeakPerReferenceApplicationService(args,
-                                                                        self.primaryGenerator,
-                                                                        self.secondaryGenerator,
-                                                                        self.aligner,
-                                                                        self.dispatcher)
+            simulationDataReader = SimulationDataAsXmapReader(SimulationAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
+            benchmarkReader = AlignmentBenchmarkReader(self.xmapReader, simulationDataReader)
+            self.dispatcher.addExtension(PrimaryCorrelationPlotter(writer))
+            self.dispatcher.addExtension(SecondaryCorrelationPlotter(writer))
+            self.dispatcher.addExtension(AlignmentPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addExtension(MultipleAlignmentsPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
 
     def run(self):
-        alignmentResultRows = self.applicationService.execute(self.referenceMaps, self.queryMaps)
+        alignmentResultRows = self.workflowCoordinator.execute(self.referenceMaps, self.queryMaps)
         unalignedFragments = [alignmentResultRow.getUnalignedFragments(self.queryMaps) for alignmentResultRow in alignmentResultRows]
         unalignedFragments = [item for row in unalignedFragments for item in row]
         
-        alignmentResultRowsSecondPass = self.applicationService.execute(self.referenceMaps, unalignedFragments)
+        alignmentResultRowsSecondPass = self.workflowCoordinator.execute(self.referenceMaps, unalignedFragments)
         alignmentResultRowsSecondPass = [alignmentResultRowRest.setAlignedRest(True) for alignmentResultRowRest in alignmentResultRowsSecondPass]
         alignmentResult = AlignmentResults.create(self.args.referenceFile.name, self.args.queryFile.name,
                                                   alignmentResultRows, alignmentResultRowsSecondPass,
                                                   self.args.outputMode, self.args.outputFile, self.args.maxDifference)
         
         for file_name, result in alignmentResult:
-            self.xmapReader.writeAlignments(file_name, result)
+            self.xmapReader.writeAlignments(file_name, result, self.args)
         if self.args.outputFile is not sys.stdout:
             self.args.outputFile.close()
+        return alignmentResult
 
     def __readMaps(self):
         cmapReader = CmapReader()

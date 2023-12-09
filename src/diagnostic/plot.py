@@ -1,3 +1,4 @@
+import math
 from typing import List, Tuple, Union
 
 import matplotlib.patches as patches
@@ -26,15 +27,26 @@ def plotRefinedCorrelation(initialCorrelationResult: CorrelationResult,
                            refinedCorrelationResult: CorrelationResult) -> Figure:
     fig, ax = __plotCorrelation(refinedCorrelationResult, refinedCorrelationResult.resolution)
     ax2 = ax.twinx()
-    start = round(refinedCorrelationResult.correlationStart / initialCorrelationResult.resolution)
-    end = round(refinedCorrelationResult.correlationEnd / initialCorrelationResult.resolution)
-    correlationFragment = initialCorrelationResult.correlation[start:end]
-    interpolated = interp1d(np.arange(correlationFragment.size), correlationFragment, kind='nearest')
-    stretched = interpolated(np.linspace(0, correlationFragment.size - 1, refinedCorrelationResult.correlation.size))
+    margin = 30000
+    leftMargin = min(margin, refinedCorrelationResult.correlationStart)
+    rightMargin = min(margin, initialCorrelationResult.correlationEnd - refinedCorrelationResult.correlationEnd)
+    initialCorrelationStart = round(
+        (refinedCorrelationResult.correlationStart - leftMargin) / initialCorrelationResult.resolution)
+    initialCorrelationEnd = round(
+        (refinedCorrelationResult.correlationEnd + rightMargin) / initialCorrelationResult.resolution)
+    initialCorrelationFragment = initialCorrelationResult.correlation[initialCorrelationStart:initialCorrelationEnd]
+    interpolated = interp1d(np.arange(initialCorrelationFragment.size), initialCorrelationFragment, kind='nearest')
+    marginInRefinedCorrelationCoordinates = math.ceil((rightMargin + leftMargin) / refinedCorrelationResult.resolution)
+    stretched = interpolated(np.linspace(
+        0, initialCorrelationFragment.size - 1,
+           refinedCorrelationResult.correlation.size + marginInRefinedCorrelationCoordinates))
+    xStart = refinedCorrelationResult.correlationStart - leftMargin
+    xEnd = refinedCorrelationResult.correlationEnd + rightMargin
+    ax2.set_xlim(left=xStart, right=xEnd)
     ax2.set_ylim(bottom=0, top=stretched.max() * 1.1)
-    x = range(refinedCorrelationResult.correlationStart, refinedCorrelationResult.correlationEnd,
-              refinedCorrelationResult.resolution)
+    x = range(xStart, xEnd, refinedCorrelationResult.resolution)
     ax2.fill_between(x, stretched, alpha=0.25)
+    __plotPeaks(initialCorrelationResult, ax2, maxAnnotations=0, marker="*")
     return fig
 
 
@@ -65,15 +77,15 @@ def __plotCorrelation(correlationResult: CorrelationResult,
     return fig, ax
 
 
-def __plotPeaks(peaks: CorrelationResult, ax: Axes, maxAnnotations=5):
+def __plotPeaks(peaks: CorrelationResult, ax: Axes, maxAnnotations=5, marker: str = "x"):
     sortedPeaks = sorted([peak for peak in peaks.peaks], key=lambda p: p.score, reverse=True)
     if not sortedPeaks:
         return
 
     maxPeak = sortedPeaks[0]
-    ax.plot(maxPeak.position, maxPeak.height, "x", markersize=24, markeredgewidth=4)
-    __plotSuboptimalPeaks(ax, sortedPeaks[1:maxAnnotations], 0.6)
-    __plotSuboptimalPeaks(ax, sortedPeaks[maxAnnotations:], 0.3)
+    ax.plot(maxPeak.position, maxPeak.height, marker, markersize=24, markeredgewidth=4)
+    __plotSuboptimalPeaks(ax, sortedPeaks[1:maxAnnotations], 0.6, marker)
+    __plotSuboptimalPeaks(ax, sortedPeaks[maxAnnotations:], 0.3, marker)
 
     peaksToAnnotate = sortedPeaks[:maxAnnotations]
     for i, peak in enumerate(peaksToAnnotate):
@@ -81,9 +93,9 @@ def __plotPeaks(peaks: CorrelationResult, ax: Axes, maxAnnotations=5):
                     (peak.position, peak.height), rotation=-45, ha="center", va="top")
 
 
-def __plotSuboptimalPeaks(ax, peaks: List[Peak], alpha: float):
+def __plotSuboptimalPeaks(ax, peaks: List[Peak], alpha: float, marker: str):
     if peaks:
-        ax.plot([p.position for p in peaks], [p.height for p in peaks], "x",
+        ax.plot([p.position for p in peaks], [p.height for p in peaks], marker,
                 markersize=16, markeredgewidth=4, alpha=alpha)
 
 

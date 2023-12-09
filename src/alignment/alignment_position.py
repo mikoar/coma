@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC, abstractmethod
-from collections import Sized
-from typing import Tuple, Iterable, Callable
+from typing import Tuple, Iterable, Callable, Sized
 
 from src.correlation.optical_map import PositionWithSiteId
 

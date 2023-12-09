@@ -12,7 +12,14 @@ from src.correlation.peak import Peak
 
 
 class AlignmentSegment:
-    empty: AlignmentSegment
+    @staticmethod
+    def create(positions: List[ScoredAlignmentPosition],
+               segmentScore: float,
+               peak: Peak,
+               allPeakPositions: List[ScoredAlignmentPosition]):
+        return AlignmentSegment(positions, segmentScore, peak, allPeakPositions) \
+            if positions \
+            else EmptyAlignmentSegment(peak, allPeakPositions)
 
     def __init__(
             self,
@@ -25,6 +32,10 @@ class AlignmentSegment:
         self.alignedPositions = [p for p in positions if isinstance(p, ScoredAlignedPair)]
         self.peak = peak
         self.allPeakPositions = allPeakPositions or []
+
+    @property
+    def empty(self):
+        return len(self.positions) == 0
 
     @property
     def startPosition(self):
@@ -56,7 +67,7 @@ class AlignmentSegment:
                 lambda p: not isinstance(p, AlignedPair) or p.lessOrEqualOnAnySequence(end),
                 slicedAtStart))
         self.__trimNotAlignedPositionsFromEnd(positions, end)
-        return AlignmentSegment(positions, sum(p.score for p in positions), self.peak, self.allPeakPositions)
+        return AlignmentSegment.create(positions, sum(p.score for p in positions), self.peak, self.allPeakPositions)
 
     def getReferenceLabels(self) -> _SegementMoleculeCharacteristics:
         """Function used to get all of the reference labels,
@@ -119,21 +130,22 @@ class AlignmentSegment:
     def __eq__(self, other):
         return isinstance(other, AlignmentSegment) \
                and other.segmentScore == self.segmentScore \
-               and other.positions == self.positions
+               and other.positions == self.positions \
+               and other.peak == self.peak
 
     def __sub__(self, other: AlignmentSegment):
         positions = [p for p in self.positions if p not in other.positions]
-        if not positions:
-            return AlignmentSegment.empty
-        return AlignmentSegment(positions, sum(p.score for p in positions), self.peak, self.allPeakPositions)
+        return AlignmentSegment.create(positions, sum(p.score for p in positions), self.peak, self.allPeakPositions)
 
     def __repr__(self):
         return f"score: {self.segmentScore}, positions: {self.positions}"
 
 
-class __EmptyAlignmentSegment(AlignmentSegment):
-    def __init__(self):
-        super().__init__([], 0., Peak.null, [])
+class EmptyAlignmentSegment(AlignmentSegment):
+    def __init__(self,
+                 peak: Peak = None,
+                 allPeakPositions: List[ScoredAlignmentPosition] = None):
+        super().__init__([], 0., peak or Peak.null, allPeakPositions or [])
 
     @property
     def startPosition(self):
@@ -148,9 +160,6 @@ class __EmptyAlignmentSegment(AlignmentSegment):
 
     def endOverlapsWithStartOf(self, other: AlignmentSegment):
         return False
-
-
-AlignmentSegment.empty = __EmptyAlignmentSegment()
 
 
 class _SegmentPair(ABC):
@@ -196,18 +205,16 @@ class _SegmentPairWithConflict(_SegmentPair):
             elif max_index == len(conf1.positions):
                 return self.segment1, self.segment2 - self.conflictingSubsegment2
             else:
-                new_seg1 = self.segment1 - \
-                           AlignmentSegment(self.conflictingSubsegment1.positions[conf1.indexes[max_index]:],
-                                            sum(p.score for p in
-                                                self.conflictingSubsegment1.positions[conf1.indexes[max_index]:]),
-                                            self.segment1.peak,
-                                            self.conflictingSubsegment1.positions[conf1.indexes[max_index]:])
-                new_seg2 = self.segment2 - \
-                           AlignmentSegment(self.conflictingSubsegment2.positions[:conf2.indexes[max_index]],
-                                            sum(p.score for p in
-                                                self.conflictingSubsegment2.positions[:conf2.indexes[max_index]]),
-                                            self.segment2.peak,
-                                            self.conflictingSubsegment2.positions[:conf2.indexes[max_index]])
+                new_seg1 = self.segment1 - AlignmentSegment.create(
+                    self.conflictingSubsegment1.positions[conf1.indexes[max_index]:],
+                    sum(p.score for p in self.conflictingSubsegment1.positions[conf1.indexes[max_index]:]),
+                    self.segment1.peak,
+                    self.conflictingSubsegment1.positions[conf1.indexes[max_index]:])
+                new_seg2 = self.segment2 - AlignmentSegment.create(
+                    self.conflictingSubsegment2.positions[:conf2.indexes[max_index]],
+                    sum(p.score for p in self.conflictingSubsegment2.positions[:conf2.indexes[max_index]]),
+                    self.segment2.peak,
+                    self.conflictingSubsegment2.positions[:conf2.indexes[max_index]])
             return new_seg1, new_seg2
         else:
             self.resolveByTrimming()
@@ -242,4 +249,3 @@ class _SegementMoleculeCharacteristics():
     @staticmethod
     def create(positions: List, scores: List, indexes: List):
         return _SegementMoleculeCharacteristics(positions, scores, indexes)
-    

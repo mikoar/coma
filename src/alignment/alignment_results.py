@@ -10,8 +10,9 @@ from typing import List
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
-from src.diagnostic.xmap_alignment import XmapAlignment
+from src.diagnostic.benchmark_alignment import BenchmarkAlignment
 from src.correlation.optical_map import OpticalMap
+
 
 class HitEnum(Enum):
     MATCH = "M"
@@ -50,12 +51,21 @@ class AlignmentResults:
         if mode == 'separate':
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
-        elif mode == "joined":
+        if mode == "joined":
             joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
                                                                 rowsWithoutSubsequentAlignmentsForSingleQueryRest,
                                                                 maxDifference)
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath,  separateRows))]
+        if mode == 'all':
+            third_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),
+                              mode='w', encoding=out_file.encoding)
+            joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
+                                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest,
+                                                                maxDifference)
+            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
+                    (new_file, AlignmentResults(referenceFilePath, queryFilePath,  rowsWithoutSubsequentAlignmentsForSingleQuery)),
+                    (third_file, AlignmentResults(referenceFilePath, queryFilePath,  rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
         
 
     @staticmethod
@@ -80,8 +90,7 @@ class AlignmentResults:
                         separate.extend(group)
         return joined, separate
 
-
-class AlignmentResultRow(XmapAlignment):
+class AlignmentResultRow(BenchmarkAlignment):
     @staticmethod
     def create(segmentsWithoutConflicts: AlignmentSegmentsWithResolvedConflicts,
                queryId: int,

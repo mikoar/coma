@@ -1,7 +1,7 @@
 from typing import List
 
 from src.alignment.alignment_position import ScoredAlignmentPosition
-from src.alignment.segments import AlignmentSegment
+from src.alignment.segments import AlignmentSegment, EmptyAlignmentSegment
 from src.correlation.peak import Peak
 
 
@@ -18,7 +18,7 @@ class AlignmentSegmentsFactory:
         start = end = 0
         currentScore = 0
         resultSegments = []
-        segmentWithMaxScore = AlignmentSegment.empty
+        segmentWithMaxScore = EmptyAlignmentSegment(peak, positions)
 
         alignmentEnd = len(positions) - 1
         while end <= alignmentEnd:
@@ -26,14 +26,14 @@ class AlignmentSegmentsFactory:
             if currentScore > max(0., segmentWithMaxScore.segmentScore - self.breakSegmentThreshold):
                 end += 1
                 if currentScore > segmentWithMaxScore.segmentScore:
-                    segmentWithMaxScore = AlignmentSegment(positions[start:end], currentScore, peak, positions)
+                    segmentWithMaxScore = AlignmentSegment.create(positions[start:end], currentScore, peak, positions)
             else:
                 if segmentWithMaxScore.segmentScore >= self.minScore:
                     resultSegments.append(segmentWithMaxScore)
-                    segmentWithMaxScore = AlignmentSegment.empty
+                    segmentWithMaxScore = EmptyAlignmentSegment(peak, positions)
                 start = end = end + 1
                 currentScore = 0
         if segmentWithMaxScore.segmentScore >= self.minScore:
             resultSegments.append(segmentWithMaxScore)
 
-        return resultSegments
+        return resultSegments or [EmptyAlignmentSegment(peak, positions)]

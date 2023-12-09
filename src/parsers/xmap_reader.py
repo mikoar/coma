@@ -1,9 +1,12 @@
 import os.path
+import socket
+from io import TextIOWrapper
 from typing import List, TextIO, Iterable
 
 import pandas as pd
 from pandas import DataFrame, Series
 
+from args import Args
 from src.alignment.alignment_results import AlignmentResults
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.parsers.bionano_file_reader import BionanoFileReader
@@ -29,8 +32,7 @@ class XmapReader:
 
         return alignments.apply(self.__rowParserFactory(), axis=1).tolist()
 
-    @staticmethod
-    def writeAlignments(file: TextIO, alignmentResults: AlignmentResults):
+    def writeAlignments(self, file: TextIO, alignmentResults: AlignmentResults, args: Args):
         columns = {
             "#h": "#f",
             "XmapEntryID": "int",
@@ -49,11 +51,14 @@ class XmapReader:
             "LabelChannel": "int",
             "Alignment": "string"
         }
-        file.write("# XMAP File Version:\t0.2\n")
-        file.write(f"# Reference Maps From:\t{os.path.abspath(alignmentResults.referenceFilePath)}\n")
-        file.write(f"# Query Maps From:\t{os.path.abspath(alignmentResults.queryFilePath)}\n")
-        file.write("\t".join([columnName for columnName in columns.keys()]) + "\n")
-        file.write("\t".join([columnType for columnType in columns.values()]) + "\n")
+        file.writelines(line + "\n" for line in [
+            f"# hostname={socket.gethostname()}",
+            "# coma " + " ".join([f"--{k} {self.__argToString(v)}" for k, v in vars(args).items()]),
+            "# XMAP File Version:\t0.2",
+            f"# Reference Maps From:\t{os.path.abspath(alignmentResults.referenceFilePath)}",
+            f"# Query Maps From:\t{os.path.abspath(alignmentResults.queryFilePath)}",
+            "\t".join([columnName for columnName in columns.keys()]),
+            "\t".join([columnType for columnType in columns.values()])])
 
         dataFrame = DataFrame([{
             "QryContigID": row.queryId,
@@ -72,8 +77,7 @@ class XmapReader:
             "Alignment": "".join(
                 [f"({pair.reference.siteId},{pair.query.siteId})" for pair in row.alignedPairs]),
         } for row in alignmentResults.rows], index=pd.RangeIndex(start=1, stop=len(alignmentResults.rows) + 1))
-
-        dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator="\n")
+        dataFrame.to_csv(file, sep='\t', header=False, mode="a", index=False,  line_terminator='\n')
 
     def __rowParserFactory(self):
         def parseRow(row: Series):
@@ -86,3 +90,11 @@ class XmapReader:
                                           self.pairParser.parse(row["Alignment"], queryId, referenceId, reverseStrand))
 
         return parseRow
+
+    @staticmethod
+    def __argToString(arg):
+        if isinstance(arg, TextIOWrapper):
+            return arg.name
+        if isinstance(arg, list):
+            return " ".join(str(a) for a in arg)
+        return str(arg)
