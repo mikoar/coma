@@ -29,6 +29,14 @@ class NotAlignedPosition(AlignmentPosition, ABC):
             raise ValueError("penalty should be negative")
         return ScoredNotAlignedPosition(self, unmatchedPenalty)
 
+    @abstractmethod
+    def lessOnBothSequences(self, other: AlignedPair) -> bool:
+        pass
+
+    @abstractmethod
+    def lessOrEqualOnAnySequence(self, other: AlignedPair) -> bool:
+        pass
+
 
 class NotAlignedQueryPosition(NotAlignedPosition):
     def __init__(self, query: PositionWithSiteId, referenceStart: int):
@@ -47,6 +55,12 @@ class NotAlignedQueryPosition(NotAlignedPosition):
             else isinstance(other, NotAlignedQueryPosition) \
                  and self.query.siteId == other.query.siteId
 
+    def lessOnBothSequences(self, other: AlignedPair) -> bool:
+        return self.query.position < other.query.position
+
+    def lessOrEqualOnAnySequence(self, other: AlignedPair) -> bool:
+        return self.query.position <= other.query.position
+
 
 class NotAlignedReferencePosition(NotAlignedPosition):
     def __init__(self, reference: PositionWithSiteId):
@@ -63,6 +77,12 @@ class NotAlignedReferencePosition(NotAlignedPosition):
         return self.reference.siteId == other[0] and other[1] is None if isinstance(other, Sized) and len(other) == 2 \
             else isinstance(other, NotAlignedReferencePosition) \
                  and self.reference.siteId == other.reference.siteId
+
+    def lessOnBothSequences(self, other: AlignedPair) -> bool:
+        return self.reference.position < other.reference.position
+
+    def lessOrEqualOnAnySequence(self, other: AlignedPair) -> bool:
+        return self.reference.position <= other.reference.position
 
 
 class AlignedPair(AlignmentPosition):
@@ -180,13 +200,7 @@ class ScoredNotAlignedPosition(NotAlignedPosition, ScoredAlignmentPosition):
         return self.position == other
 
     def lessOnBothSequences(self, other: AlignedPair) -> bool:
-        if isinstance(self.position, NotAlignedReferencePosition):
-            return self.position.reference.position < other.reference.position
-        else:
-            return self.position.query.position < other.query.position
+        return self.position.lessOnBothSequences(other)
 
     def lessOrEqualOnAnySequence(self, other: AlignedPair) -> bool:
-        if isinstance(self.position, NotAlignedReferencePosition):
-            return self.position.reference.position <= other.reference.position
-        else:
-            return self.position.query.position <= other.query.position
+        return self.position.lessOrEqualOnAnySequence(other)

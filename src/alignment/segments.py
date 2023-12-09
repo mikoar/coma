@@ -7,7 +7,7 @@ from typing import List, Tuple
 import numpy as np
 
 from src.alignment.alignment_position import ScoredAlignmentPosition, ScoredAlignedPair, AlignedPair, \
-    NotAlignedQueryPosition
+    NotAlignedQueryPosition, ScoredNotAlignedPosition, NotAlignedReferencePosition
 from src.correlation.peak import Peak
 
 
@@ -85,14 +85,14 @@ class AlignmentSegment:
                 referencePositions.append(position.reference)
                 referenceScores.append(position.score + sumScore)
                 sumScore = 0
+            elif isinstance(position, ScoredNotAlignedPosition) \
+                    and isinstance(position.position, NotAlignedReferencePosition):
+                referenceIndexes.append(index)
+                referencePositions.append(position.position.reference)
+                referenceScores.append(position.score + sumScore)
+                sumScore = 0
             else:
-                if not isinstance(position.position, NotAlignedQueryPosition):
-                    referenceIndexes.append(index)
-                    referencePositions.append(position.position.reference)
-                    referenceScores.append(position.score + sumScore)
-                    sumScore = 0
-                else:
-                    sumScore += position.score
+                sumScore += position.score
         return _SegementMoleculeCharacteristics(referencePositions, referenceScores, referenceIndexes)
 
     def getQueryLabels(self) -> _SegementMoleculeCharacteristics:
@@ -110,14 +110,14 @@ class AlignmentSegment:
                 queryScores.append(position.score + sumScore)
                 queryIndexes.append(index)
                 sumScore = 0
+            elif isinstance(position, ScoredNotAlignedPosition) \
+                    and isinstance(position.position, NotAlignedQueryPosition):
+                queryPositions.append(position.position.query)
+                queryScores.append(position.score + sumScore)
+                queryIndexes.append(index)
+                sumScore = 0
             else:
-                if isinstance(position.position, NotAlignedQueryPosition):
-                    queryPositions.append(position.position.query)
-                    queryScores.append(position.score + sumScore)
-                    queryIndexes.append(index)
-                    sumScore = 0
-                else:
-                    sumScore += position.score
+                sumScore += position.score
         return _SegementMoleculeCharacteristics(queryPositions, queryScores, queryIndexes)
 
     @staticmethod
