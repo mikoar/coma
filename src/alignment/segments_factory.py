@@ -15,25 +15,57 @@ class AlignmentSegmentsFactory:
         self.breakSegmentThreshold = breakSegmentThreshold
 
     def getSegments(self, positions: List[ScoredAlignmentPosition], peak: Peak) -> List[AlignmentSegment]:
-        start = end = 0
-        currentScore = 0
-        resultSegments = []
-        segmentWithMaxScore = EmptyAlignmentSegment(peak, positions)
+        return _AlignmentSegmentBuilder(
+            self.minScore,
+            self.breakSegmentThreshold,
+            positions,
+            peak).getSegments()
 
-        alignmentEnd = len(positions) - 1
-        while end <= alignmentEnd:
-            currentScore += positions[end].score
-            if currentScore > max(0., segmentWithMaxScore.segmentScore - self.breakSegmentThreshold):
-                end += 1
-                if currentScore > segmentWithMaxScore.segmentScore:
-                    segmentWithMaxScore = AlignmentSegment.create(positions[start:end], currentScore, peak, positions)
+
+class _AlignmentSegmentBuilder:
+    def __init__(self,
+                 minScore: float,
+                 breakSegmentThreshold: float,
+                 positions: List[ScoredAlignmentPosition],
+                 peak: Peak):
+        self.minScore = minScore
+        self.breakSegmentThreshold = breakSegmentThreshold
+        self.positions = positions
+        self.peak = peak
+        self.currentSegmentStart = 0
+        self.cursor = 0
+        self.currentSegmentScore = 0
+        self.resultSegments = []
+        self.segmentWithMaxScore = EmptyAlignmentSegment(peak, positions)
+
+    def getSegments(self) -> List[AlignmentSegment]:
+        alignmentEnd = len(self.positions) - 1
+        while self.cursor <= alignmentEnd:
+            self.currentSegmentScore += self.positions[self.cursor].score
+            if self.__currentSegmentScoreFellBelowBreakSegmentThreshold():
+                self.__breakSegment()
             else:
-                if segmentWithMaxScore.segmentScore >= self.minScore:
-                    resultSegments.append(segmentWithMaxScore)
-                    segmentWithMaxScore = EmptyAlignmentSegment(peak, positions)
-                start = end = end + 1
-                currentScore = 0
-        if segmentWithMaxScore.segmentScore >= self.minScore:
-            resultSegments.append(segmentWithMaxScore)
+                self.cursor += 1
+                self.__extendCurrentSegmentToCursorIfItImprovesTheScore()
 
-        return resultSegments or [EmptyAlignmentSegment(peak, positions)]
+        self.__addCurrentSegmentToResultIfScoreIsEnough()
+
+        return self.resultSegments or [EmptyAlignmentSegment(self.peak, self.positions)]
+
+    def __currentSegmentScoreFellBelowBreakSegmentThreshold(self):
+        return self.currentSegmentScore <= max(0., self.segmentWithMaxScore.segmentScore - self.breakSegmentThreshold)
+
+    def __breakSegment(self):
+        self.__addCurrentSegmentToResultIfScoreIsEnough()
+        self.currentSegmentStart = self.cursor = self.cursor + 1
+        self.currentSegmentScore = 0
+
+    def __addCurrentSegmentToResultIfScoreIsEnough(self):
+        if self.segmentWithMaxScore.segmentScore >= self.minScore:
+            self.resultSegments.append(self.segmentWithMaxScore)
+            self.segmentWithMaxScore = EmptyAlignmentSegment(self.peak, self.positions)
+
+    def __extendCurrentSegmentToCursorIfItImprovesTheScore(self):
+        if self.currentSegmentScore > self.segmentWithMaxScore.segmentScore:
+            self.segmentWithMaxScore = AlignmentSegment.create(self.positions[self.currentSegmentStart:self.cursor], self.currentSegmentScore,
+                                                               self.peak, self.positions)
