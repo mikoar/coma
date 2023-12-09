@@ -36,7 +36,7 @@ class WorkflowCoordinator:
         secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
         scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
         segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
-        alignerEngine = AlignerEngine(args.maxDistance)
+        alignerEngine = AlignerEngine(args.maxPairDistance)
         alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
         aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
         return WorkflowCoordinator(
