@@ -44,7 +44,7 @@ class SecondaryCorrelationPlotter(Extension):
 
     def handle(self, message: CorrelationResultMessage):
         fig = plotRefinedCorrelation(message.initialAlignment, message.refinedAlignment)
-        self.writer.savePlot(fig, f"secondary_cor{message.refinedAlignment.query.moleculeId}_{message.index}.svg")
+        self.writer.savePlot(fig, f"secondary_cor_{message.refinedAlignment.query.moleculeId}_{message.index}.svg")
 
 
 class AlignmentPlotter(Extension):

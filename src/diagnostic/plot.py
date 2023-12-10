@@ -72,13 +72,14 @@ def __plotCorrelation(correlationResult: CorrelationResult,
     ax.plot(x, correlationResult.correlation)
 
     __plotPeaks(correlationResult, ax)
-    __markNoiseLevel(ax, correlationResult)
+    __markPeakBaseLevel(ax, correlationResult)
 
     return fig, ax
 
 
-def __plotPeaks(peaks: CorrelationResult, ax: Axes, maxAnnotations=5, marker: str = "x"):
-    sortedPeaks = sorted([peak for peak in peaks.peaks], key=lambda p: p.score, reverse=True)
+def __plotPeaks(correlationResult: CorrelationResult, ax: Axes, maxAnnotations=5, marker: str = "x"):
+    sortedPeaks = sorted([peak for peak in correlationResult.peaks if peak.height >= correlationResult.peakBaseLevel],
+                         key=lambda p: p.score, reverse=True)
     if not sortedPeaks:
         return
 
@@ -99,8 +100,8 @@ def __plotSuboptimalPeaks(ax, peaks: List[Peak], alpha: float, marker: str):
                 markersize=16, markeredgewidth=4, alpha=alpha)
 
 
-def __markNoiseLevel(ax, correlationResult):
-    ax.hlines(correlationResult.noiseLevel,
+def __markPeakBaseLevel(ax, correlationResult):
+    ax.hlines(correlationResult.peakBaseLevel,
               correlationResult.correlationStart,
               correlationResult.correlationEnd,
               linestyles="--",

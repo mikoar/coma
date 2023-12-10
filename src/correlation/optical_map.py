@@ -98,15 +98,15 @@ class CorrelationResult:
                resolution: int = 1,
                blur: int = 0,
                correlationStart: int = 0,
-               correlationEnd: int = None):
-        noiseLevel = CorrelationResult.rootMeanSquare(correlation)
+               correlationEnd: int = None,
+               peakHeightThreshold: float = None):
         return CorrelationResult(
             correlation,
             query,
             reference,
-            CorrelationResult.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel, peaksCount),
+            CorrelationResult.createPeaks(peakPositions, peakProperties, resolution, correlationStart, 0, peaksCount),
             reverseStrand,
-            noiseLevel,
+            peakHeightThreshold,
             resolution,
             blur,
             correlationStart,
@@ -128,7 +128,7 @@ class CorrelationResult:
         self.reference = reference
         self.peaks = peaks
         self.reverseStrand = reverseStrand
-        self.noiseLevel = noiseLevel
+        self.peakBaseLevel = noiseLevel
         self.resolution = resolution
         self.blur = blur
         self.correlationStart = correlationStart
@@ -206,8 +206,7 @@ class InitialAlignment(CorrelationResult):
 
         return CorrelationResult.create(correlation, self.query, self.reference, peakPositions, peakProperties,
                                         10, self.reverseStrand, resolution, sequenceGenerator.blurRadius,
-                                        referenceStart,
-                                        referenceStart + correlationLength)
+                                        referenceStart, referenceStart + correlationLength, peakHeightThreshold)
 
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
