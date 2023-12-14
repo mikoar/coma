@@ -69,6 +69,5 @@ class _AlignmentSegmentBuilder:
         if self.extendedSegmentScore > self.currentSegment.segmentScore:
             self.currentSegment = AlignmentSegment.create(
                 self.positions[self.currentSegmentStart:self.extendedSegmentEndPosition],
-                self.extendedSegmentScore,
                 self.peak,
                 self.positions)

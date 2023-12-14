@@ -14,10 +14,9 @@ from src.correlation.peak import Peak
 class AlignmentSegment:
     @staticmethod
     def create(positions: List[ScoredAlignmentPosition],
-               segmentScore: float,
                peak: Peak,
                allPeakPositions: List[ScoredAlignmentPosition]):
-        return AlignmentSegment(positions, segmentScore, peak, allPeakPositions) \
+        return AlignmentSegment(positions, sum(p.score for p in positions), peak, allPeakPositions) \
             if positions \
             else EmptyAlignmentSegment(peak, allPeakPositions)
 
@@ -67,14 +66,14 @@ class AlignmentSegment:
                 lambda p: not isinstance(p, AlignedPair) or p.lessOrEqualOnAnySequence(end),
                 slicedAtStart))
         self.__trimNotAlignedPositionsFromEnd(positions, end)
-        return AlignmentSegment.create(positions, sum(p.score for p in positions), self.peak, self.allPeakPositions)
+        return AlignmentSegment.create(positions, self.peak, self.allPeakPositions)
 
-    def getReferenceLabels(self) -> _SegmentMoleculeCharacteristics:
+    def getReferenceLabels(self) -> _ConflictingSegmentCharacteristics:
         """Function used to get all of the reference labels,
         scores and their indexes present in a segment
 
         :return: Characteristics of Reference in a segment of alignment
-        :rtype: _SegmentMoleculeCharacteristics
+        :rtype: _ConflictingSegmentCharacteristics
         """
 
         referencePositions, referenceScores, referenceIndexes = [], [], []
@@ -93,14 +92,14 @@ class AlignmentSegment:
                 sumScore = 0
             else:
                 sumScore += position.score
-        return _SegmentMoleculeCharacteristics(referencePositions, referenceScores, referenceIndexes)
+        return _ConflictingSegmentCharacteristics(referencePositions, referenceScores, referenceIndexes)
 
-    def getQueryLabels(self) -> _SegmentMoleculeCharacteristics:
+    def getQueryLabels(self) -> _ConflictingSegmentCharacteristics:
         """Function used to get all of the query labels,
         scores and their indexes present in a segment
 
         :return: Characteristics of Query in a segment of alignment
-        :rtype: _SegmentMoleculeCharacteristics
+        :rtype: _ConflictingSegmentCharacteristics
         """
         queryPositions, queryScores, queryIndexes = [], [], []
         sumScore = 0
@@ -118,7 +117,7 @@ class AlignmentSegment:
                 sumScore = 0
             else:
                 sumScore += position.score
-        return _SegmentMoleculeCharacteristics(queryPositions, queryScores, queryIndexes)
+        return _ConflictingSegmentCharacteristics(queryPositions, queryScores, queryIndexes)
 
     @staticmethod
     def __trimNotAlignedPositionsFromEnd(positions, end=None):
@@ -133,9 +132,13 @@ class AlignmentSegment:
                and other.positions == self.positions \
                and other.peak == self.peak
 
-    def __sub__(self, other: AlignmentSegment):
-        positions = [p for p in self.positions if p not in other.positions]
-        return AlignmentSegment.create(positions, sum(p.score for p in positions), self.peak, self.allPeakPositions)
+    def __sub__(self, other: AlignmentSegment | List[ScoredAlignmentPosition]):
+        if isinstance(other, AlignmentSegment):
+            otherPositions = other.positions
+        else:
+            otherPositions = other
+        positions = [p for p in self.positions if p not in otherPositions]
+        return AlignmentSegment.create(positions, self.peak, self.allPeakPositions)
 
     def __repr__(self):
         return f"score: {self.segmentScore}, positions: {self.positions}"
@@ -197,51 +200,52 @@ class _SegmentPairWithConflict(_SegmentPair):
 
     def resolveConflict(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
         if self.leftConflictingSubsegment.peak.position > self.rightConflictingSubsegment.peak.position:
-            return self.__findOptimaPlace(self.leftConflictingSubsegment.getReferenceLabels(),
-                                          self.rightConflictingSubsegment.getReferenceLabels())
+            return self.__trimSegmentsAtOptimalPosition(
+                self.leftConflictingSubsegment.getReferenceLabels(),
+                self.rightConflictingSubsegment.getReferenceLabels())
         else:
-            return self.__findOptimaPlace(self.leftConflictingSubsegment.getQueryLabels(),
-                                          self.rightConflictingSubsegment.getQueryLabels())
+            return self.__trimSegmentsAtOptimalPosition(
+                self.leftConflictingSubsegment.getQueryLabels(),
+                self.rightConflictingSubsegment.getQueryLabels())
 
-    def __findOptimaPlace(self, conf1, conf2) -> Tuple[AlignmentSegment, AlignmentSegment]:
-        if len(conf1.positions) == len(conf2.positions):
-            points_1_np = np.cumsum([0] + conf1.scores)
-            points_2_np = np.cumsum([0] + conf2.scores[::-1])[::-1]
-            scores_sum = np.add(points_1_np, points_2_np)
-            max_index = np.argmax(scores_sum)
-            if max_index == 0:
+    def __trimSegmentsAtOptimalPosition(
+            self,
+            leftSubsegmentCharacteristics: _ConflictingSegmentCharacteristics,
+            rightSubsegmentCharacteristics: _ConflictingSegmentCharacteristics):
+        if len(leftSubsegmentCharacteristics.positions) == len(rightSubsegmentCharacteristics.positions):
+            optimalMergeIndex = self.__getOptimalMergeIndex(leftSubsegmentCharacteristics, rightSubsegmentCharacteristics)
+            if optimalMergeIndex == 0:
                 return self.leftSegment - self.leftConflictingSubsegment, self.rightSegment
-            elif max_index == len(conf1.positions):
+            elif optimalMergeIndex == len(leftSubsegmentCharacteristics.positions):
                 return self.leftSegment, self.rightSegment - self.rightConflictingSubsegment
             else:
-                new_seg1 = self.leftSegment - AlignmentSegment.create(
-                    self.leftConflictingSubsegment.positions[conf1.indexes[max_index]:],
-                    sum(p.score for p in self.leftConflictingSubsegment.positions[conf1.indexes[max_index]:]),
-                    self.leftSegment.peak,
-                    self.leftConflictingSubsegment.positions[conf1.indexes[max_index]:])
-                new_seg2 = self.rightSegment - AlignmentSegment.create(
-                    self.rightConflictingSubsegment.positions[:conf2.indexes[max_index]],
-                    sum(p.score for p in self.rightConflictingSubsegment.positions[:conf2.indexes[max_index]]),
-                    self.rightSegment.peak,
-                    self.rightConflictingSubsegment.positions[:conf2.indexes[max_index]])
-            return new_seg1, new_seg2
+                leftTrimIndex = leftSubsegmentCharacteristics.indexes[optimalMergeIndex]
+                leftSegmentPositionsToRemove = self.leftConflictingSubsegment.positions[leftTrimIndex:]
+                newLeftSegment = self.leftSegment - leftSegmentPositionsToRemove
+
+                rightTrimIndex = rightSubsegmentCharacteristics.indexes[optimalMergeIndex]
+                rightSegmentPositionsToRemove = self.rightConflictingSubsegment.positions[:rightTrimIndex]
+                newRightSegment = self.rightSegment - rightSegmentPositionsToRemove
+            return newLeftSegment, newRightSegment
         else:
-            self.resolveByTrimming()
+            self.__removeWholeConflictingSubsegmentWithWorseScore()
 
-    def resolveByTrimming(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
-        """Function used to resolve conflicts
-        with uneven number of conflicting labels
+    @staticmethod
+    def __getOptimalMergeIndex(leftSubsegmentCharacteristics, rightSubsegmentCharacteristics):
+        leftSubsegmentCumulatedScores = np.cumsum([0] + leftSubsegmentCharacteristics.scores)
+        rightSubsegmentCumulatedScores = np.cumsum([0] + rightSubsegmentCharacteristics.scores[::-1])[::-1]
+        totalCumulatedScores = np.add(leftSubsegmentCumulatedScores, rightSubsegmentCumulatedScores)
+        optimalMergeIndex = np.argmax(totalCumulatedScores)
+        return optimalMergeIndex
 
-        :return: Two Segments without conflicts
-        :rtype: Tuple[AlignmentSegment, AlignmentSegment]
-        """
+    def __removeWholeConflictingSubsegmentWithWorseScore(self) -> Tuple[AlignmentSegment, AlignmentSegment]:
         if self.leftConflictingSubsegment.segmentScore > self.rightConflictingSubsegment.segmentScore:
             return self.leftSegment, self.rightSegment - self.rightConflictingSubsegment
         else:
             return self.leftSegment - self.leftConflictingSubsegment, self.rightSegment
 
 
-class _SegmentMoleculeCharacteristics():
+class _ConflictingSegmentCharacteristics():
     def __init__(self, positions: List, scores: List, indexes: List):
         self.positions = positions
         self.scores = scores
