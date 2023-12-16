@@ -123,6 +123,14 @@ def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], peak
             verticalalignment='top')
 
 
-def plotHeatMap(arr, fileName, x, y):
-    ax = sns.heatmap(arr, linewidth=0.5, annot=True, xticklabels=x, yticklabels=y, fmt='.2f')
+def plotHeatMap(arr, fileName, x, y, title=None):
+    pyplot.clf()
+    ax = sns.heatmap(arr, linewidth=0.5, annot=True,
+                     xticklabels=[int(x) for x in x],
+                     yticklabels=y, fmt='.3f',
+                     vmin=0.2, vmax=1,
+                     cmap=sns.color_palette("vlag", as_cmap=True))
+    ax.set_xlabel("Blur"),
+    ax.set_ylabel("Resolution")
+    ax.set_title(title)
     ax.get_figure().savefig(fileName)
