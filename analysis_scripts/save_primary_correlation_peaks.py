@@ -48,7 +48,7 @@ if __name__ == '__main__':
                         "-o", outputFile,
                         "--primaryResolution", str(resolution),
                         "--primaryBlur", str(blur),
-                        "--peaksCount", "3"
+                        "--peaksCount", "1"
                     ])
 
                     coma = Program(args, [PeaksCatcher(peaksOutputFile)])
