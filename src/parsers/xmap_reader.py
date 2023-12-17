@@ -77,7 +77,7 @@ class XmapReader:
             "Alignment": "".join(
                 [f"({pair.reference.siteId},{pair.query.siteId})" for pair in row.alignedPairs]),
         } for row in alignmentResults.rows], index=pd.RangeIndex(start=1, stop=len(alignmentResults.rows) + 1))
-        dataFrame.to_csv(file, sep='\t', header=False, mode="a", index=False,  line_terminator='\n')
+        dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator='\n')
 
     def __rowParserFactory(self):
         def parseRow(row: Series):

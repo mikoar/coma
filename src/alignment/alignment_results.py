@@ -58,7 +58,7 @@ class AlignmentResults:
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath,  separateRows))]
         if mode == 'all':
-            third_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),
+            third_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (2,)),
                               mode='w', encoding=out_file.encoding)
             joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
                                                                 rowsWithoutSubsequentAlignmentsForSingleQueryRest,
@@ -219,31 +219,35 @@ class AlignmentResultRow(BenchmarkAlignment):
                 # Aligned positions are at the end/start
                 if self.orientation == '+':
                     positions = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
+                    shift = len(query.positions)-len(positions)
                     if self.queryEndPosition == 0.0:
                         return []
                 else:
                     alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
                     lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
                     positions = query.positions[: lastPair.query.siteId + 3]
-                return [OpticalMap(self.queryId, positions[-1] - positions[0] + 1, positions)]
+                    shift = 0
+                return [OpticalMap(self.queryId, self.queryLength, positions, shift=shift)]
             else:
                 # Case where aligned fragment is in the middle
                 if self.orientation == '+':
                     positions1 = query.positions[: query.positions.index(self.queryStartPosition) + 3]
                     positions2 = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
+
                 else:
                     alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
                     firstPair = alignedPairs[0] if alignedPairs else AlignedPair.null
                     lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
                     positions1 = query.positions[: lastPair.query.siteId + 3]
                     positions2 = query.positions[firstPair.query.siteId - 2 :]
+
                 if len(positions1) >= 7 and len(positions2) >= 7:
-                    return [OpticalMap(self.queryId, positions1[-1] - positions1[0] + 1, positions1),
-                            OpticalMap(self.queryId, positions2[-1] - positions2[0] + 1, positions2)]
+                    return [OpticalMap(self.queryId, self.queryLength, positions1, shift=0),
+                            OpticalMap(self.queryId, self.queryLength, positions2, shift=len(query.positions)-len(positions2))]
                 elif len(positions1) >= 7:
-                    return [OpticalMap(self.queryId, positions1[-1] - positions1[0] + 1, positions1)]
+                    return [OpticalMap(self.queryId, self.queryLength, positions1, shift=0)]
                 elif len(positions2) >= 7:
-                    return [OpticalMap(self.queryId, positions2[-1] - positions2[0] + 1, positions2)]
+                    return [OpticalMap(self.queryId, self.queryLength, positions2, shift=len(query.positions)-len(positions2))]
                 else:
                     return []
 
@@ -259,20 +263,14 @@ class AlignmentResultRow(BenchmarkAlignment):
         :param maxDifference: Maximum difference between reference positions of the
         alignments if they are to be joint
         :type maxDifference: int
-        :return: Whether those two alignments should be joint
+        :return: Whether those two alignments should be joined
         :rtype: bool
         """
         if self.orientation == alignedRest.orientation and self.referenceId == alignedRest.referenceId:
-            diff = min(self.referenceEndPosition, alignedRest.referenceEndPosition) - \
-                max(self.referenceStartPosition, alignedRest.referenceStartPosition)
+            diff = abs(max(self.referenceStartPosition, alignedRest.referenceStartPosition) - \
+                min(self.referenceEndPosition, alignedRest.referenceEndPosition))
             if diff <= maxDifference:
-                if ((self.alignedPairs[0].reference.siteId < alignedRest.alignedPairs[0].reference.siteId) and \
-                    (self.alignedPairs[0].query.siteId < alignedRest.alignedPairs[0].query.siteId) and \
-                        (self.alignedPairs[-1].reference.siteId < alignedRest.alignedPairs[-1].reference.siteId)) or \
-                        ((self.alignedPairs[0].reference.siteId > alignedRest.alignedPairs[0].reference.siteId) and \
-                            (self.alignedPairs[0].query.siteId > alignedRest.alignedPairs[0].query.siteId) and \
-                                (alignedRest.alignedPairs[-1].reference.siteId < self.alignedPairs[-1].reference.siteId)):
-                    return True
+                return True
         return False
 
     def resolve(self, alignedRest: AlignmentResultRow) -> AlignmentResultRow:

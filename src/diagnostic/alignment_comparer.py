@@ -101,7 +101,7 @@ class AlignmentComparison:
         ] for row in self.rows]
 
         dataFrame = DataFrame(data, columns=headers, index=pd.RangeIndex(start=1, stop=len(self.rows) + 1))
-        dataFrame.to_csv(file, sep='\t', header=False, mode="a", lineterminator="\n")
+        dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator="\n")
 
 
 class _NullAlignmentComparison(AlignmentComparison):

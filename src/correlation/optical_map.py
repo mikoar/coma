@@ -32,6 +32,7 @@ class OpticalMap:
     moleculeId: int
     length: int
     positions: List[int]
+    shift: int = 0
 
     def trim(self):
         if not self.positions:
@@ -42,13 +43,13 @@ class OpticalMap:
 
     def getPositionsWithSiteIds(self, reverse: bool = False):
         if reverse:
-            i = len(self.positions)
+            i = len(self.positions) + self.shift
             moleculeEndPosition = self.length - 1
             for position in self.positions[::-1]:
                 yield PositionWithSiteId(i, moleculeEndPosition - position)
                 i -= 1
         else:
-            i = 1
+            i = 1 + self.shift
             for position in self.positions:
                 yield PositionWithSiteId(i, position)
                 i += 1
