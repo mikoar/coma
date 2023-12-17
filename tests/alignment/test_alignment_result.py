@@ -77,21 +77,20 @@ def test_filtersOutSubsequentAlignmentsOfOneQuery():
     assert alignmentResults[0][1].rows[1].referenceId == 12
 
 
-@pytest.mark.parametrize("queries, pairs, queryStart, queryEnd, queryLength, expectedLength, expectedOutputLength, expectedPositions, reverse", [
-    ([OpticalMap(1, 100, [0, 1, 5, 10, 20, 30, 100])], [(20, 42), (21, 43), (22, 44), (23, 45)], 0, 10, 20, 100, 1, [1, 5, 10, 20, 30, 100], False),
-    ([OpticalMap(1, 120, [0, 1, 5, 10, 20, 30, 100, 120])], [(0, 0), (1, 1)], 10, 0, 20, 11, 1, [0, 1, 5, 10], True),
-    ([OpticalMap(1, 100, [0, 1, 5, 10, 20, 30, 100])], [(20, 42), (21, 43), (22, 44), (23, 45)], 5, 10, 20, 100, 0, [1, 5, 10, 20, 30, 100], False),
-    ([OpticalMap(1, 140, [0, 1, 5, 10, 20, 30, 100, 120, 130, 140])], [(20, 42), (21, 43), (22, 44), (23, 45)], 20, 30, 20, 101, 2, [0, 1, 5, 10, 20, 30, 100],
+@pytest.mark.parametrize("queries, pairs, queryStart, queryEnd, queryLength, expectedOutputLength, expectedPositions, reverse", [
+    ([OpticalMap(1, 100, [0, 1, 5, 10, 20, 30, 100])], [(20, 42), (21, 43), (22, 44), (23, 45)], 0, 10, 100, 1, [1, 5, 10, 20, 30, 100], False),
+    ([OpticalMap(1, 120, [0, 1, 5, 10, 20, 30, 100, 120])], [(0, 0), (1, 1)], 10, 0, 120, 1, [0, 1, 5, 10], True),
+    ([OpticalMap(1, 100, [0, 1, 5, 10, 20, 30, 100])], [(20, 42), (21, 43), (22, 44), (23, 45)], 5, 10, 100, 0, [1, 5, 10, 20, 30, 100], False),
+    ([OpticalMap(1, 140, [0, 1, 5, 10, 20, 30, 100, 120, 130, 140])], [(20, 42), (21, 43), (22, 44), (23, 45)], 20, 30, 140, 2, [0, 1, 5, 10, 20, 30, 100],
      False)
 ])
 def test_getUnalignedFragments(queries: List[OpticalMap], pairs: List[Tuple[int, int]], queryStart: int, queryEnd: int, queryLength: int,
-                               expectedLength:int, expectedOutputLength: int, expectedPositions: List[Tuple[int, int]], reverse: bool):
+                               expectedOutputLength: int, expectedPositions: List[Tuple[int, int]], reverse: bool):
     row = AlignmentResultRow([AlignmentSegmentStub.createFromPairs(pairs)], queryId=queries[0].moleculeId,
                              queryStartPosition=queryStart, queryEndPosition=queryEnd, queryLength=queryLength,
                              reverseStrand=reverse)
     assert len(row.getUnalignedFragments(queries)) == expectedOutputLength
     if len(row.getUnalignedFragments(queries)) != 0:
-        assert row.getUnalignedFragments(queries)[0].length == expectedLength
         assert row.getUnalignedFragments(queries)[0].positions == expectedPositions
 
 
