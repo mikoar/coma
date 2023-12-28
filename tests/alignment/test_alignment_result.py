@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List, Tuple
 import pytest
+import os
 
 from src.alignment.alignment_results import AlignmentResultRow, AlignmentResults
 from src.correlation.optical_map import OpticalMap
@@ -58,7 +59,6 @@ def test_cigarString(pairs: List[Tuple[int, int]], expected: str):
 
     assert row.cigarString == expected
 
-
 def test_filtersOutSubsequentAlignmentsOfOneQuery():
     alignmentResults = AlignmentResults.create('', '', [
         AlignmentResultRow([], queryId=20, referenceId=10, confidence=200),
@@ -69,12 +69,16 @@ def test_filtersOutSubsequentAlignmentsOfOneQuery():
         AlignmentResultRow([], queryId=10, referenceId=10, confidence=100),
         AlignmentResultRow([], queryId=10, referenceId=11, confidence=110),
         AlignmentResultRow([], queryId=20, referenceId=12, confidence=210)],
-                                               mode="best", out_file=None, maxDifference=100000)
+                                               mode="separate", out_file=open("test.xmap", "w"),
+                                               maxDifference=100000)
     assert len(alignmentResults[0][1].rows) == 2
     assert alignmentResults[0][1].rows[0].queryId == 10
     assert alignmentResults[0][1].rows[0].referenceId == 11
     assert alignmentResults[0][1].rows[1].queryId == 20
     assert alignmentResults[0][1].rows[1].referenceId == 12
+    
+    os.remove("test.xmap")
+    os.remove("test_1.xmap")
 
 
 @pytest.mark.parametrize("queries, pairs, queryStart, queryEnd, queryLength, expectedOutputLength, expectedPositions, reverse", [

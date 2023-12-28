@@ -112,7 +112,7 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
 @pytest.mark.parametrize("segment0, segment1, expectedSegments",
                          checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params)
 def test_conflicts_overlappingSegments_trimsWhileMaxingScore(
-        segment0, segment1, expectedSegments: List[AlignmentSegment]):
+        segment0: AlignmentSegment, segment1: AlignmentSegment, expectedSegments: List[AlignmentSegment]):
     resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
     segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
     assert segmentsAfter == expectedSegments

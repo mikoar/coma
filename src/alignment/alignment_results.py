@@ -40,8 +40,7 @@ class AlignmentResults:
             sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQuery = \
             [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
-        new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),
-                        mode='w', encoding=out_file.encoding)
+        new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),  mode='w', encoding=out_file.encoding)
         rowsSortedByQueryIdThenByConfidenceRest = \
             sorted(sorted(rows_rest, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQueryRest = \

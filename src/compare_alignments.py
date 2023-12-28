@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from typing import NamedTuple, TextIO, List
@@ -12,18 +14,7 @@ from src.parsers.xmap_reader import XmapReader
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compares optical map alignments.")
-    parser.add_argument(dest="alignmentFiles", nargs=2, type=argparse.FileType("r"))
-    parser.add_argument("-r", "--reference", dest="referenceFile", type=argparse.FileType("r"), required=True)
-    parser.add_argument("-q", "--query", dest="queryFile", type=argparse.FileType("r"), required=True)
-    parser.add_argument("-o", "--output", dest="outputFile", nargs="?", type=argparse.FileType("w"), default=sys.stdout)
-    parser.add_argument("-d", "--includePositions", dest="includePositions", action="store_true",
-                        help="Additionally writes genomic positions for each label in the output.")
-    parser.add_argument("-c", "--combineMultipleQuerySources", dest="combineMultipleQuerySources", action="store_true", default=True,
-                        help="Treats multiple pairs of a single query label as one. "
-                             "For instance, alignments (1, 1) and (1, 1)(2, 1) will be marked as matching")
-
-    args: Args = parser.parse_args()  # type: ignore
+    args = Args.parse()
     Program(args).run()
 
 
@@ -34,6 +25,22 @@ class Args(NamedTuple):
     outputFile: TextIO
     includePositions: bool
     combineMultipleQuerySources: bool
+
+    @staticmethod
+    def parse(args: List[str] = None) -> Args:
+        parser = argparse.ArgumentParser(description="Compares optical map alignments.")
+        parser.add_argument(dest="alignmentFiles", nargs=2, type=argparse.FileType("r"))
+        parser.add_argument("-r", "--reference", dest="referenceFile", type=argparse.FileType("r"), required=True)
+        parser.add_argument("-q", "--query", dest="queryFile", type=argparse.FileType("r"), required=True)
+        parser.add_argument("-o", "--output", dest="outputFile", nargs="?", type=argparse.FileType("w"), default=sys.stdout)
+        parser.add_argument("-d", "--includePositions", dest="includePositions", action="store_true",
+                            help="Additionally writes genomic positions for each label in the output.")
+        parser.add_argument("-c", "--combineMultipleQuerySources", dest="combineMultipleQuerySources", action="store_true", default=True,
+                            help="Treats multiple pairs of a single query label as one. "
+                                 "For instance, alignments (1, 1) and (1, 1)(2, 1) will be marked as matching")
+
+        args = parser.parse_args(args)
+        return args  # type: ignore
 
 
 class Program:

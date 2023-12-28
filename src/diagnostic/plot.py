@@ -72,13 +72,14 @@ def __plotCorrelation(correlationResult: CorrelationResult,
     ax.plot(x, correlationResult.correlation)
 
     __plotPeaks(correlationResult, ax)
-    __markNoiseLevel(ax, correlationResult)
+    __markPeakBaseLevel(ax, correlationResult)
 
     return fig, ax
 
 
-def __plotPeaks(peaks: CorrelationResult, ax: Axes, maxAnnotations=5, marker: str = "x"):
-    sortedPeaks = sorted([peak for peak in peaks.peaks], key=lambda p: p.score, reverse=True)
+def __plotPeaks(correlationResult: CorrelationResult, ax: Axes, maxAnnotations=5, marker: str = "x"):
+    sortedPeaks = sorted([peak for peak in correlationResult.peaks if peak.height >= correlationResult.peakBaseLevel],
+                         key=lambda p: p.score, reverse=True)
     if not sortedPeaks:
         return
 
@@ -99,8 +100,8 @@ def __plotSuboptimalPeaks(ax, peaks: List[Peak], alpha: float, marker: str):
                 markersize=16, markeredgewidth=4, alpha=alpha)
 
 
-def __markNoiseLevel(ax, correlationResult):
-    ax.hlines(correlationResult.noiseLevel,
+def __markPeakBaseLevel(ax, correlationResult):
+    ax.hlines(correlationResult.peakBaseLevel,
               correlationResult.correlationStart,
               correlationResult.correlationEnd,
               linestyles="--",
@@ -122,6 +123,14 @@ def __addExpectedStartStopRect(ax, expectedReferenceRange: Tuple[int, int], peak
             verticalalignment='top')
 
 
-def plotHeatMap(arr, fileName, x, y):
-    ax = sns.heatmap(arr, linewidth=0.5, annot=True, xticklabels=x, yticklabels=y, fmt='.2f')
+def plotHeatMap(arr, fileName, x, y, title=None):
+    pyplot.clf()
+    ax = sns.heatmap(arr, linewidth=0.5, annot=True,
+                     xticklabels=[int(x) for x in x],
+                     yticklabels=y, fmt='.3f',
+                     vmin=0.2, vmax=1,
+                     cmap=sns.color_palette("vlag", as_cmap=True))
+    ax.set_xlabel("Blur"),
+    ax.set_ylabel("Resolution")
+    ax.set_title(title)
     ax.get_figure().savefig(fileName)
