@@ -54,7 +54,8 @@ class Args(NamedTuple):
         parser.add_argument("-oM", "--outputMode", dest="outputMode", type=str,
                             default="best", choices=["best", "separate", "joined", "all"],
                             help="Mode which should be used while creating output alignment file. There are 3 possible "
-                            "options: 'best'- choosing best alignment based on confidence, 'separate'- creates two "
+                            "options: 'best'- includes joined alignments when possible and best alignment based on "
+                            "confidence when joined option is not available, 'separate'- creates two "
                             "separate files for alignments, 'joined'- joins alignments when it is possible and saves "
                             "rest to separate file, 'all'-creates 3 files, one with joint alignments, and two with all "
                             "obtained alignments.")
@@ -63,13 +64,13 @@ class Args(NamedTuple):
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
                                  "in the initial cross-correlation seeding step.")
 
-        parser.add_argument("-b1", "--primaryBlur", dest="primaryBlur", type=int, default=2,
+        parser.add_argument("-b1", "--primaryBlur", dest="primaryBlur", type=int, default=1,
                             help="Extends each label in the vectorized form of the optical map in both directions "
                                  "by given number of positions in the initial cross-correlation seeding step "
                                  "in order to increase the chance of overlap. "
                                  "Final width of each label is equal to 2b + 1.")
 
-        parser.add_argument("-p", "--peaksCount", dest="peaksCount", type=int, default=5,
+        parser.add_argument("-p", "--peaksCount", dest="peaksCount", type=int, default=3,
                             help="Number of peaks found for each query molecule against all reference molecules in the "
                                  "first cross-correlation run that are selected for further steps - the second "
                                  "cross-correlation run and alignment creation. Then the alignment with the highest "
@@ -79,11 +80,11 @@ class Args(NamedTuple):
                             help="Minimum distance between peaks identified in the initial cross-correlation. "
                                  "For more details see parameter distance of scipy.signal._peak_finding.find_peaks.")
 
-        parser.add_argument("-r2", "--secondaryResolution", dest="secondaryResolution", type=int, default=200,
+        parser.add_argument("-r2", "--secondaryResolution", dest="secondaryResolution", type=int, default=100,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
                                  "in the second cross-correlation run.")
 
-        parser.add_argument("-b2", "--secondaryBlur", dest="secondaryBlur", type=int, default=2,
+        parser.add_argument("-b2", "--secondaryBlur", dest="secondaryBlur", type=int, default=4,
                             help="Extends each label in the vectorized form of the optical map in both directions "
                                  "by given number of positions in the second cross-correlation run "
                                  "in order to increase the chance of overlap. "
@@ -94,13 +95,13 @@ class Args(NamedTuple):
                                  "seeding is extended in both directions to serve as an input "
                                  "for the second cross-correlation run.")
 
-        parser.add_argument("-pt", "--peakHeightThreshold", dest="peakHeightThreshold", type=float, default=15,
+        parser.add_argument("-pt", "--peakHeightThreshold", dest="peakHeightThreshold", type=float, default=27,
                             help="Minimum second cross-correlation peak height to qualify for aligned pairs search.")
 
-        parser.add_argument("-d", "--maxPairDistance", dest="maxPairDistance", type=int, default=1000,
+        parser.add_argument("-d", "--maxPairDistance", dest="maxPairDistance", type=int, default=1500,
                             help="Maximum distance between aligned pairs relatively to the cross-correlation lag.")
 
-        parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=800,
+        parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=1000,
                             help="Score value given to an aligned pair with 0 distance between reference and query "
                                  "positions.")
 
@@ -108,7 +109,7 @@ class Args(NamedTuple):
                             default=1., help="Multiplier applied to the distance between reference and query positions "
                                              "of an aligned pair that reduces the pair's score.")
 
-        parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-100,
+        parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-250,
                             help="Penalty to a segment score for each unpaired reference or query position.")
 
         parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1000,

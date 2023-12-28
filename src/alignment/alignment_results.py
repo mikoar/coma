@@ -40,8 +40,6 @@ class AlignmentResults:
             sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQuery = \
             [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
-        if mode == 'best':
-            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery))]
         new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),
                         mode='w', encoding=out_file.encoding)
         rowsSortedByQueryIdThenByConfidenceRest = \
@@ -51,18 +49,20 @@ class AlignmentResults:
         if mode == 'separate':
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
-        if mode == "joined":
-            joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
-                                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest,
-                                                                maxDifference)
+        
+        joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
+                                                            rowsWithoutSubsequentAlignmentsForSingleQueryRest,
+                                                            maxDifference)
+        if mode == 'best':
+            rowsWithoutSubsequentAlignmentsForSingleQueryBest = sorted(joinedRows + rowsWithoutSubsequentAlignmentsForSingleQuery,
+                                                                       key=lambda r: r.queryId)
+            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryBest))]
+        if mode == 'joined':
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath,  separateRows))]
         if mode == 'all':
             third_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (2,)),
                               mode='w', encoding=out_file.encoding)
-            joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
-                                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest,
-                                                                maxDifference)
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
                     (new_file, AlignmentResults(referenceFilePath, queryFilePath,  rowsWithoutSubsequentAlignmentsForSingleQuery)),
                     (third_file, AlignmentResults(referenceFilePath, queryFilePath,  rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
