@@ -56,7 +56,7 @@ class AlignmentResults:
             joinedIds = [row.queryId for row in joinedRows]
             bestRows = [row for row in rowsWithoutSubsequentAlignmentsForSingleQuery if row.queryId not in joinedIds]
             rowsWithoutSubsequentAlignmentsForSingleQueryBest = sorted(joinedRows + bestRows, key=lambda r: r.queryId)
-            os.remove(new_file)
+            os.remove(new_file.name)
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryBest))]
         if mode == 'joined':
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
