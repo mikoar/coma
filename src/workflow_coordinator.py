@@ -88,6 +88,7 @@ class WorkflowCoordinator:
     def __getAlignmentRow(self, ic: InitialAlignment, sc: CorrelationResult, index: int):
         alignmentResultRow = self.aligner.align(sc.reference, sc.query, sc.peaks, sc.reverseStrand)
         message = AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic, index)
+        self.dispatcher.dispatch(message)
         return alignmentResultRow, message
 
     @staticmethod
