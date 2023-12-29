@@ -25,6 +25,11 @@ class Options:
     limitQueryToAlignedArea: bool = False
     drawGridForNotAlignedPositions: bool = True
     drawRemovedAlignedPositions: bool = True
+    referenceStartPosition: int | None = None
+    referenceEndPosition: int | None = None
+    queryStartPosition: int | None = None
+    queryEndPosition: int | None = None
+    hideLegend: bool = False
 
 
 class AlignmentPlot:
@@ -48,7 +53,7 @@ class AlignmentPlot:
         self._plotSegments()
         self._drawGridForNotAlignedPositions()
         self._drawRemovedAlignedPositions()
-        self.axes.legend()
+        self._drawLegend()
 
     def _createFigure(self):
         self.figure: Figure = pyplot.figure()
@@ -67,15 +72,15 @@ class AlignmentPlot:
                 if self.correlation and self.correlation.maxPeak and hasattr(self.alignment, "segments") else []
 
         self.overlapsWithBenchmark = \
-            (not (self.benchmarkAlignment.referenceEndPosition < self.alignment.referenceStartPosition
-                  or self.alignment.referenceEndPosition <= self.benchmarkAlignment.referenceStartPosition)) \
+            (not (self.benchmarkAlignment.referenceEndPosition < self.__referenceStartPosition
+                  or self.__referenceEndPosition <= self.benchmarkAlignment.referenceStartPosition)) \
                 if self.benchmarkAlignment else False
 
-        alignmentStartPositions = [self.alignment.referenceStartPosition]
-        alignmentReferenceEndPositions = [self.alignment.referenceEndPosition]
+        alignmentStartPositions = [self.__referenceStartPosition]
+        alignmentReferenceEndPositions = [self.__referenceEndPosition]
 
-        self.yMinPlot = self.alignment.queryStartPosition if self.options.limitQueryToAlignedArea else 0
-        self.yMaxPlot = self.alignment.queryEndPosition if self.options.limitQueryToAlignedArea else self.query.length
+        self.yMinPlot = self.__queryStartPosition if self.options.limitQueryToAlignedArea else 0
+        self.yMaxPlot = self.__queryEndPosition if self.options.limitQueryToAlignedArea else self.query.length
 
         self.yMinAxis = self.yMinPlot - margin
         self.yMinBorder = self.yMinAxis - margin
@@ -115,7 +120,7 @@ class AlignmentPlot:
     def _plotReference(self):
         self.axes.set_xlabel(f"Reference {self.reference.moleculeId}")
         refLabelsInScope = [p for p in self.reference.getPositionsWithSiteIds()
-                            if self.__isReferencePositionInScope(p.position)]
+                            if self._isReferencePositionInScope(p.position)]
         self.axes.plot([r.position for r in refLabelsInScope],
                        np.repeat(self.yMinAxis, len(refLabelsInScope)),
                        marker="|",
@@ -134,7 +139,7 @@ class AlignmentPlot:
     def _plotQuery(self):
         self.axes.set_ylabel(f"Query {self.query.moleculeId}")
         queryLabelsInScope = [p for p in self.query.getPositionsWithSiteIds()
-                              if not self.options.limitQueryToAlignedArea or self.__isQueryPositionInScope(p.position)]
+                              if not self.options.limitQueryToAlignedArea or self._isQueryPositionInScope(p.position)]
 
         self.axes.plot(np.repeat(self.xMinAxis, len(queryLabelsInScope)), [q.position for q in queryLabelsInScope],
                        marker="_",
@@ -161,7 +166,7 @@ class AlignmentPlot:
                 x = list(map(lambda p: p.reference.position, segment.alignedPositions))
                 y = list(map(lambda p: self.__absoluteQueryPosition(p), segment.alignedPositions))
                 self.__plotSegment(color, peak, peakNumber, segment, segmentNumber, x, y)
-                self.__drawGrid(x, y)
+                self._drawGrid(x, y)
 
     def __drawPeak(self, color, peak: Peak):
         peakRectangle = Rectangle((peak.leftProminenceBasePosition, self.yMinBorder - 9999999999.),
@@ -220,7 +225,7 @@ class AlignmentPlot:
                        linewidth=2)
 
         if self.overlapsWithBenchmark:
-            self.__drawGrid(x, y, lineStyle=(0, (1, 5)))
+            self._drawGrid(x, y, lineStyle=(0, (1, 5)))
 
     def __plotSegment(self, color, peak: Peak, peakNumber: int, segment: AlignmentSegment, segmentNumber: int, x, y):
         self.axes.plot(x, y,
@@ -232,7 +237,7 @@ class AlignmentPlot:
                        linewidth=2,
                        color=color)
 
-    def __drawGrid(self, x, y, xMax=None, yMax=None, lineStyle: str | Tuple = "--", label: str = None):
+    def _drawGrid(self, x, y, xMax=None, yMax=None, lineStyle: str | Tuple = "--", label: str = None):
         self.axes.vlines(x, self.yMinAxis, xMax or y, linestyles=lineStyle, colors="gray", linewidth=0.5)
         self.axes.hlines(y, self.xMinAxis, yMax or x, linestyles=lineStyle, colors="gray", linewidth=0.5,
                          label=label)
@@ -264,10 +269,10 @@ class AlignmentPlot:
             + [pair for pair in self.benchmarkAlignment.alignedPairs]
 
         x = [p for p in self.reference.positions if
-             self.__isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
+             self._isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
         y = [p for p in self.query.positions if
-             self.__isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
-        self.__drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (15, 3)), label="not aligned positions")
+             self._isQueryPositionInScope(p) and self.__isNotAlignedQuery(p, alignedPositions)]
+        self._drawGrid(x, y, self.yMaxPlot, self.xMaxPlot, lineStyle=(0, (15, 3)), label="not aligned positions")
 
     def _drawRemovedAlignedPositions(self):
         if not self.options.drawRemovedAlignedPositions or not hasattr(self.alignment, "segments"):
@@ -300,6 +305,10 @@ class AlignmentPlot:
             self.axes.annotate(f"peak:{','.join(sources)}",
                                (position.reference.position, self.__absoluteQueryPosition(position)))
 
+    def _drawLegend(self):
+        if not self.options.hideLegend:
+            self.axes.legend()
+
     @staticmethod
     def __isNotAlignedReference(position: int, alignedPositions: List[BenchmarkAlignedPair]):
         return position not in [ap.reference.position for ap in alignedPositions]
@@ -308,11 +317,11 @@ class AlignmentPlot:
     def __isNotAlignedQuery(position: int, alignedPositions: List[BenchmarkAlignedPair]):
         return position not in [ap.query.position for ap in alignedPositions]
 
-    def __isReferencePositionInScope(self, position: int):
-        return self.xMinPlot <= position <= self.xMaxAxis
+    def _isReferencePositionInScope(self, position: int):
+        return self.xMinPlot <= position <= self.xMaxPlot
 
-    def __isQueryPositionInScope(self, position: int):
-        return self.yMinAxis <= position <= self.yMaxPlot
+    def _isQueryPositionInScope(self, position: int):
+        return self.yMinPlot <= position <= self.yMaxPlot
 
     def __absoluteQueryPosition(self, p: BenchmarkAlignedPair | AlignedPair):
         return self.alignment.queryLength - p.query.position if self.alignment.reverseStrand else p.query.position
@@ -323,6 +332,22 @@ class AlignmentPlot:
 
     def __drawPeakRotationPoint(self, peak: Peak):
         return peak.position, self.query.length if self.alignment.reverseStrand else 0
+
+    @property
+    def __referenceStartPosition(self):
+        return self.options.referenceStartPosition or self.alignment.referenceStartPosition
+
+    @property
+    def __referenceEndPosition(self):
+        return self.options.referenceEndPosition or self.alignment.referenceEndPosition
+
+    @property
+    def __queryStartPosition(self):
+        return self.options.queryStartPosition or self.alignment.queryStartPosition
+
+    @property
+    def __queryEndPosition(self):
+        return self.options.queryEndPosition or self.alignment.queryEndPosition
 
 
 class BenchmarkAlignmentPlot(AlignmentPlot):
@@ -335,10 +360,14 @@ class BenchmarkAlignmentPlot(AlignmentPlot):
         self._plotReference()
         self._plotQuery()
         self._plotAlignment()
-        self.axes.legend()
+        self._drawLegend()
 
     def _plotAlignment(self):
-        x, y = list(zip(*map(lambda p: (p.reference.position, p.query.position), self.alignment.alignedPairs)))
+        pairsInScope = (p for p in self.alignment.alignedPairs if
+                        self._isReferencePositionInScope(p.reference.position) and
+                        self._isQueryPositionInScope(p.query.position))
+
+        x, y = list(zip(*map(lambda p: (p.reference.position, p.query.position), pairsInScope)))
         self.axes.plot(x, y,
                        label=f"({len(self.alignment.alignedPairs)} pairs, "
                              f"confidence: {self.alignment.confidence})",
@@ -348,3 +377,5 @@ class BenchmarkAlignmentPlot(AlignmentPlot):
                        marker="o",
                        markersize=8,
                        linewidth=2)
+
+        self._drawGrid(x, y)
