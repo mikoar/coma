@@ -266,7 +266,7 @@ class AlignmentPlot:
 
         alignedPositions: List[BenchmarkAlignedPair] = \
             [position for segment in self.alignment.segments for position in segment.alignedPositions] \
-            + [pair for pair in self.benchmarkAlignment.alignedPairs]
+            + ([pair for pair in self.benchmarkAlignment.alignedPairs] if self.benchmarkAlignment else [])
 
         x = [p for p in self.reference.positions if
              self._isReferencePositionInScope(p) and self.__isNotAlignedReference(p, alignedPositions)]
