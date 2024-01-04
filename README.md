@@ -61,11 +61,11 @@ All scripts used during indels detection are stored in the "sv" folder. There ar
 To use it, it is best to first run the program using the "all" output version and then pass three obtained output files as the input for the molecule_indels.py wrapper using the following command:
 
 `
-python molecule_indels.py -r reference.cmap -q query.cmap -f aligned_all.xmap -f alligned_all_1.xmap -s alligned_all_2.xmap -o joined_indels.txt
+python molecule_indels.py -r reference.cmap -q query.cmap -j aligned_all.xmap -f aligned_all_1.xmap -s aligned_all_2.xmap -o joined_indels.txt
 `
 
-The second possible path focuses on the conflicts observed when more than one segment is created for a single molecule and they are joined to form one alignment. To identify indels in those places it is necessary to first run the program with the extension allowing to catch all created segments for each query molecule. To do this simply run the program using the "save_primary_correlation_peaks.py" wrapper available in the analysis_scripts folder and then use created files in the segments_indels.py workflow:
+The second possible path focuses on the conflicts observed when more than one segment is created for a single molecule and they are joined to form one alignment. To identify indels in those places use created segments_indels.py wrapper which includes aligning molecules with COMA:
 
 `
-python segment_indels.py -r reference.cmap -q query.cmap -a aligned.xmap -s Found_segments.csv -o segment_indels.txt
+python segment_indels.py -r reference.cmap -q query.cmap -a aligned_output.xmap -s found_segments_output.csv -o segment_indels.txt
 `

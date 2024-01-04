@@ -3,22 +3,71 @@ import argparse
 from read_files import read_alignments_file, read_all_files, read_segments_file
 import re
 from write_indel_files import write_indel_file
+from src.args import Args
+from src.extensions.extension import Extension
+from src.extensions.messages import AlignmentResultRowMessage, MultipleAlignmentResultRowsMessage
+from src.program import Program
 
 
 def main():
     parser = argparse.ArgumentParser(description="Looks for indels in alignment file based on segments conflicts")
     parser.add_argument("-r", "--reference", dest="referenceFile", type=str, required=True)
     parser.add_argument("-q", "--query", dest="queryFile", type=str, required=True)
-    parser.add_argument("-a", "--aligned", dest="alignedFile", type=str, required=True,
-                        help="File with obtained COMA alignments")
-    parser.add_argument("-s", "--segments", dest="segmentsFile", type=str, required=True,
-                        help="File with segments created during COMA workflow")
+    parser.add_argument("-a", "--alignedOutput", dest="alignedFile", type=str, required=True,
+                        help="Name of output file with COMA alignments")
+    parser.add_argument("-s", "--segmentsOutput", dest="segmentsFile", type=str, required=True,
+                        help="Name of output file with segments created during COMA workflow")
     parser.add_argument("-o", "--output", dest="outputFile", nargs="?",
                         type=str, default="segment_indels.txt")
 
     args = parser.parse_args()  # type: ignore
     run(args)
 
+
+
+class SegmentsCatcher(Extension):
+    messageType = AlignmentResultRowMessage
+
+    def __init__(self, filePath: str):
+        self.filePath = filePath
+
+    def handle(self, message: AlignmentResultRowMessage):
+        peak = message.correlation.maxPeak
+        if peak:
+            with open(self.filePath, "a") as f:
+                f.write(
+                        f"{message.correlation.query.moleculeId};"
+                        f"{message.correlation.reverseStrand};"
+                        f"{len(message.alignment.segments)};"
+                        f"{message.alignment.segments};"
+                        f"{message.alignment.queryStartPosition};"
+                        f"{message.alignment.queryEndPosition};"
+                        f"{message.alignment.referenceStartPosition};"
+                        f"{message.alignment.referenceEndPosition};"
+                        f"{peak.score:.2f};"
+                        f"{peak.position}\n")
+                
+class MultipleSegmentsCatcher(Extension):
+    messageType = MultipleAlignmentResultRowsMessage
+
+    def __init__(self, filePath: str):
+        self.filePath = filePath
+
+    def handle(self, message: AlignmentResultRowMessage):
+        peak = message.correlation.maxPeak
+        if peak:
+            with open(self.filePath, "a") as f:
+                f.write(
+                        f"{message.correlation.query.moleculeId};"
+                        f"{message.correlation.reverseStrand};"
+                        f"{len(message.alignment.segments)};"
+                        f"{message.alignment.segments};"
+                        f"{message.alignment.queryStartPosition};"
+                        f"{message.alignment.queryEndPosition};"
+                        f"{message.alignment.referenceStartPosition};"
+                        f"{message.alignment.referenceEndPosition};"
+                        f"{peak.score:.2f};"
+                        f"{peak.position}\n")
 
 def find_conflict_place(multiple_segments: dict, alignmentFile: str) -> dict:
     """Function used to find places where segments where joined
@@ -118,30 +167,43 @@ def look_for_indels_in_breakage(alignment_dict: dict, reference_dict: dict,
             if q_id in breakage_dict.keys():
                 for i in breakage_dict[q_id]:
                     breakage_place = i
-                    next_pair = alignment.alignedPairs[breakage_place[0] + 1]
-                    breakage_pair = alignment.alignedPairs[breakage_place[0]]
+                    if len(alignment.alignedPairs) > breakage_place[0] + 1:
+                        next_pair = alignment.alignedPairs[breakage_place[0] + 1]
+                        breakage_pair = alignment.alignedPairs[breakage_place[0]]
 
-                    r_label_s = reference_dict[r_id].positions[breakage_pair.reference.siteId - 1]
-                    q_label_s = query_dict[q_id].positions[breakage_pair.query.siteId - 1]
-                    r_label_e = reference_dict[r_id].positions[next_pair.reference.siteId - 1]
-                    q_label_e = query_dict[q_id].positions[next_pair.query.siteId - 1]
+                        r_label_s = reference_dict[r_id].positions[breakage_pair.reference.siteId - 1]
+                        q_label_s = query_dict[q_id].positions[breakage_pair.query.siteId - 1]
+                        r_label_e = reference_dict[r_id].positions[next_pair.reference.siteId - 1]
+                        q_label_e = query_dict[q_id].positions[next_pair.query.siteId - 1]
 
-                    diff = abs(r_label_s - r_label_e) - abs(q_label_s - q_label_e)
-                    if abs(diff) > 100 and abs(diff) < 100000:
-                        if diff < -100:
-                            indels["insertion"].append(
-                                    ["insertion", alignment.referenceId, r_label_s, r_label_e,
-                                    q_id, q_label_s, q_label_e, diff])
-                        else:
-                            indels["deletion"].append(
-                                    ["deletion", alignment.referenceId, r_label_s, r_label_e,
-                                    q_id, q_label_s, q_label_e, diff])
+                        diff = abs(r_label_s - r_label_e) - abs(q_label_s - q_label_e)
+                        if abs(diff) > 100 and abs(diff) < 100000:
+                            if diff < -100:
+                                indels["insertion"].append(
+                                        ["insertion", alignment.referenceId, r_label_s, r_label_e,
+                                        q_id, q_label_s, q_label_e, diff])
+                            else:
+                                indels["deletion"].append(
+                                        ["deletion", alignment.referenceId, r_label_s, r_label_e,
+                                        q_id, q_label_s, q_label_e, diff])
     return indels
 
 
 
 def run(args):
-    small_df = read_segments_file(args.segmentsFile)
+    segments_file = args.segmentsFile
+    with open(segments_file, "w") as f:
+        f.write("queryId;reverseStrand;segmentNb;segment;segmentQueryStart;segmentQueryEnd;segmentReferenceStart;segmentReferenceEnd;score;peakPosition\n")
+
+    program_args = Args.parse([
+        "-q", args.queryFile,
+        "-r", args.referenceFile,
+        "-o", args.alignedFile
+    ])
+    coma = Program(program_args, [SegmentsCatcher(segments_file)])
+    coma.run()
+
+    small_df = read_segments_file(segments_file)
     more_segemnts = find_segments_indels(small_df)
 
     breakage_points = find_conflict_place(more_segemnts, args.alignedFile)
