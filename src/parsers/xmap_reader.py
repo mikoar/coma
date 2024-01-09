@@ -6,7 +6,7 @@ from typing import List, TextIO, Iterable
 import pandas as pd
 from pandas import DataFrame, Series
 
-from args import Args
+from src.args import Args
 from src.alignment.alignment_results import AlignmentResults
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.parsers.bionano_file_reader import BionanoFileReader
