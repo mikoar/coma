@@ -19,6 +19,10 @@ def main():
                         help="Name of output file with segments created during COMA workflow")
     parser.add_argument("-o", "--output", dest="outputFile", nargs="?",
                         type=str, default="segment_indels.txt")
+    parser.add_argument("-ma", "--secondaryMargin", dest="secondaryMargin", type=int, default=16000,
+                        help="The number of base pairs by which the peak from initial cross-correlation "
+                        "seeding is extended in both directions to serve as an input for the "
+                        "second cross-correlation run.")
 
     args = parser.parse_args()  # type: ignore
     run(args)
@@ -198,7 +202,8 @@ def run(args):
     program_args = Args.parse([
         "-q", args.queryFile,
         "-r", args.referenceFile,
-        "-o", args.alignedFile
+        "-o", args.alignedFile,
+        "-ma", args.secondaryMargin
     ])
     coma = Program(program_args, [SegmentsCatcher(segments_file)])
     coma.run()
