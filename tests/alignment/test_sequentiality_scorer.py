@@ -39,6 +39,6 @@ def test_getScore(pos1, pos2, pos3, pos4, expectedScore):
         .withPosition(ScoredAlignedPairBuilder().withReferencePosition(pos4[0]).withQueryPosition(pos4[1]).build()) \
         .build()
 
-    score = SequentialityScorer().getScore(previousSegment, currentSegment)
+    score = SequentialityScorer(1., 0).getScore(previousSegment, currentSegment)
 
     assert score == expectedScore

@@ -228,7 +228,7 @@ class _SegmentPairWithConflict(_SegmentPair):
                 newRightSegment = self.rightSegment - rightSegmentPositionsToRemove
             return newLeftSegment, newRightSegment
         else:
-            self.__removeWholeConflictingSubsegmentWithWorseScore()
+            return self.__removeWholeConflictingSubsegmentWithWorseScore()
 
     @staticmethod
     def __getOptimalMergeIndex(leftSubsegmentCharacteristics, rightSubsegmentCharacteristics):

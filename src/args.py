@@ -31,6 +31,8 @@ class Args(NamedTuple):
     peaksCount: int
     disableProgressBar: bool
     outputMode: Literal["best", "separate", "joined", "all", "single"]
+    segmentJoinMultiplier: float
+    sequentialityScore: int
 
     @staticmethod
     def parse(args: List[str] = None) -> Args:
@@ -54,13 +56,12 @@ class Args(NamedTuple):
 
         parser.add_argument("-oM", "--outputMode", dest="outputMode", type=str,
                             default="best", choices=["best", "separate", "joined", "all"],
-                            help="Mode which should be used while creating output alignment file. There are 4 possible "
+                            help="Mode which should be used while creating output alignment file. There are 3 possible "
                                  "options: 'best'- includes joined alignments when possible and best alignment based on "
                                  "confidence when joined option is not available, 'separate'- creates two "
                                  "separate files for alignments, 'joined'- joins alignments when it is possible and saves "
                                  "rest to separate file, 'all'-creates 3 files, one with joint alignments, and two with all "
-                                 "obtained alignments, "
-                                 "single - performs only a single pass of alignment")
+                                 "obtained alignments.")
 
         parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=1400,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
@@ -139,6 +140,12 @@ class Args(NamedTuple):
 
         parser.add_argument("-pb", "--disableProgressBar", dest="disableProgressBar", action="store_true",
                             help="Disables the progress bar.")
+
+        parser.add_argument("-sj", "--segmentJoinMultiplier", dest="segmentJoinMultiplier", type=float, default=1,
+                            help="Multiplier applied to segment sequentiality scores.")
+
+        parser.add_argument("-ss", "--sequentialityScore", dest="sequentialityScore", type=int, default=0,
+                            help="Segment sequentiality scoring function version.")
 
         args = parser.parse_args(args)
         return args  # type: ignore

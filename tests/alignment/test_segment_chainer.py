@@ -2,10 +2,12 @@ from typing import List
 
 import pytest
 
-from src.alignment.segment_chainer import SegmentChainer
+from src.alignment.segment_chainer import SegmentChainer, SequentialityScorer
 from src.alignment.segments import AlignmentSegment
 from tests.test_doubles.alignment_segment_builder import AlignmentSegmentBuilder
 from tests.test_doubles.scored_aligned_pair_builder import ScoredAlignedPairBuilder
+
+chainer = SegmentChainer(SequentialityScorer(1., 0))
 
 
 @pytest.mark.parametrize("segments, expectedOrder", [
@@ -45,7 +47,7 @@ from tests.test_doubles.scored_aligned_pair_builder import ScoredAlignedPairBuil
     ], [3, 2, 1]),
 ])
 def test_chain(segments: List[AlignmentSegment], expectedOrder: List[int]):
-    chainedSegments = SegmentChainer().chain(segments)
+    chainedSegments = chainer.chain(segments)
     assert chainedSegments == [s for _, s in sorted(zip(expectedOrder, segments), key=lambda x: x[0])]
 
 
@@ -67,7 +69,7 @@ def test_chain_dropsOutlyingSegment():
             .withScore(1200.)
             .build()
     ]
-    chainedSegments = SegmentChainer().chain(segments)
+    chainedSegments = chainer.chain(segments)
     assert chainedSegments == [segments[0], segments[1]]
 
 
@@ -87,7 +89,7 @@ def test_chain_preservesEmptySegments():
             .withScore(0.)
             .build()
     ]
-    chainedSegments = SegmentChainer().chain(segments)
+    chainedSegments = chainer.chain(segments)
     assert len(chainedSegments) == 3
 
 
@@ -97,7 +99,7 @@ def test_chain_emptySegmentsOnly():
             .withScore(0.)
             .build()
     ]
-    chainedSegments = SegmentChainer().chain(segments)
+    chainedSegments = chainer.chain(segments)
     assert chainedSegments == segments
 
 

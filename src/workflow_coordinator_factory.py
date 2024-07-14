@@ -1,6 +1,6 @@
 from alignment.aligner import AlignerEngine, Aligner
 from alignment.alignment_position_scorer import AlignmentPositionScorer
-from alignment.segment_chainer import SegmentChainer
+from alignment.segment_chainer import SegmentChainer, SequentialityScorer
 from alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from alignment.segments_factory import AlignmentSegmentsFactory
 from args import Args
@@ -27,7 +27,9 @@ class WorkflowCoordinatorFactory:
             self.args.unmatchedPenalty)
         segmentsFactory = AlignmentSegmentsFactory(self.args.minScore, self.args.breakSegmentThreshold)
         alignerEngine = AlignerEngine(self.args.maxPairDistance)
-        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
+        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(
+            SegmentChainer(
+                SequentialityScorer(self.args.segmentJoinMultiplier, self.args.sequentialityScore)))
         aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
         if self.args.outputMode == "single":
             return _WorkflowCoordinator(

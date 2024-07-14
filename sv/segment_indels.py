@@ -23,6 +23,15 @@ def main():
                         help="The number of base pairs by which the peak from initial cross-correlation "
                         "seeding is extended in both directions to serve as an input for the "
                         "second cross-correlation run.")
+    parser.add_argument("-pt", "--peakHeightThreshold", dest="peakHeightThreshold", type=float, default=27,
+                        help="Minimum second cross-correlation peak height to qualify for aligned pairs search.")
+    parser.add_argument("-sj", "--segmentJoinMultiplier", dest="segmentJoinMultiplier", type=float, default=1,
+                        help="Multiplier applied to segment sequentiality scores.")
+    parser.add_argument("-ss", "--sequentialityScore", dest="sequentialityScore", type=int, default=0,
+                        help="Segment sequentiality scoring function version.")
+    parser.add_argument("-D", "--diagnostics", dest="diagnosticsEnabled", action="store_true",
+                        help="Draws cross-correlation and alignment plots. When used, 'alignmentFile' parameter "
+                             "is required")
 
     args = parser.parse_args()  # type: ignore
     run(args)
@@ -106,21 +115,21 @@ def find_conflict_place(multiple_segments: dict, alignmentFile: str) -> dict:
                 elif len(multiple_segments[alignment.queryId]) > 2:
                     if str(alignment.alignedPairs[0]) == multiple_segments[alignment.queryId][0][0]:
                         first = multiple_segments[alignment.queryId][0]
-                    if added == False:
-                        for index, pair in enumerate(first):
-                            if str(alignment.alignedPairs[index]) != pair and added is False:
-                                breakage_places[int(alignment.queryId)] = [[index, pair]]
-                                added = True          
-                    if added == False:
-                        breakage_places[int(alignment.queryId)] = [[index, pair]]
-                        if str(alignment.alignedPairs[index + 1]) == multiple_segments[alignment.queryId][1][0]:
-                            added = False
-                            for second_index, pair in enumerate(multiple_segments[alignment.queryId][1]):
-                                if str(alignment.alignedPairs[index + second_index + 1]) != pair and added is False:
+                        if added == False:
+                            for index, pair in enumerate(first):
+                                if str(alignment.alignedPairs[index]) != pair and added is False:
+                                    breakage_places[int(alignment.queryId)] = [[index, pair]]
+                                    added = True          
+                        if added == False:
+                            breakage_places[int(alignment.queryId)] = [[index, pair]]
+                            if str(alignment.alignedPairs[index + 1]) == multiple_segments[alignment.queryId][1][0]:
+                                added = False
+                                for second_index, pair in enumerate(multiple_segments[alignment.queryId][1]):
+                                    if str(alignment.alignedPairs[index + second_index + 1]) != pair and added is False:
+                                        breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
+                                        added = True
+                                if added == False:
                                     breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
-                                    added = True
-                            if added == False:
-                                breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
     return breakage_places
 
 def find_segments_indels(small_df: pd.DataFrame) -> dict:
@@ -199,12 +208,18 @@ def run(args):
     with open(segments_file, "w") as f:
         f.write("queryId;reverseStrand;segmentNb;segment;segmentQueryStart;segmentQueryEnd;segmentReferenceStart;segmentReferenceEnd;score;peakPosition\n")
 
+    action_args = []
+    if args.diagnosticsEnabled:
+        action_args.append("-D")
     program_args = Args.parse([
         "-q", args.queryFile,
         "-r", args.referenceFile,
         "-o", args.alignedFile,
-        "-ma", args.secondaryMargin
-    ])
+        "-ma", str(args.secondaryMargin),
+        "-pt", str(args.peakHeightThreshold),
+        "-sj", str(args.segmentJoinMultiplier),
+        "-ss", str(args.sequentialityScore)
+    ] + action_args)
     coma = Program(program_args, [SegmentsCatcher(segments_file)])
     coma.run()
 
