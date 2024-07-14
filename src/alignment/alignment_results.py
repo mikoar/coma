@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import itertools
-import argparse
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import List
+from typing import List, TextIO
 
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
-from src.diagnostic.benchmark_alignment import BenchmarkAlignment
 from src.correlation.optical_map import OpticalMap
+from src.diagnostic.benchmark_alignment import BenchmarkAlignment
 
 
 class HitEnum(Enum):
@@ -32,7 +31,7 @@ class AlignmentResults:
                rows: List[AlignmentResultRow],
                rows_rest: List[AlignmentResultRow],
                mode: str,
-               out_file: argparse.FileType,
+               out_file: TextIO,
                maxDifference: int):
         if mode == "best":
             rows = rows + rows_rest
@@ -40,15 +39,19 @@ class AlignmentResults:
             sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQuery = \
             [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
-        new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)),  mode='w', encoding=out_file.encoding)
+        new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)), mode='w',
+                        encoding=out_file.encoding)
         rowsSortedByQueryIdThenByConfidenceRest = \
             sorted(sorted(rows_rest, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQueryRest = \
-            [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidenceRest, lambda r: r.queryId)]
+            [next(group) for _, group in
+             itertools.groupby(rowsSortedByQueryIdThenByConfidenceRest, lambda r: r.queryId)]
         if mode == 'separate':
-            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
-                    (new_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
-        
+            return [(out_file,
+                     AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
+                    (new_file, AlignmentResults(referenceFilePath, queryFilePath,
+                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
+
         joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
                                                             rowsWithoutSubsequentAlignmentsForSingleQueryRest,
                                                             maxDifference)
@@ -57,17 +60,19 @@ class AlignmentResults:
             bestRows = [row for row in rowsWithoutSubsequentAlignmentsForSingleQuery if row.queryId not in joinedIds]
             rowsWithoutSubsequentAlignmentsForSingleQueryBest = sorted(joinedRows + bestRows, key=lambda r: r.queryId)
             os.remove(new_file.name)
-            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQueryBest))]
+            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath,
+                                                rowsWithoutSubsequentAlignmentsForSingleQueryBest))]
         if mode == 'joined':
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
-                    (new_file, AlignmentResults(referenceFilePath, queryFilePath,  separateRows))]
+                    (new_file, AlignmentResults(referenceFilePath, queryFilePath, separateRows))]
         if mode == 'all':
             third_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (2,)),
                               mode='w', encoding=out_file.encoding)
             return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
-                    (new_file, AlignmentResults(referenceFilePath, queryFilePath,  rowsWithoutSubsequentAlignmentsForSingleQuery)),
-                    (third_file, AlignmentResults(referenceFilePath, queryFilePath,  rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
-        
+                    (new_file,
+                     AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
+                    (third_file, AlignmentResults(referenceFilePath, queryFilePath,
+                                                  rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
 
     @staticmethod
     def resolve(rows: List[AlignmentResultRow],
@@ -75,7 +80,8 @@ class AlignmentResults:
                 maxDifference: int):
         separate = []
         joined = []
-        for _, queries in itertools.groupby(sorted(rows + rows_rest, key=lambda r: r.referenceId), lambda r: r.referenceId):
+        for _, queries in itertools.groupby(sorted(rows + rows_rest, key=lambda r: r.referenceId),
+                                            lambda r: r.referenceId):
             for _, group in itertools.groupby(sorted(list(queries), key=lambda r: r.queryId), lambda r: r.queryId):
                 group = list(group)
                 if len(group) == 1:
@@ -90,6 +96,7 @@ class AlignmentResults:
                     else:
                         separate.extend(group)
         return joined, separate
+
 
 class AlignmentResultRow(BenchmarkAlignment):
     @staticmethod
@@ -203,7 +210,7 @@ class AlignmentResultRow(BenchmarkAlignment):
         x = f"{count}{hit.value}"
         return x
 
-    def getUnalignedFragments(self, queries:List[OpticalMap]) -> List[OpticalMap]:
+    def getUnalignedFragments(self, queries: List[OpticalMap]) -> List[OpticalMap]:
         """Function used to return unaligned fragments of the query
         if those parts constitute more than 0.2 of the whole query
 
@@ -212,15 +219,15 @@ class AlignmentResultRow(BenchmarkAlignment):
         :return: Unaligned parts of query in question
         :rtype: List[OpticalMap]
         """
-        if abs(self.queryStartPosition - self.queryEndPosition) > 0.8  * self.queryLength:
+        if abs(self.queryStartPosition - self.queryEndPosition) > 0.8 * self.queryLength:
             return []
         else:
             query = next((opticMap for opticMap in queries if opticMap.moleculeId == self.queryId), None)
             if self.queryStartPosition == 0.0 or self.queryEndPosition == 0.0:
                 # Aligned positions are at the end/start
                 if self.orientation == '+':
-                    positions = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
-                    shift = len(query.positions)-len(positions)
+                    positions = query.positions[query.positions.index(self.queryEndPosition) - 2:]
+                    shift = len(query.positions) - len(positions)
                     if self.queryEndPosition == 0.0:
                         return []
                 else:
@@ -233,22 +240,24 @@ class AlignmentResultRow(BenchmarkAlignment):
                 # Case where aligned fragment is in the middle
                 if self.orientation == '+':
                     positions1 = query.positions[: query.positions.index(self.queryStartPosition) + 3]
-                    positions2 = query.positions[query.positions.index(self.queryEndPosition) - 2 :]
+                    positions2 = query.positions[query.positions.index(self.queryEndPosition) - 2:]
 
                 else:
                     alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
                     firstPair = alignedPairs[0] if alignedPairs else AlignedPair.null
                     lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
                     positions1 = query.positions[: lastPair.query.siteId + 3]
-                    positions2 = query.positions[firstPair.query.siteId - 2 :]
+                    positions2 = query.positions[firstPair.query.siteId - 2:]
 
                 if len(positions1) >= 7 and len(positions2) >= 7:
                     return [OpticalMap(self.queryId, self.queryLength, positions1, shift=0),
-                            OpticalMap(self.queryId, self.queryLength, positions2, shift=len(query.positions)-len(positions2))]
+                            OpticalMap(self.queryId, self.queryLength, positions2,
+                                       shift=len(query.positions) - len(positions2))]
                 elif len(positions1) >= 7:
                     return [OpticalMap(self.queryId, self.queryLength, positions1, shift=0)]
                 elif len(positions2) >= 7:
-                    return [OpticalMap(self.queryId, self.queryLength, positions2, shift=len(query.positions)-len(positions2))]
+                    return [OpticalMap(self.queryId, self.queryLength, positions2,
+                                       shift=len(query.positions) - len(positions2))]
                 else:
                     return []
 
@@ -256,7 +265,7 @@ class AlignmentResultRow(BenchmarkAlignment):
         self.alignedRest = alignedRest
         return self
 
-    def check_overlap(self, alignedRest: AlignmentResultRow, maxDifference:int) -> bool:
+    def check_overlap(self, alignedRest: AlignmentResultRow, maxDifference: int) -> bool:
         """Function used to identify overlapping alignments of the same query
 
         :param alignedRest: Other alignment of the same query
@@ -269,7 +278,7 @@ class AlignmentResultRow(BenchmarkAlignment):
         """
         if self.orientation == alignedRest.orientation and self.referenceId == alignedRest.referenceId:
             diff = abs(max(self.referenceStartPosition, alignedRest.referenceStartPosition) - \
-                min(self.referenceEndPosition, alignedRest.referenceEndPosition))
+                       min(self.referenceEndPosition, alignedRest.referenceEndPosition))
             if diff <= maxDifference:
                 return True
         return False
@@ -291,6 +300,6 @@ class AlignmentResultRow(BenchmarkAlignment):
             seg1, seg2 = pair.resolveConflict()
             notEmptySegments = [s for s in [seg1, seg2] if s != AlignmentSegment.empty]
             return AlignmentResultRow.create(AlignmentSegmentsWithResolvedConflicts(notEmptySegments),
-                                      self.queryId, self.referenceId, self.queryLength, self.referenceLength,
-                                      self.reverseStrand)
+                                             self.queryId, self.referenceId, self.queryLength, self.referenceLength,
+                                             self.reverseStrand)
         return
