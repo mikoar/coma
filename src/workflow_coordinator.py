@@ -5,6 +5,7 @@ from typing import List, Iterator
 
 from p_tqdm import p_imap
 
+from multi_pass_workflow_coordinator import MultiPassWorkflowCoordinator
 from src.alignment.aligner import Aligner, AlignerEngine
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
 from src.alignment.alignment_results import AlignmentResultRow
@@ -39,8 +40,12 @@ class WorkflowCoordinator:
         alignerEngine = AlignerEngine(args.maxPairDistance)
         alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
         aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-        return WorkflowCoordinator(
-            args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
+        if args.outputMode == "single":
+            return WorkflowCoordinator(
+                args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
+        else:
+            return MultiPassWorkflowCoordinator(
+                args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
 
     def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
         return [a for a in p_imap(
@@ -64,7 +69,8 @@ class WorkflowCoordinator:
         return self.__getBestAlignment(alignmentResultRows)
 
     def __getPrimaryCorrelations(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> Iterator[InitialAlignment]:
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator, self.args.minPeakDistance, self.args.peaksCount)
+        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
+                                                          self.args.minPeakDistance, self.args.peaksCount)
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
 
         primaryCorrelationReverse = queryMap.getInitialAlignment(

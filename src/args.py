@@ -30,7 +30,7 @@ class Args(NamedTuple):
     benchmarkAlignmentFile: TextIO
     peaksCount: int
     disableProgressBar: bool
-    outputMode: Literal["best", "separate", "joined", "all"]
+    outputMode: Literal["best", "separate", "joined", "all", "single"]
 
     @staticmethod
     def parse(args: List[str] = None) -> Args:
@@ -54,12 +54,13 @@ class Args(NamedTuple):
 
         parser.add_argument("-oM", "--outputMode", dest="outputMode", type=str,
                             default="best", choices=["best", "separate", "joined", "all"],
-                            help="Mode which should be used while creating output alignment file. There are 3 possible "
+                            help="Mode which should be used while creating output alignment file. There are 4 possible "
                                  "options: 'best'- includes joined alignments when possible and best alignment based on "
                                  "confidence when joined option is not available, 'separate'- creates two "
                                  "separate files for alignments, 'joined'- joins alignments when it is possible and saves "
                                  "rest to separate file, 'all'-creates 3 files, one with joint alignments, and two with all "
-                                 "obtained alignments.")
+                                 "obtained alignments, "
+                                 "single - performs only a single pass of alignment")
 
         parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=1400,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "

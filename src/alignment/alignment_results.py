@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import itertools
-import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, TextIO
+from typing import List
 
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
@@ -28,59 +27,26 @@ class AlignmentResults:
     @staticmethod
     def create(referenceFilePath: str,
                queryFilePath: str,
-               rows: List[AlignmentResultRow],
-               rows_rest: List[AlignmentResultRow],
-               mode: str,
-               out_file: TextIO,
-               maxDifference: int):
-        if mode == "best":
-            rows = rows + rows_rest
+               rows: List[AlignmentResultRow]):
+        return AlignmentResults(
+            referenceFilePath,
+            queryFilePath,
+            AlignmentResults.filterOutSubsequentAlignmentsForSingleQuery(rows))
+
+    @staticmethod
+    def filterOutSubsequentAlignmentsForSingleQuery(alignmentResultRows):
         rowsSortedByQueryIdThenByConfidence = \
-            sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
+            sorted(sorted(alignmentResultRows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQuery = \
             [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
-        new_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (1,)), mode='w',
-                        encoding=out_file.encoding)
-        rowsSortedByQueryIdThenByConfidenceRest = \
-            sorted(sorted(rows_rest, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
-        rowsWithoutSubsequentAlignmentsForSingleQueryRest = \
-            [next(group) for _, group in
-             itertools.groupby(rowsSortedByQueryIdThenByConfidenceRest, lambda r: r.queryId)]
-        if mode == 'separate':
-            return [(out_file,
-                     AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
-                    (new_file, AlignmentResults(referenceFilePath, queryFilePath,
-                                                rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
-
-        joinedRows, separateRows = AlignmentResults.resolve(rowsWithoutSubsequentAlignmentsForSingleQuery,
-                                                            rowsWithoutSubsequentAlignmentsForSingleQueryRest,
-                                                            maxDifference)
-        if mode == 'best':
-            joinedIds = [row.queryId for row in joinedRows]
-            bestRows = [row for row in rowsWithoutSubsequentAlignmentsForSingleQuery if row.queryId not in joinedIds]
-            rowsWithoutSubsequentAlignmentsForSingleQueryBest = sorted(joinedRows + bestRows, key=lambda r: r.queryId)
-            os.remove(new_file.name)
-            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath,
-                                                rowsWithoutSubsequentAlignmentsForSingleQueryBest))]
-        if mode == 'joined':
-            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
-                    (new_file, AlignmentResults(referenceFilePath, queryFilePath, separateRows))]
-        if mode == 'all':
-            third_file = open("{0}_{2}{1}".format(*os.path.splitext(out_file.name) + (2,)),
-                              mode='w', encoding=out_file.encoding)
-            return [(out_file, AlignmentResults(referenceFilePath, queryFilePath, joinedRows)),
-                    (new_file,
-                     AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)),
-                    (third_file, AlignmentResults(referenceFilePath, queryFilePath,
-                                                  rowsWithoutSubsequentAlignmentsForSingleQueryRest))]
+        return rowsWithoutSubsequentAlignmentsForSingleQuery
 
     @staticmethod
     def resolve(rows: List[AlignmentResultRow],
-                rows_rest: List[AlignmentResultRow],
                 maxDifference: int):
         separate = []
         joined = []
-        for _, queries in itertools.groupby(sorted(rows + rows_rest, key=lambda r: r.referenceId),
+        for _, queries in itertools.groupby(sorted(rows, key=lambda r: r.referenceId),
                                             lambda r: r.referenceId):
             for _, group in itertools.groupby(sorted(list(queries), key=lambda r: r.queryId), lambda r: r.queryId):
                 group = list(group)
@@ -283,7 +249,7 @@ class AlignmentResultRow(BenchmarkAlignment):
                 return True
         return False
 
-    def resolve(self, alignedRest: AlignmentResultRow) -> AlignmentResultRow:
+    def resolve(self, alignedRest: AlignmentResultRow) -> AlignmentResultRow | None:
         """Function used to resolve conflicts between two overlapping alignments of the same query
 
         :param alignedRest: Other alignment of the same query
@@ -296,8 +262,8 @@ class AlignmentResultRow(BenchmarkAlignment):
         else:
             pair = alignedRest.segments[0].checkForConflicts(self.segments[0])
 
-        if pair.resolveConflict():
-            seg1, seg2 = pair.resolveConflict()
+        if resolution := pair.resolveConflict():
+            seg1, seg2 = resolution
             notEmptySegments = [s for s in [seg1, seg2] if s != AlignmentSegment.empty]
             return AlignmentResultRow.create(AlignmentSegmentsWithResolvedConflicts(notEmptySegments),
                                              self.queryId, self.referenceId, self.queryLength, self.referenceLength,
