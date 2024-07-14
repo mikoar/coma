@@ -9,10 +9,10 @@ from correlation.peaks_selector import PeaksSelector
 from correlation.sequence_generator import SequenceGenerator
 from extensions.dispatcher import Dispatcher
 from parsers.xmap_reader import XmapReader
-from workflow_coordinator import WorkflowCoordinator
+from workflow_coordinator import _WorkflowCoordinator
 
 
-class MultiPassWorkflowCoordinator(WorkflowCoordinator):
+class _MultiPassWorkflowCoordinator(_WorkflowCoordinator):
     def __init__(self,
                  args: Args,
                  primaryGenerator: SequenceGenerator,

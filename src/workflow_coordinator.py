@@ -5,13 +5,8 @@ from typing import List, Iterator
 
 from p_tqdm import p_imap
 
-from multi_pass_workflow_coordinator import MultiPassWorkflowCoordinator
-from src.alignment.aligner import Aligner, AlignerEngine
-from src.alignment.alignment_position_scorer import AlignmentPositionScorer
+from src.alignment.aligner import Aligner
 from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segment_chainer import SegmentChainer
-from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
-from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.args import Args
 from src.correlation.optical_map import OpticalMap, InitialAlignment, CorrelationResult
 from src.correlation.peaks_selector import PeaksSelector, SelectedPeak
@@ -21,7 +16,7 @@ from src.extensions.messages import CorrelationResultMessage, InitialAlignmentMe
     MultipleAlignmentResultRowsMessage
 
 
-class WorkflowCoordinator:
+class _WorkflowCoordinator:
     def __init__(self, args: Args, primaryGenerator: SequenceGenerator, secondaryGenerator: SequenceGenerator,
                  aligner: Aligner, dispatcher: Dispatcher, peaksSelector: PeaksSelector):
         self.args = args
@@ -30,22 +25,6 @@ class WorkflowCoordinator:
         self.aligner = aligner
         self.dispatcher = dispatcher
         self.peaksSelector = peaksSelector
-
-    @staticmethod
-    def create(args: Args, dispatcher: Dispatcher):
-        primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
-        secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
-        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
-        segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
-        alignerEngine = AlignerEngine(args.maxPairDistance)
-        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
-        aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-        if args.outputMode == "single":
-            return WorkflowCoordinator(
-                args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
-        else:
-            return MultiPassWorkflowCoordinator(
-                args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
 
     def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
         return [a for a in p_imap(
