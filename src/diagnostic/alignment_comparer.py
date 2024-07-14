@@ -101,7 +101,7 @@ class AlignmentComparison:
         ] for row in self.rows]
 
         dataFrame = DataFrame(data, columns=headers, index=pd.RangeIndex(start=1, stop=len(self.rows) + 1))
-        dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator="\n")
+        dataFrame.to_csv(file, sep='\t', header=False, mode="a", lineterminator="\n")
 
 
 class _NullAlignmentComparison(AlignmentComparison):
@@ -181,7 +181,8 @@ class AlignmentComparer:
         return {(a.queryId, a.referenceId): a for a in sorted(alignments, key=lambda a: (a.referenceId, a.queryId))}
 
     @staticmethod
-    def __getNotMatchingAlignments(source: Dict[(int, int), BenchmarkAlignment], target: Dict[(int, int), BenchmarkAlignment]):
+    def __getNotMatchingAlignments(source: Dict[(int, int), BenchmarkAlignment],
+                                   target: Dict[(int, int), BenchmarkAlignment]):
         return [a1 for key, a1 in source.items() if key not in target]
 
 
@@ -199,14 +200,16 @@ class AlignmentRowComparer:
 
         ratio = self.__getIdentityRatio(alignment1Pairs, alignment2Pairs)
         return AlignmentRowComparison(
-            AlignmentRowComparisonResultType.BOTH, alignment1, alignment2, difference1, difference2, coverage1, coverage2, ratio)
+            AlignmentRowComparisonResultType.BOTH, alignment1, alignment2, difference1, difference2, coverage1,
+            coverage2, ratio)
 
     def __combineMultipleQuerySources(self, pairs: List[BenchmarkAlignedPair], otherPairs: List[BenchmarkAlignedPair]):
         if not self.combineMultipleQuerySources:
             return pairs
 
-        alignmentsPerQuery = [self.__removeExtraAlignmentsWithSameQueryIfOneOfThemIsInOtherList(list(alignmentsWithSameQuery), otherPairs)
-                              for _, alignmentsWithSameQuery in groupby(pairs, BenchmarkAlignedPair.querySiteIdSelector)]
+        alignmentsPerQuery = [
+            self.__removeExtraAlignmentsWithSameQueryIfOneOfThemIsInOtherList(list(alignmentsWithSameQuery), otherPairs)
+            for _, alignmentsWithSameQuery in groupby(pairs, BenchmarkAlignedPair.querySiteIdSelector)]
         return [a for alignments in alignmentsPerQuery for a in alignments]
 
     @staticmethod

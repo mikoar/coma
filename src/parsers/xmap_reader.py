@@ -6,8 +6,8 @@ from typing import List, TextIO, Iterable
 import pandas as pd
 from pandas import DataFrame, Series
 
-from src.args import Args
 from src.alignment.alignment_results import AlignmentResults
+from src.args import Args
 from src.correlation.bionano_alignment import BionanoAlignment
 from src.parsers.bionano_file_reader import BionanoFileReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairParser, BaseXmapAlignmentPairParser
@@ -47,7 +47,7 @@ class XmapReader:
             "HitEnum": "string",
             "QryLen": "float",
             "RefLen": "float",
-            "AlignedRest" : "string",
+            "AlignedRest": "string",
             "LabelChannel": "int",
             "Alignment": "string"
         }
@@ -72,12 +72,12 @@ class XmapReader:
             "HitEnum": row.cigarString,
             "QryLen": "{:.1f}".format(row.queryLength),
             "RefLen": "{:.1f}".format(row.referenceLength),
-            "AlignedRest" : "{}".format(row.alignedRest),
+            "AlignedRest": "{}".format(row.alignedRest),
             "LabelChannel": 1,
             "Alignment": "".join(
                 [f"({pair.reference.siteId},{pair.query.siteId})" for pair in row.alignedPairs]),
         } for row in alignmentResults.rows], index=pd.RangeIndex(start=1, stop=len(alignmentResults.rows) + 1))
-        dataFrame.to_csv(file, sep='\t', header=False, mode="a", line_terminator='\n')
+        dataFrame.to_csv(file, sep='\t', header=False, mode="a", lineterminator='\n')
 
     def __rowParserFactory(self):
         def parseRow(row: Series):
