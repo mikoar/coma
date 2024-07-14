@@ -208,7 +208,7 @@ class InitialAlignment(CorrelationResult):
                 correlation,
                 height=peakHeightThreshold,
                 width=(None, None),
-                prominence=0.05 * correlation.max())
+                prominence=0.05 * correlation.max(initial=0))
 
         correlationLength = len(correlation) * resolution
 

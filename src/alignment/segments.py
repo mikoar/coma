@@ -213,7 +213,8 @@ class _SegmentPairWithConflict(_SegmentPair):
             leftSubsegmentCharacteristics: _ConflictingSegmentCharacteristics,
             rightSubsegmentCharacteristics: _ConflictingSegmentCharacteristics):
         if len(leftSubsegmentCharacteristics.positions) == len(rightSubsegmentCharacteristics.positions):
-            optimalMergeIndex = self.__getOptimalMergeIndex(leftSubsegmentCharacteristics, rightSubsegmentCharacteristics)
+            optimalMergeIndex = self.__getOptimalMergeIndex(leftSubsegmentCharacteristics,
+                                                            rightSubsegmentCharacteristics)
             if optimalMergeIndex == 0:
                 return self.leftSegment - self.leftConflictingSubsegment, self.rightSegment
             elif optimalMergeIndex == len(leftSubsegmentCharacteristics.positions):
@@ -245,7 +246,7 @@ class _SegmentPairWithConflict(_SegmentPair):
             return self.leftSegment - self.leftConflictingSubsegment, self.rightSegment
 
 
-class _ConflictingSegmentCharacteristics():
+class _ConflictingSegmentCharacteristics:
     def __init__(self, positions: List, scores: List, indexes: List):
         self.positions = positions
         self.scores = scores

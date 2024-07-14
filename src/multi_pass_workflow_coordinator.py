@@ -36,7 +36,7 @@ class _MultiPassWorkflowCoordinator(_WorkflowCoordinator):
             AlignmentResults.filterOutSubsequentAlignmentsForSingleQuery(alignmentResultRowsSecondPass)
 
         if self.args.outputMode == 'separate':
-            self.saveAdditionalOutput(filteredSecondPassRows)
+            self.saveAdditionalOutput(filteredSecondPassRows, 1)
             return filteredFirstPassRows
 
         joinedRows, separateRows = AlignmentResults.resolve(
