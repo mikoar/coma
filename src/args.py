@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import NamedTuple, TextIO, List
+from typing import NamedTuple, TextIO, List, Literal
 
 
 class Args(NamedTuple):
@@ -25,10 +25,12 @@ class Args(NamedTuple):
     unmatchedPenalty: int
     minScore: int
     breakSegmentThreshold: int
+    maxDifference: int
     diagnosticsEnabled: bool
     benchmarkAlignmentFile: TextIO
     peaksCount: int
     disableProgressBar: bool
+    outputMode: Literal["best", "separate", "joined", "all", "single"]
 
     @staticmethod
     def parse(args: List[str] = None) -> Args:
@@ -49,6 +51,16 @@ class Args(NamedTuple):
         parser.add_argument("-o", "--output", dest="outputFile", nargs="?", type=argparse.FileType("w"),
                             default=sys.stdout,
                             help="XMAP output file path. Stdout is used if omitted.")
+
+        parser.add_argument("-oM", "--outputMode", dest="outputMode", type=str,
+                            default="best", choices=["best", "separate", "joined", "all"],
+                            help="Mode which should be used while creating output alignment file. There are 4 possible "
+                                 "options: 'best'- includes joined alignments when possible and best alignment based on "
+                                 "confidence when joined option is not available, 'separate'- creates two "
+                                 "separate files for alignments, 'joined'- joins alignments when it is possible and saves "
+                                 "rest to separate file, 'all'-creates 3 files, one with joint alignments, and two with all "
+                                 "obtained alignments, "
+                                 "single - performs only a single pass of alignment")
 
         parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=1400,
                             help="Scaling factor used to reduce the size of the vectorized form of the optical map "
@@ -107,6 +119,10 @@ class Args(NamedTuple):
 
         parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=1200,
                             help="Alignment segments can be split into two if their score drops below this threshold.")
+
+        parser.add_argument("-diff", "--maxDifference", dest="maxDifference", type=int, default=100000,
+                            help="Multiple alignments of the same query will be joined if difference between their "
+                                 "reference positions is less or equal this parameter.")
 
         parser.add_argument("-D", "--diagnostics", dest="diagnosticsEnabled", action="store_true",
                             help="Draws cross-correlation and alignment plots. When used, 'outputFile' parameter "

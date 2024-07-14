@@ -5,12 +5,8 @@ from typing import List, Iterator
 
 from p_tqdm import p_imap
 
-from src.alignment.aligner import Aligner, AlignerEngine
-from src.alignment.alignment_position_scorer import AlignmentPositionScorer
+from src.alignment.aligner import Aligner
 from src.alignment.alignment_results import AlignmentResultRow
-from src.alignment.segment_chainer import SegmentChainer
-from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
-from src.alignment.segments_factory import AlignmentSegmentsFactory
 from src.args import Args
 from src.correlation.optical_map import OpticalMap, InitialAlignment, CorrelationResult
 from src.correlation.peaks_selector import PeaksSelector, SelectedPeak
@@ -20,7 +16,7 @@ from src.extensions.messages import CorrelationResultMessage, InitialAlignmentMe
     MultipleAlignmentResultRowsMessage
 
 
-class WorkflowCoordinator:
+class _WorkflowCoordinator:
     def __init__(self, args: Args, primaryGenerator: SequenceGenerator, secondaryGenerator: SequenceGenerator,
                  aligner: Aligner, dispatcher: Dispatcher, peaksSelector: PeaksSelector):
         self.args = args
@@ -29,18 +25,6 @@ class WorkflowCoordinator:
         self.aligner = aligner
         self.dispatcher = dispatcher
         self.peaksSelector = peaksSelector
-
-    @staticmethod
-    def create(args: Args, dispatcher: Dispatcher):
-        primaryGenerator = SequenceGenerator(args.primaryResolution, args.primaryBlur)
-        secondaryGenerator = SequenceGenerator(args.secondaryResolution, args.secondaryBlur)
-        scorer = AlignmentPositionScorer(args.perfectMatchScore, args.distancePenaltyMultiplier, args.unmatchedPenalty)
-        segmentsFactory = AlignmentSegmentsFactory(args.minScore, args.breakSegmentThreshold)
-        alignerEngine = AlignerEngine(args.maxPairDistance)
-        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(SegmentChainer())
-        aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
-        return WorkflowCoordinator(
-            args, primaryGenerator, secondaryGenerator, aligner, dispatcher, PeaksSelector(args.peaksCount))
 
     def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
         return [a for a in p_imap(
@@ -64,7 +48,8 @@ class WorkflowCoordinator:
         return self.__getBestAlignment(alignmentResultRows)
 
     def __getPrimaryCorrelations(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> Iterator[InitialAlignment]:
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator, self.args.minPeakDistance, self.args.peaksCount)
+        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
+                                                          self.args.minPeakDistance, self.args.peaksCount)
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
 
         primaryCorrelationReverse = queryMap.getInitialAlignment(
@@ -88,6 +73,7 @@ class WorkflowCoordinator:
     def __getAlignmentRow(self, ic: InitialAlignment, sc: CorrelationResult, index: int):
         alignmentResultRow = self.aligner.align(sc.reference, sc.query, sc.peaks, sc.reverseStrand)
         message = AlignmentResultRowMessage(sc.reference, sc.query, alignmentResultRow, ic, index)
+        self.dispatcher.dispatch(message)
         return alignmentResultRow, message
 
     @staticmethod

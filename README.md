@@ -54,3 +54,18 @@ To run the software with default parameters and [sample data](https://bionano.co
 `
 coma -r ./data/NA12878_BSPQI/alignmolvref_contig24_r.cmap -q ./data/NA12878_BSPQI/alignmolvref_contig24_q.cmap -o ./alignment24.xmap
 `
+## Indels detection
+
+All scripts used during indels detection are stored in the "sv" folder. There are two possible paths used during this process. The first one analyzes places where the molecules were joined in the "joined" output version files.
+
+To use it, it is best to first run the program using the "all" output version and then pass three obtained output files as the input for the molecule_indels.py wrapper using the following command:
+
+`
+python molecule_indels.py -r reference.cmap -q query.cmap -j aligned_all.xmap -f aligned_all_1.xmap -s aligned_all_2.xmap -o joined_indels.txt
+`
+
+The second possible path focuses on the conflicts observed when more than one segment is created for a single molecule and they are joined to form one alignment. To identify indels in those places use created segments_indels.py wrapper which includes aligning molecules with COMA:
+
+`
+python segment_indels.py -r reference.cmap -q query.cmap -a aligned_output.xmap -s found_segments_output.csv -o segment_indels.txt
+`

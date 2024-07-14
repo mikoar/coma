@@ -15,7 +15,7 @@ from src.parsers.simulation_alignment_pair_parser import SimulationAlignmentPair
 from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
-from src.workflow_coordinator import WorkflowCoordinator
+from workflow_coordinator_factory import WorkflowCoordinatorFactory
 
 
 def main():
@@ -29,15 +29,17 @@ class Program:
         self.__readMaps()
         self.xmapReader = XmapReader(XmapAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
         self.dispatcher = Dispatcher(extensions)
-        self.workflowCoordinator = WorkflowCoordinator.create(args, self.dispatcher)
+        self.workflowCoordinator = WorkflowCoordinatorFactory(args, self.dispatcher, self.xmapReader).create()
         if args.diagnosticsEnabled:
             writer = DiagnosticsWriter(args.outputFile)
-            simulationDataReader = SimulationDataAsXmapReader(SimulationAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
+            simulationDataReader = SimulationDataAsXmapReader(
+                SimulationAlignmentPairWithDistanceParser(self.referenceMaps, self.queryMaps))
             benchmarkReader = AlignmentBenchmarkReader(self.xmapReader, simulationDataReader)
             self.dispatcher.addExtension(PrimaryCorrelationPlotter(writer))
             self.dispatcher.addExtension(SecondaryCorrelationPlotter(writer))
             self.dispatcher.addExtension(AlignmentPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
-            self.dispatcher.addExtension(MultipleAlignmentsPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
+            self.dispatcher.addExtension(
+                MultipleAlignmentsPlotter(writer, benchmarkReader, args.benchmarkAlignmentFile))
 
     def run(self):
         alignmentResultRows = self.workflowCoordinator.execute(self.referenceMaps, self.queryMaps)

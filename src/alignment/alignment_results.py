@@ -8,6 +8,7 @@ from typing import List
 from src.alignment.alignment_position import AlignedPair, NotAlignedPosition
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentsWithResolvedConflicts
 from src.alignment.segments import AlignmentSegment
+from src.correlation.optical_map import OpticalMap
 from src.diagnostic.benchmark_alignment import BenchmarkAlignment
 
 
@@ -27,11 +28,40 @@ class AlignmentResults:
     def create(referenceFilePath: str,
                queryFilePath: str,
                rows: List[AlignmentResultRow]):
+        return AlignmentResults(
+            referenceFilePath,
+            queryFilePath,
+            AlignmentResults.filterOutSubsequentAlignmentsForSingleQuery(rows))
+
+    @staticmethod
+    def filterOutSubsequentAlignmentsForSingleQuery(alignmentResultRows):
         rowsSortedByQueryIdThenByConfidence = \
-            sorted(sorted(rows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
+            sorted(sorted(alignmentResultRows, key=lambda r: r.confidence, reverse=True), key=lambda r: r.queryId)
         rowsWithoutSubsequentAlignmentsForSingleQuery = \
             [next(group) for _, group in itertools.groupby(rowsSortedByQueryIdThenByConfidence, lambda r: r.queryId)]
-        return AlignmentResults(referenceFilePath, queryFilePath, rowsWithoutSubsequentAlignmentsForSingleQuery)
+        return rowsWithoutSubsequentAlignmentsForSingleQuery
+
+    @staticmethod
+    def resolve(rows: List[AlignmentResultRow],
+                maxDifference: int):
+        separate = []
+        joined = []
+        for _, queries in itertools.groupby(sorted(rows, key=lambda r: r.referenceId),
+                                            lambda r: r.referenceId):
+            for _, group in itertools.groupby(sorted(list(queries), key=lambda r: r.queryId), lambda r: r.queryId):
+                group = list(group)
+                if len(group) == 1:
+                    separate.append(group[0])
+                else:
+                    if group[0].check_overlap(group[1], maxDifference):
+                        resolved = group[0].resolve(group[1])
+                        if resolved:
+                            joined.append(resolved)
+                        else:
+                            separate.extend(group)
+                    else:
+                        separate.extend(group)
+        return joined, separate
 
 
 class AlignmentResultRow(BenchmarkAlignment):
@@ -66,7 +96,8 @@ class AlignmentResultRow(BenchmarkAlignment):
                  referenceStartPosition: int = 0,
                  referenceEndPosition: int = 0,
                  reverseStrand: bool = False,
-                 confidence: float = 0.):
+                 confidence: float = 0.,
+                 alignedRest: bool = False):
 
         self.queryId = queryId
         self.referenceId = referenceId
@@ -79,6 +110,7 @@ class AlignmentResultRow(BenchmarkAlignment):
         self.queryLength = queryLength
         self.referenceLength = referenceLength
         self.segments = segments
+        self.alignedRest = alignedRest
 
     @property
     def positions(self):
@@ -143,3 +175,97 @@ class AlignmentResultRow(BenchmarkAlignment):
     def __hitToString(count, hit):
         x = f"{count}{hit.value}"
         return x
+
+    def getUnalignedFragments(self, queries: List[OpticalMap]) -> List[OpticalMap]:
+        """Function used to return unaligned fragments of the query
+        if those parts constitute more than 0.2 of the whole query
+
+        :param queries: whole query which is being currently aligned
+        :type queries: List[OpticalMap]
+        :return: Unaligned parts of query in question
+        :rtype: List[OpticalMap]
+        """
+        if abs(self.queryStartPosition - self.queryEndPosition) > 0.8 * self.queryLength:
+            return []
+        else:
+            query = next((opticMap for opticMap in queries if opticMap.moleculeId == self.queryId), None)
+            if self.queryStartPosition == 0.0 or self.queryEndPosition == 0.0:
+                # Aligned positions are at the end/start
+                if self.orientation == '+':
+                    positions = query.positions[query.positions.index(self.queryEndPosition) - 2:]
+                    shift = len(query.positions) - len(positions)
+                    if self.queryEndPosition == 0.0:
+                        return []
+                else:
+                    alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
+                    lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
+                    positions = query.positions[: lastPair.query.siteId + 3]
+                    shift = 0
+                return [OpticalMap(self.queryId, self.queryLength, positions, shift=shift)]
+            else:
+                # Case where aligned fragment is in the middle
+                if self.orientation == '+':
+                    positions1 = query.positions[: query.positions.index(self.queryStartPosition) + 3]
+                    positions2 = query.positions[query.positions.index(self.queryEndPosition) - 2:]
+
+                else:
+                    alignedPairs = sorted(p for s in self.segments for p in s.positions if isinstance(p, AlignedPair))
+                    firstPair = alignedPairs[0] if alignedPairs else AlignedPair.null
+                    lastPair = alignedPairs[-1] if alignedPairs else AlignedPair.null
+                    positions1 = query.positions[: lastPair.query.siteId + 3]
+                    positions2 = query.positions[firstPair.query.siteId - 2:]
+
+                if len(positions1) >= 7 and len(positions2) >= 7:
+                    return [OpticalMap(self.queryId, self.queryLength, positions1, shift=0),
+                            OpticalMap(self.queryId, self.queryLength, positions2,
+                                       shift=len(query.positions) - len(positions2))]
+                elif len(positions1) >= 7:
+                    return [OpticalMap(self.queryId, self.queryLength, positions1, shift=0)]
+                elif len(positions2) >= 7:
+                    return [OpticalMap(self.queryId, self.queryLength, positions2,
+                                       shift=len(query.positions) - len(positions2))]
+                else:
+                    return []
+
+    def setAlignedRest(self, alignedRest: bool):
+        self.alignedRest = alignedRest
+        return self
+
+    def check_overlap(self, alignedRest: AlignmentResultRow, maxDifference: int) -> bool:
+        """Function used to identify overlapping alignments of the same query
+
+        :param alignedRest: Other alignment of the same query
+        :type alignedRest: AlignmentResultRow
+        :param maxDifference: Maximum difference between reference positions of the
+        alignments if they are to be joint
+        :type maxDifference: int
+        :return: Whether those two alignments should be joined
+        :rtype: bool
+        """
+        if self.orientation == alignedRest.orientation and self.referenceId == alignedRest.referenceId:
+            diff = abs(max(self.referenceStartPosition, alignedRest.referenceStartPosition) - \
+                       min(self.referenceEndPosition, alignedRest.referenceEndPosition))
+            if diff <= maxDifference:
+                return True
+        return False
+
+    def resolve(self, alignedRest: AlignmentResultRow) -> AlignmentResultRow | None:
+        """Function used to resolve conflicts between two overlapping alignments of the same query
+
+        :param alignedRest: Other alignment of the same query
+        :type alignedRest: AlignmentResultRow
+        :return: Joint alignment with resolved conflicts
+        :rtype: AlignmentResultRow
+        """
+        if self.alignedPairs[0].reference.position < alignedRest.alignedPairs[0].reference.position:
+            pair = self.segments[0].checkForConflicts(alignedRest.segments[0])
+        else:
+            pair = alignedRest.segments[0].checkForConflicts(self.segments[0])
+
+        if resolution := pair.resolveConflict():
+            seg1, seg2 = resolution
+            notEmptySegments = [s for s in [seg1, seg2] if s != AlignmentSegment.empty]
+            return AlignmentResultRow.create(AlignmentSegmentsWithResolvedConflicts(notEmptySegments),
+                                             self.queryId, self.referenceId, self.queryLength, self.referenceLength,
+                                             self.reverseStrand)
+        return

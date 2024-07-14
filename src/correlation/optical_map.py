@@ -11,6 +11,8 @@ from scipy.signal import find_peaks, correlate
 from src.correlation.peak import Peak
 from src.correlation.sequence_generator import SequenceGenerator
 
+warnings.simplefilter("ignore")
+
 
 @dataclass(frozen=True)
 class PositionWithSiteId:
@@ -31,6 +33,7 @@ class OpticalMap:
     moleculeId: int
     length: int
     positions: List[int]
+    shift: int = 0
 
     def trim(self):
         if not self.positions:
@@ -41,13 +44,13 @@ class OpticalMap:
 
     def getPositionsWithSiteIds(self, reverse: bool = False):
         if reverse:
-            i = len(self.positions)
+            i = len(self.positions) + self.shift
             moleculeEndPosition = self.length - 1
             for position in self.positions[::-1]:
                 yield PositionWithSiteId(i, moleculeEndPosition - position)
                 i -= 1
         else:
-            i = 1
+            i = 1 + self.shift
             for position in self.positions:
                 yield PositionWithSiteId(i, position)
                 i += 1
@@ -73,7 +76,8 @@ class OpticalMap:
                 rel_height=0.5,
                 distance=(minPeakDistance / sequenceGenerator.resolution))
 
-        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, peaksCount, reverseStrand,
+        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, peaksCount,
+                                       reverseStrand,
                                        sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
                                        len(correlation) * sequenceGenerator.resolution)
 
@@ -145,8 +149,10 @@ class CorrelationResult:
                 for position, height, leftBase, rightBase
                 in zip(toRelativeGenomicPositions(peakPositions[bestPeaksIndices], resolution, correlationStart),
                        peakProperties["peak_heights"][bestPeaksIndices],
-                       toRelativeGenomicPositions(peakProperties["left_ips"][bestPeaksIndices], resolution, correlationStart),
-                       toRelativeGenomicPositions(peakProperties["right_ips"][bestPeaksIndices], resolution, correlationStart))]
+                       toRelativeGenomicPositions(peakProperties["left_ips"][bestPeaksIndices], resolution,
+                                                  correlationStart),
+                       toRelativeGenomicPositions(peakProperties["right_ips"][bestPeaksIndices], resolution,
+                                                  correlationStart))]
 
     @staticmethod
     def rootMeanSquare(array: np.ndarray) -> float:
@@ -172,13 +178,15 @@ class InitialAlignment(CorrelationResult):
                resolution: int = 1,
                blur: int = 0,
                correlationStart: int = 0,
-               correlationEnd: int = None):
+               correlationEnd: int = None,
+               peakHeightThreshold: float = None):
         noiseLevel = InitialAlignment.rootMeanSquare(correlation)
         return InitialAlignment(
             correlation,
             query,
             reference,
-            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel, peaksCount),
+            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel,
+                                         peaksCount),
             reverseStrand,
             noiseLevel,
             resolution,
