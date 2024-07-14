@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-warnings.simplefilter("ignore")
 from dataclasses import dataclass
 from math import ceil
 from typing import List
@@ -11,6 +10,8 @@ from scipy.signal import find_peaks, correlate
 
 from src.correlation.peak import Peak
 from src.correlation.sequence_generator import SequenceGenerator
+
+warnings.simplefilter("ignore")
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,8 @@ class OpticalMap:
                 rel_height=0.5,
                 distance=(minPeakDistance / sequenceGenerator.resolution))
 
-        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, peaksCount, reverseStrand,
+        return InitialAlignment.create(correlation, self, reference, peakPositions, peakProperties, peaksCount,
+                                       reverseStrand,
                                        sequenceGenerator.resolution, sequenceGenerator.blurRadius, 0,
                                        len(correlation) * sequenceGenerator.resolution)
 
@@ -147,8 +149,10 @@ class CorrelationResult:
                 for position, height, leftBase, rightBase
                 in zip(toRelativeGenomicPositions(peakPositions[bestPeaksIndices], resolution, correlationStart),
                        peakProperties["peak_heights"][bestPeaksIndices],
-                       toRelativeGenomicPositions(peakProperties["left_ips"][bestPeaksIndices], resolution, correlationStart),
-                       toRelativeGenomicPositions(peakProperties["right_ips"][bestPeaksIndices], resolution, correlationStart))]
+                       toRelativeGenomicPositions(peakProperties["left_ips"][bestPeaksIndices], resolution,
+                                                  correlationStart),
+                       toRelativeGenomicPositions(peakProperties["right_ips"][bestPeaksIndices], resolution,
+                                                  correlationStart))]
 
     @staticmethod
     def rootMeanSquare(array: np.ndarray) -> float:
@@ -174,13 +178,15 @@ class InitialAlignment(CorrelationResult):
                resolution: int = 1,
                blur: int = 0,
                correlationStart: int = 0,
-               correlationEnd: int = None):
+               correlationEnd: int = None,
+               peakHeightThreshold: float = None):
         noiseLevel = InitialAlignment.rootMeanSquare(correlation)
         return InitialAlignment(
             correlation,
             query,
             reference,
-            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel, peaksCount),
+            InitialAlignment.createPeaks(peakPositions, peakProperties, resolution, correlationStart, noiseLevel,
+                                         peaksCount),
             reverseStrand,
             noiseLevel,
             resolution,
