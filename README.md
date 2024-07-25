@@ -21,7 +21,7 @@ using the following commands:
 git clone https://github.com/mikoar/coma
 cd ./coma/
 python3 -m venv env
-source env /bin/activate
+source env/bin/activate
 pip install -e .
 coma --help
 ```
