@@ -15,7 +15,7 @@ from src.parsers.simulation_alignment_pair_parser import SimulationAlignmentPair
 from src.parsers.simulation_data_as_xmap_reader import SimulationDataAsXmapReader
 from src.parsers.xmap_alignment_pair_parser import XmapAlignmentPairWithDistanceParser
 from src.parsers.xmap_reader import XmapReader
-from workflow_coordinator_factory import WorkflowCoordinatorFactory
+from src.workflow_coordinator_factory import WorkflowCoordinatorFactory
 
 
 def main():

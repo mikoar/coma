@@ -1,15 +1,15 @@
-from alignment.aligner import AlignerEngine, Aligner
-from alignment.alignment_position_scorer import AlignmentPositionScorer
-from alignment.segment_chainer import SegmentChainer, SequentialityScorer
-from alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
-from alignment.segments_factory import AlignmentSegmentsFactory
-from args import Args
-from correlation.peaks_selector import PeaksSelector
-from correlation.sequence_generator import SequenceGenerator
-from extensions.dispatcher import Dispatcher
-from multi_pass_workflow_coordinator import _MultiPassWorkflowCoordinator
-from parsers.xmap_reader import XmapReader
-from workflow_coordinator import _WorkflowCoordinator
+from src.alignment.aligner import AlignerEngine, Aligner
+from src.alignment.alignment_position_scorer import AlignmentPositionScorer
+from src.alignment.segment_chainer import SegmentChainer, SequentialityScorer
+from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
+from src.alignment.segments_factory import AlignmentSegmentsFactory
+from src.args import Args
+from src.correlation.peaks_selector import PeaksSelector
+from src.correlation.sequence_generator import SequenceGenerator
+from src.extensions.dispatcher import Dispatcher
+from src.multi_pass_workflow_coordinator import _MultiPassWorkflowCoordinator
+from src.parsers.xmap_reader import XmapReader
+from src.workflow_coordinator import _WorkflowCoordinator
 
 
 class WorkflowCoordinatorFactory:

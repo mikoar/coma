@@ -1,15 +1,15 @@
 import os
 from typing import List
 
-from alignment.aligner import Aligner
-from alignment.alignment_results import AlignmentResultRow, AlignmentResults
-from args import Args
-from correlation.optical_map import OpticalMap
-from correlation.peaks_selector import PeaksSelector
-from correlation.sequence_generator import SequenceGenerator
-from extensions.dispatcher import Dispatcher
-from parsers.xmap_reader import XmapReader
-from workflow_coordinator import _WorkflowCoordinator
+from src.alignment.aligner import Aligner
+from src.alignment.alignment_results import AlignmentResultRow, AlignmentResults
+from src.args import Args
+from src.correlation.optical_map import OpticalMap
+from src.correlation.peaks_selector import PeaksSelector
+from src.correlation.sequence_generator import SequenceGenerator
+from src.extensions.dispatcher import Dispatcher
+from src.parsers.xmap_reader import XmapReader
+from src.workflow_coordinator import _WorkflowCoordinator
 
 
 class _MultiPassWorkflowCoordinator(_WorkflowCoordinator):
