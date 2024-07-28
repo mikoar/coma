@@ -16,7 +16,7 @@ def main():
     parser.add_argument("-a", "--alignedOutput", dest="alignedFile", type=str, required=True,
                         help="Name of output file with COMA alignments")
     parser.add_argument("-s", "--segmentsOutput", dest="segmentsFile", type=str, required=True,
-                        help="Name of output file with segments created during COMA workflow")
+                        help="Name of output file with multiple segments created during COMA workflow")
     parser.add_argument("-o", "--output", dest="outputFile", nargs="?",
                         type=str, default="segment_indels.txt")
     parser.add_argument("-ma", "--secondaryMargin", dest="secondaryMargin", type=int, default=16000,
@@ -32,6 +32,49 @@ def main():
     parser.add_argument("-D", "--diagnostics", dest="diagnosticsEnabled", action="store_true",
                         help="Draws cross-correlation and alignment plots. When used, 'alignmentFile' parameter "
                              "is required")
+    parser.add_argument("-r1", "--primaryResolution", dest="primaryResolution", type=int, default=1400,
+                        help="Scaling factor used to reduce the size of the vectorized form of the optical map "
+                                "in the initial cross-correlation seeding step.")
+    parser.add_argument("-b1", "--primaryBlur", dest="primaryBlur", type=int, default=1,
+                        help="Extends each label in the vectorized form of the optical map in both directions "
+                                "by given number of positions in the initial cross-correlation seeding step "
+                                "in order to increase the chance of overlap. "
+                                "Final width of each label is equal to 2b + 1.")
+    parser.add_argument("-p", "--peaksCount", dest="peaksCount", type=int, default=3,
+                        help="Number of peaks found for each query molecule against all reference molecules in the "
+                                "first cross-correlation run that are selected for further steps - the second "
+                                "cross-correlation run and alignment creation. Then the alignment with the highest "
+                                "score is returned, one alignment record per query molecule at most.")
+    parser.add_argument("-md", "--minPeakDistance", dest="minPeakDistance", type=int, default=20000,
+                        help="Minimum distance between peaks identified in the initial cross-correlation. "
+                                "For more details see parameter distance of scipy.signal._peak_finding.find_peaks.")
+    parser.add_argument("-r2", "--secondaryResolution", dest="secondaryResolution", type=int, default=100,
+                        help="Scaling factor used to reduce the size of the vectorized form of the optical map "
+                                "in the second cross-correlation run.")
+    parser.add_argument("-b2", "--secondaryBlur", dest="secondaryBlur", type=int, default=4,
+                        help="Extends each label in the vectorized form of the optical map in both directions "
+                                "by given number of positions in the second cross-correlation run "
+                                "in order to increase the chance of overlap. "
+                                "Final width of each label is equal to 2b + 1.")
+    parser.add_argument("-d", "--maxPairDistance", dest="maxPairDistance", type=int, default=1500,
+                        help="Maximum distance between aligned pairs relatively to the cross-correlation lag.")
+    parser.add_argument("-sp", "--perfectMatchScore", dest="perfectMatchScore", type=int, default=1000,
+                        help="Score value given to an aligned pair with 0 distance between reference and query "
+                                "positions.")
+    parser.add_argument("-dp", "--distancePenaltyMultiplier", dest="distancePenaltyMultiplier", type=float,
+                        default=1., help="Multiplier applied to the distance between reference and query positions "
+                                            "of an aligned pair that reduces the pair's score.")
+    parser.add_argument("-su", "--unmatchedPenalty", dest="unmatchedPenalty", type=int, default=-250,
+                        help="Penalty to a segment score for each unpaired reference or query position.")
+    parser.add_argument("-ms", "--minScore", dest="minScore", type=int, default=1000,
+                        help="Minimum score of a segment.")
+    parser.add_argument("-bs", "--breakSegmentThreshold", dest="breakSegmentThreshold", type=int, default=1200,
+                        help="Alignment segments can be split into two if their score drops below this threshold.")
+    parser.add_argument("-diff", "--maxDifference", dest="maxDifference", type=int, default=100000,
+                        help="Multiple alignments of the same query will be joined if difference between their "
+                                "reference positions is less or equal this parameter.")
+    parser.add_argument("-pb", "--disableProgressBar", dest="disableProgressBar", action="store_true",
+                        help="Disables the progress bar.")
 
     args = parser.parse_args()  # type: ignore
     run(args)
@@ -57,6 +100,7 @@ class SegmentsCatcher(Extension):
                         f"{message.alignment.queryEndPosition};"
                         f"{message.alignment.referenceStartPosition};"
                         f"{message.alignment.referenceEndPosition};"
+                        f"{message.alignment.confidence};"
                         f"{peak.score:.2f};"
                         f"{peak.position}\n")
                 
@@ -96,6 +140,7 @@ def find_conflict_place(multiple_segments: dict, alignmentFile: str) -> dict:
     alignments = read_alignments_file(alignmentFile)
     for chromosme in alignments.values():
         for alignment in chromosme:
+            # Analyze only alignments with multiple segments
             if alignment.queryId in multiple_segments.keys():
                 added = False
                 if len(multiple_segments[alignment.queryId]) == 2:
@@ -113,23 +158,28 @@ def find_conflict_place(multiple_segments: dict, alignmentFile: str) -> dict:
                     if added == False:
                         breakage_places[int(alignment.queryId)] = [[index, pair]]
                 elif len(multiple_segments[alignment.queryId]) > 2:
-                    if str(alignment.alignedPairs[0]) == multiple_segments[alignment.queryId][0][0]:
-                        first = multiple_segments[alignment.queryId][0]
-                        if added == False:
-                            for index, pair in enumerate(first):
-                                if str(alignment.alignedPairs[index]) != pair and added is False:
-                                    breakage_places[int(alignment.queryId)] = [[index, pair]]
-                                    added = True          
-                        if added == False:
-                            breakage_places[int(alignment.queryId)] = [[index, pair]]
-                            if str(alignment.alignedPairs[index + 1]) == multiple_segments[alignment.queryId][1][0]:
-                                added = False
-                                for second_index, pair in enumerate(multiple_segments[alignment.queryId][1]):
-                                    if str(alignment.alignedPairs[index + second_index + 1]) != pair and added is False:
-                                        breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
+                    # Look for matching alignments
+                    for segments_index in range((len( multiple_segments[alignment.queryId])-1)):
+                        if str(alignment.alignedPairs[0]) == multiple_segments[alignment.queryId][segments_index][0]:
+                            first = multiple_segments[alignment.queryId][segments_index]
+                            if added == False:
+                                for index, pair in enumerate(first):
+                                    if str(alignment.alignedPairs[index]) != pair and added is False:
+                                        breakage_places[int(alignment.queryId)] = [[index, pair]]
                                         added = True
-                                if added == False:
-                                    breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
+                            # No breakage found during iteration of aligned pairs and found segment
+                            if added == False:
+                                breakage_places[int(alignment.queryId)] = [[index, pair]]
+                                # Looking for other breakage points- make sure that alignment extends over first one
+                                if len(alignment.alignedPairs) < index +1:
+                                    if str(alignment.alignedPairs[index + 1]) == multiple_segments[alignment.queryId][segments_index+1][0]:
+                                        added = False
+                                        for second_index, pair in enumerate(multiple_segments[alignment.queryId][segments_index+1]):
+                                            if str(alignment.alignedPairs[index + second_index + 1]) != pair and added is False:
+                                                breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
+                                                added = True
+                                        if added == False:
+                                            breakage_places[int(alignment.queryId)].append([index + second_index + 1, pair])
     return breakage_places
 
 def find_segments_indels(small_df: pd.DataFrame) -> dict:
@@ -143,11 +193,11 @@ def find_segments_indels(small_df: pd.DataFrame) -> dict:
     """
     segment_d = {}
     for _, row in small_df.iterrows():
-        segemnts = row["segment"]
-        segemnts = segemnts.split("],")
-        segemnts = [i for i in segemnts if i not in [' score: 0.0, positions: [', ' score: 0.0, positions: []]']]
-        if len(segemnts) > 1:
-            for i in segemnts:
+        segments = row["segment"]
+        segments = segments.split("],")
+        segments = [i for i in segments if i not in [' score: 0.0, positions: [', ' score: 0.0, positions: []]']]
+        if len(segments) > 1:
+            for i in segments:
                 if row["queryId"] not in segment_d.keys():
                     if len([pair for pair in re.findall(r'\(.*?\)', i) if "-" not in pair]) > 0:
                         segment_d[row["queryId"]] = [[pair for pair in re.findall(r'\(.*?\)', i) if "-" not in pair]]
@@ -206,27 +256,47 @@ def look_for_indels_in_breakage(alignment_dict: dict, reference_dict: dict,
 def run(args):
     segments_file = args.segmentsFile
     with open(segments_file, "w") as f:
-        f.write("queryId;reverseStrand;segmentNb;segment;segmentQueryStart;segmentQueryEnd;segmentReferenceStart;segmentReferenceEnd;score;peakPosition\n")
+        f.write("queryId;reverseStrand;segmentNb;segment;segmentQueryStart;segmentQueryEnd;segmentReferenceStart;segmentReferenceEnd;alignmentConfidence;score;peakPosition\n")
 
     action_args = []
     if args.diagnosticsEnabled:
         action_args.append("-D")
+    if args.disableProgressBar:
+        action_args.append("-pb")
     program_args = Args.parse([
         "-q", args.queryFile,
         "-r", args.referenceFile,
         "-o", args.alignedFile,
+        "-r1", str(args.primaryResolution),
+        "-b1", str(args.primaryBlur),
+        "-p", str(args.peaksCount),
+        "-md", str(args.minPeakDistance),
+        "-r2", str(args.secondaryResolution),
+        "-b2", str(args.secondaryBlur),
+        "-d", str(args.maxPairDistance),
+        "-sp", str(args.perfectMatchScore),
+        "-dp", str(args.distancePenaltyMultiplier),
+        "-su", str(args.unmatchedPenalty),
+        "-ms", str(args.minScore),
+        "-bs", str(args.breakSegmentThreshold),
+        "-diff", str(args.maxDifference),
         "-ma", str(args.secondaryMargin),
         "-pt", str(args.peakHeightThreshold),
         "-sj", str(args.segmentJoinMultiplier),
-        "-ss", str(args.sequentialityScore)
+        "-ss", str(args.sequentialityScore),
     ] + action_args)
+
     coma = Program(program_args, [SegmentsCatcher(segments_file)])
     coma.run()
 
     small_df = read_segments_file(segments_file)
-    more_segemnts = find_segments_indels(small_df)
+    more_segments = find_segments_indels(small_df)
+    
+    with open(segments_file, "w") as f:
+        f.write("queryId;reverseStrand;segmentNb;segment;segmentQueryStart;segmentQueryEnd;segmentReferenceStart;segmentReferenceEnd;alignmentConfidence;score;peakPosition\n")
+    small_df.to_csv(segments_file, index=False)
 
-    breakage_points = find_conflict_place(more_segemnts, args.alignedFile)
+    breakage_points = find_conflict_place(more_segments, args.alignedFile)
 
     reference_dict, query_dict, alignment_referenceId = read_all_files(reference_file=args.referenceFile,
                                                                        alignment_file=args.alignedFile,
