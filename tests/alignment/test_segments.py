@@ -15,7 +15,8 @@ def test_conflicts_noConflicts_returnsUnchanged():
     segment1 = AlignmentSegmentStub.createFromPairs([(4, 4, 100.), (5, 5, 100.), (6, 6, 100.)])
     resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
 
-    segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
+    qPositions = segment0.getQueryLabels().positions + segment1.getQueryLabels().positions 
+    segmentsAfter = resolver.resolveConflicts([segment0, segment1], sorted(qPositions)).segments
 
     assert segmentsAfter[0] == segment0
     assert segmentsAfter[1] == segment1
@@ -37,7 +38,8 @@ def test_conflicts_noConflicts_returnsUnchanged():
 def test_conflicts_withEmptySegment_returnsUnchanged(
         segment0, segment1, expectedSegments: List[AlignmentSegment]):
     resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
-    segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
+    qPositions = segment0.getQueryLabels().positions + segment1.getQueryLabels().positions 
+    segmentsAfter = resolver.resolveConflicts([segment0, segment1], sorted(qPositions)).segments
     assert segmentsAfter == expectedSegments
 
 
@@ -114,7 +116,8 @@ checkForConflicts_overlappingSegments_trimsWhileMaxingScore_params = [
 def test_conflicts_overlappingSegments_trimsWhileMaxingScore(
         segment0: AlignmentSegment, segment1: AlignmentSegment, expectedSegments: List[AlignmentSegment]):
     resolver = AlignmentSegmentConflictResolver(MockSegmentChainer())
-    segmentsAfter = resolver.resolveConflicts([segment0, segment1]).segments
+    qPositions = segment0.getQueryLabels().positions + segment1.getQueryLabels().positions 
+    segmentsAfter = resolver.resolveConflicts([segment0, segment1], sorted(qPositions)).segments
     assert segmentsAfter == expectedSegments
 
 

@@ -58,8 +58,8 @@ def write_indel_file(indels_dict:dict, alignment_file_name:str, file_name:str="i
     lines_sorted_del = sorted(lines_deletions, key=operator.itemgetter(1, 3))
     lines_sorted_ins = sorted(lines_insertions, key=operator.itemgetter(1, 3))
 
-    lines_deletions_sorted = cluster_indels(lines_sorted_del)
-    lines_insertions_sorted = cluster_indels(lines_sorted_ins)
+    lines_deletions_sorted = cluster_indels(lines_sorted_del, blur=-1)
+    lines_insertions_sorted = cluster_indels(lines_sorted_ins, blur=-1)
     lines_sorted = sorted(lines_deletions_sorted + lines_insertions_sorted,
                           key=operator.itemgetter(1, 3))
 

@@ -5,7 +5,7 @@ from typing import List, Iterator
 
 from p_tqdm import p_imap
 
-from src.alignment.aligner import Aligner
+from src.alignment.aligner import Aligner, ChainBuilder
 from src.alignment.alignment_results import AlignmentResultRow
 from src.args import Args
 from src.correlation.optical_map import OpticalMap, InitialAlignment, CorrelationResult
@@ -18,7 +18,7 @@ from src.extensions.messages import CorrelationResultMessage, InitialAlignmentMe
 
 class _WorkflowCoordinator:
     def __init__(self, args: Args, primaryGenerator: SequenceGenerator, secondaryGenerator: SequenceGenerator,
-                 aligner: Aligner, dispatcher: Dispatcher, peaksSelector: PeaksSelector):
+                 aligner: Aligner | ChainBuilder, dispatcher: Dispatcher, peaksSelector: PeaksSelector):
         self.args = args
         self.primaryGenerator = primaryGenerator
         self.secondaryGenerator = secondaryGenerator
@@ -26,16 +26,21 @@ class _WorkflowCoordinator:
         self.dispatcher = dispatcher
         self.peaksSelector = peaksSelector
 
-    def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap]) -> List[AlignmentResultRow]:
+    def execute(self, referenceMaps: List[OpticalMap], queryMaps: List[OpticalMap], isFirstPass: bool=True) -> List[AlignmentResultRow]:
+        self.aligner.setFirstPass(isFirstPass)
+        scRange = self.args.scalingRange if isFirstPass else 0
+        scStep = self.args.scalingStep if self.args.scalingStep is not None else self.args.primaryResolution
+        scParameters = scRange, scStep
         return [a for a in p_imap(
             lambda x: self.__align(*x),
-            list((referenceMaps, q) for q in queryMaps),
+            list((referenceMaps, q, scParameters) for q in queryMaps),
             num_cpus=self.args.numberOfCpus,
             disable=self.args.disableProgressBar)
                 if a is not None and a.alignedPairs]
 
-    def __align(self, referenceMaps: List[OpticalMap], queryMap: OpticalMap) -> AlignmentResultRow | None:
-        primaryCorrelations = chain.from_iterable(self.__getPrimaryCorrelations(r, queryMap) for r in referenceMaps)
+    def __align(self, referenceMaps: List[OpticalMap], queryMap: OpticalMap, scParameters = (0,0)) -> AlignmentResultRow | None:
+        primaryCorrelations = chain.from_iterable(self.__getPrimaryCorrelations(r, q)
+                                                  for q in queryMap.getScaledMaps(*scParameters) for r in referenceMaps)
 
         bestPrimaryCorrelationPeaks = self.peaksSelector.selectPeaks(primaryCorrelations)
 
@@ -48,12 +53,14 @@ class _WorkflowCoordinator:
         return self.__getBestAlignment(alignmentResultRows)
 
     def __getPrimaryCorrelations(self, referenceMap: OpticalMap, queryMap: OpticalMap) -> Iterator[InitialAlignment]:
-        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, self.primaryGenerator,
-                                                          self.args.minPeakDistance, self.args.peaksCount)
+        primaryCorrelation = queryMap.getInitialAlignment(referenceMap, 
+                                                          self.primaryGenerator,
+                                                          self.args.minPeakDistance, 
+                                                          self.args.primaryPeaksCount)
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelation))
 
         primaryCorrelationReverse = queryMap.getInitialAlignment(
-            referenceMap, self.primaryGenerator, self.args.minPeakDistance, self.args.peaksCount, reverseStrand=True)
+            referenceMap, self.primaryGenerator, self.args.minPeakDistance, self.args.primaryPeaksCount, reverseStrand=True)
 
         self.dispatcher.dispatch(InitialAlignmentMessage(primaryCorrelationReverse))
         if any(primaryCorrelation.peaks):
@@ -65,7 +72,8 @@ class _WorkflowCoordinator:
         secondaryCorrelation = selectedPeak.primaryCorrelation.refine(selectedPeak.peak.position,
                                                                       self.secondaryGenerator,
                                                                       self.args.secondaryMargin,
-                                                                      self.args.peakHeightThreshold)
+                                                                      self.args.peakHeightThreshold,
+                                                                      self.args.secondaryPeaksCount)
 
         self.dispatcher.dispatch(CorrelationResultMessage(selectedPeak.primaryCorrelation, secondaryCorrelation, index))
         return selectedPeak.primaryCorrelation, secondaryCorrelation

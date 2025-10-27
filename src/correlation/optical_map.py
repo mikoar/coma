@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from math import ceil
+# from math import ceil
 from typing import List
 
 import numpy as np
@@ -24,7 +24,8 @@ class PositionWithSiteId:
 
 
 def toRelativeGenomicPositions(correlationCoordinates: np.ndarray, resolution: int, start: int = 0) -> np.ndarray:
-    resolutionAdjustment = ceil(resolution / 2) - 1
+    # resolutionAdjustment = ceil(resolution / 2) - 1
+    resolutionAdjustment = resolution // 2
     return correlationCoordinates * resolution + (resolutionAdjustment + start)
 
 
@@ -34,6 +35,8 @@ class OpticalMap:
     length: int
     positions: List[int]
     shift: int = 0
+    bpShift: int = 0
+    scFactor: float = 1
 
     def trim(self):
         if not self.positions:
@@ -42,10 +45,53 @@ class OpticalMap:
                           self.positions[-1] - self.positions[0] + 1,
                           list(map(lambda p: p - self.positions[0], self.positions)))
 
+    def getScaledMaps(self, scalingRange: float = 0, step: int = 1000):
+        yield self
+        stretch = 0
+        while stretch < scalingRange*self.length:
+            stretch += step
+            for i in [-1, 1]:
+                scLength = self.length + i*stretch
+                scFactor = scLength/self.length
+                scPositions =  [int(pos*scFactor) for pos in self.positions]
+                yield OpticalMap(self.moleculeId,
+                                 scLength,
+                                 scPositions,
+                                 self.shift,
+                                 self.bpShift,
+                                 scFactor)
+
+    def getAbsolutePosition(self, position: int, reverse: bool):
+        moleculeEndPosition = self.length + 1
+        if reverse:
+            position = moleculeEndPosition - position
+        return position + self.bpShift
+
+    def getSubMap(self, reverse: bool, start: int = 0, end: int = None):
+        moleculeEndPosition = self.length + 1
+        if end is None:
+            end = moleculeEndPosition
+        if reverse:
+            start, end = moleculeEndPosition - end, moleculeEndPosition - start
+        shift = self.shift
+        bpShift = self.bpShift + start
+        selPositions = []
+        for pos in self.positions:
+            if pos<start:
+                shift += 1
+            elif pos<end:
+                selPositions.append(int(pos-start))
+        return OpticalMap(
+            int(self.moleculeId), 
+            int(end - start), 
+            selPositions,
+            shift,
+            bpShift)
+
     def getPositionsWithSiteIds(self, reverse: bool = False):
         if reverse:
             i = len(self.positions) + self.shift
-            moleculeEndPosition = self.length - 1
+            moleculeEndPosition = self.length + 1
             for position in self.positions[::-1]:
                 yield PositionWithSiteId(i, moleculeEndPosition - position)
                 i -= 1
@@ -82,8 +128,10 @@ class OpticalMap:
                                        len(correlation) * sequenceGenerator.resolution)
 
     def getSequence(self, sequenceGenerator: SequenceGenerator, reverseStrand=False, start: int = 0, end: int = None):
-        sequence = sequenceGenerator.positionsToSequence(self.positions, start, end)
-        return sequence[::-1] if reverseStrand else sequence
+        if end is None:
+            end = self.length
+        positions = [end-pos for pos in self.positions] if reverseStrand else self.positions
+        return sequenceGenerator.positionsToSequence(positions, start, end)
 
     @staticmethod
     def __getCorrelation(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
@@ -194,8 +242,11 @@ class InitialAlignment(CorrelationResult):
             correlationStart,
             correlationEnd or len(correlation) - 1)
 
-    def refine(self, peakPosition: int, sequenceGenerator: SequenceGenerator, secondaryMargin: int = 8000,
-               peakHeightThreshold: float = 15.):
+    def refine(self, peakPosition: int, 
+               sequenceGenerator: SequenceGenerator, 
+               secondaryMargin: int = 8000,
+               peakHeightThreshold: float = 15.,
+               peaksCount: int = 10):
         querySequence = self.query.getSequence(sequenceGenerator, self.reverseStrand)
         resolution = sequenceGenerator.resolution
         referenceStart = peakPosition - secondaryMargin
@@ -213,7 +264,7 @@ class InitialAlignment(CorrelationResult):
         correlationLength = len(correlation) * resolution
 
         return CorrelationResult.create(correlation, self.query, self.reference, peakPositions, peakProperties,
-                                        10, self.reverseStrand, resolution, sequenceGenerator.blurRadius,
+                                        peaksCount, self.reverseStrand, resolution, sequenceGenerator.blurRadius,
                                         referenceStart, referenceStart + correlationLength, peakHeightThreshold)
 
     @staticmethod

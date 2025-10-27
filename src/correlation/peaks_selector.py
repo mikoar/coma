@@ -16,6 +16,5 @@ class PeaksSelector:
         self.count = count
 
     def selectPeaks(self, correlations: Iterator[InitialAlignment]) -> List[SelectedPeak]:
-        peaks = (SelectedPeak(c, p) for c in correlations for p in c.peaks)
-        topPeaks = sorted(peaks, key=lambda sp: sp.peak.score, reverse=True)[0:self.count]
-        return topPeaks
+        sortedPeaks = sorted((SelectedPeak(c, p) for c in correlations for p in c.peaks), key=lambda sp: sp.peak.score, reverse=True)
+        return sortedPeaks[:self.count]

@@ -1,5 +1,6 @@
-from src.alignment.aligner import AlignerEngine, Aligner
+from src.alignment.aligner import AlignerEngine, Aligner, ChainBuilder
 from src.alignment.alignment_position_scorer import AlignmentPositionScorer
+from src.alignment.chain_scorer import ChainScorer
 from src.alignment.segment_chainer import SegmentChainer, SequentialityScorer
 from src.alignment.segment_with_resolved_conflicts import AlignmentSegmentConflictResolver
 from src.alignment.segments_factory import AlignmentSegmentsFactory
@@ -24,20 +25,25 @@ class WorkflowCoordinatorFactory:
         scorer = AlignmentPositionScorer(
             self.args.perfectMatchScore,
             self.args.distancePenaltyMultiplier,
-            self.args.unmatchedPenalty)
-        segmentsFactory = AlignmentSegmentsFactory(self.args.minScore, self.args.breakSegmentThreshold)
-        alignerEngine = AlignerEngine(self.args.maxPairDistance)
-        alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(
-            SegmentChainer(
-                SequentialityScorer(self.args.segmentJoinMultiplier, self.args.sequentialityScore)))
-        aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
+            self.args.unmatchedPenalty,
+            self.args.endReachingScore)
+        if self.args.sequentialityScore==2:
+            chainScorer = ChainScorer(self.args.segmentCombinePenalty, self.args.segmentJoinMultiplier, self.args.minScore, self.args.minSubsequentScore)
+            aligner = ChainBuilder(scorer, chainScorer, self.args.secondaryResolution*self.args.secondaryBlur)
+        else:
+            segmentsFactory = AlignmentSegmentsFactory(self.args.minScore, self.args.breakSegmentThreshold)
+            alignerEngine = AlignerEngine(self.args.maxPairDistance)
+            alignmentSegmentConflictResolver = AlignmentSegmentConflictResolver(
+                SegmentChainer(
+                    SequentialityScorer(self.args.segmentJoinMultiplier, self.args.sequentialityScore, self.args.segmentCombinePenalty, self.args.secondaryMargin)))
+            aligner = Aligner(scorer, segmentsFactory, alignerEngine, alignmentSegmentConflictResolver)
         if self.args.outputMode == "single":
             return _WorkflowCoordinator(
                 self.args, primaryGenerator,
                 secondaryGenerator,
                 aligner,
                 self.dispatcher,
-                PeaksSelector(self.args.peaksCount))
+                PeaksSelector(self.args.primaryPeaksCount))
         else:
             return _MultiPassWorkflowCoordinator(
                 self.args,
@@ -45,5 +51,5 @@ class WorkflowCoordinatorFactory:
                 secondaryGenerator,
                 aligner,
                 self.dispatcher,
-                PeaksSelector(self.args.peaksCount),
+                PeaksSelector(self.args.primaryPeaksCount),
                 self.xmapReader)

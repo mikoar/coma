@@ -4,25 +4,32 @@ from typing import List
 import numpy as np
 
 
+# def vectorisePositions(positions: List[int], resolution: int = 100, start: int = 0, end: int = None):
+#     if not isinstance(resolution, int) or resolution < 1:
+#         raise ValueError(resolution)
+#     end = end or positions[-1]
+#     window_start = start
+#     window_end = window_start + resolution
+#     for position in positions:
+#         if position < window_start:
+#             continue
+#         while position >= window_end:
+#             window_start += resolution
+#             window_end += resolution
+#             yield 0
+#             if window_start > end:
+#                 return
+
+#         yield 1
+#         window_start += resolution
+#         window_end += resolution
+
 def vectorisePositions(positions: List[int], resolution: int = 100, start: int = 0, end: int = None):
     if not isinstance(resolution, int) or resolution < 1:
         raise ValueError(resolution)
-    end = end or positions[-1]
-    window_start = start
-    window_end = window_start + resolution
-    for position in positions:
-        if position < window_start:
-            continue
-        while position >= window_end:
-            window_start += resolution
-            window_end += resolution
-            yield 0
-            if window_start > end:
-                return
-
-        yield 1
-        window_start += resolution
-        window_end += resolution
+    vectSize = (end-start+1)//resolution
+    vectPositions = set((pos-start)//resolution for pos in positions)
+    return (1 if i in vectPositions else 0 for i in range(vectSize))
 
 
 def blur(vector: List[int], radius: int) -> np.ndarray:

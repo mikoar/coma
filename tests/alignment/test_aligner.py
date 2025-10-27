@@ -18,7 +18,7 @@ def getSut(maxDistance=0):
     segmentsFactoryMock: AlignmentSegmentsFactory = Mock(spec=AlignmentSegmentsFactory)
     segmentsFactoryMock.getSegments = lambda positions, peak: [AlignmentSegment(positions, 300, peak, positions)]
     segmentConflictResolverMock: AlignmentSegmentConflictResolver = Mock(spec=AlignmentSegmentConflictResolver)
-    segmentConflictResolverMock.resolveConflicts = lambda segments: AlignmentSegmentsWithResolvedConflicts(segments)
+    segmentConflictResolverMock.resolveConflicts = lambda segments, queryPosistions: AlignmentSegmentsWithResolvedConflicts(segments)
     return Aligner(AlignmentPositionScorer(100, 1, 0),
                    segmentsFactoryMock,
                    AlignerEngine(maxDistance),

@@ -121,10 +121,14 @@ class AlignmentSegment:
 
     @staticmethod
     def __trimNotAlignedPositionsFromEnd(positions, end=None):
-        if positions:
-            while not isinstance(positions[-1], AlignedPair) and (
+        while positions and (not isinstance(positions[-1], AlignedPair)) and (
                     not end or not positions[-1].lessOrEqualOnAnySequence(end)):
-                positions.pop()
+            positions.pop()
+        # moze skonczyc sie pustym fragmentem - do sprawdzenia
+        # if positions:
+        #     while not isinstance(positions[-1], AlignedPair) and (
+        #             not end or not positions[-1].lessOrEqualOnAnySequence(end)):
+        #         positions.pop()
 
     def __eq__(self, other):
         return isinstance(other, AlignmentSegment) \

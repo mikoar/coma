@@ -4,13 +4,14 @@ import math
 from typing import Iterable, List
 
 from src.alignment.segments import AlignmentSegment
+from src.correlation.optical_map import PositionWithSiteId
 
 
 class SegmentChainer:
     def __init__(self, sequentialityScorer: SequentialityScorer):
         self.sequentialityScorer = sequentialityScorer
 
-    def chain(self, segments: Iterable[AlignmentSegment]):
+    def chain(self, segments: Iterable[AlignmentSegment], queryPositions: list[PositionWithSiteId]):
         def initialOrderingKey(segment: AlignmentSegment):
             return segment.startPosition.reference.position + segment.endPosition.reference.position \
                    + segment.startPosition.query.position + segment.endPosition.query.position
@@ -23,8 +24,9 @@ class SegmentChainer:
         cumulatedScore = [-math.inf] * len(preOrderedNonEmptySegments)
         previousSegmentIndexes: List[int | None] = [None] * len(preOrderedNonEmptySegments)
         bestPreviousSegmentIndex = 0
+        bestPreviousTotalScore = -math.inf
         for i, currentSegment in enumerate(preOrderedNonEmptySegments):
-            cumulatedScore[i] = 0
+            cumulatedScore[i] = self.sequentialityScorer.getStartScore(queryPositions[0], currentSegment)
             for j, previousSegment in enumerate(preOrderedNonEmptySegments[:i]):
                 currentScore = cumulatedScore[j] + self.sequentialityScorer.getScore(
                     previousSegment, currentSegment)
@@ -32,8 +34,10 @@ class SegmentChainer:
                     cumulatedScore[i] = currentScore
                     previousSegmentIndexes[i] = j
             cumulatedScore[i] += currentSegment.segmentScore
-            if cumulatedScore[i] > cumulatedScore[bestPreviousSegmentIndex]:
+            currentTotalScore = cumulatedScore[i] + self.sequentialityScorer.getEndScore(queryPositions[-1], currentSegment)
+            if currentTotalScore > bestPreviousTotalScore:
                 bestPreviousSegmentIndex = i
+                bestPreviousTotalScore = currentTotalScore
         result = [preOrderedNonEmptySegments[bestPreviousSegmentIndex]]
         while (bestPreviousSegmentIndex := previousSegmentIndexes[bestPreviousSegmentIndex]) is not None:
             result.insert(0, preOrderedNonEmptySegments[bestPreviousSegmentIndex])
@@ -41,9 +45,20 @@ class SegmentChainer:
 
 
 class SequentialityScorer:
-    def __init__(self, segmentJoinMultiplier: float, sequentialityScore: int):
+    def __init__(self, segmentJoinMultiplier: float, sequentialityScore: int, segmentBreakPenalty: int=0, secondaryMargin: int=100000):
         self.segmentJoinMultiplier = segmentJoinMultiplier
         self.sequentialityScore = sequentialityScore
+        self.segmentBreakPenalty = segmentBreakPenalty
+        self.secondaryMargin = secondaryMargin
+
+    def calcScore(self, referDist, queryDist, seqScore):
+        distSum = referDist + queryDist
+        absDistSum = abs(referDist) + abs(queryDist)
+        distDiff = referDist - queryDist
+        if seqScore == 0:
+            return (distSum ** 2 + distDiff ** 2) / max(abs(distSum), abs(distDiff), 1)
+        else:
+            return (absDistSum ** 2 + distDiff ** 2) / max(absDistSum + abs(distDiff), 1)
 
     def getScore(self, previousSegment: AlignmentSegment, currentSegment: AlignmentSegment):
         queryLength = min(abs(currentSegment.endPosition.query.position - currentSegment.startPosition.query.position),
@@ -60,13 +75,20 @@ class SequentialityScorer:
         if min(referenceLength + 2 * referenceDistance, queryLength + 2 * queryDistance) < 0:
             return -math.inf
 
-        def calcScore(referDist, queryDist, seqScore):
-            distSum = referDist + queryDist
-            absDistSum = abs(referDist) + abs(queryDist)
-            distDiff = referDist - queryDist
-            if seqScore == 0:
-                return (distSum ** 2 + distDiff ** 2) / max(abs(distSum), abs(distDiff), 1)
-            else:
-                return (absDistSum ** 2 + distDiff ** 2) / max(absDistSum + abs(distDiff), 1)
+        
+        distScore = self.calcScore(referenceDistance, queryDistance, self.sequentialityScore)
+        return - self.segmentBreakPenalty - self.segmentJoinMultiplier * distScore
 
-        return - self.segmentJoinMultiplier * calcScore(referenceDistance, queryDistance, self.sequentialityScore)
+    def getStartScore(self, queryStart: PositionWithSiteId, currentSegment: AlignmentSegment):
+        queryDistance = min(self.secondaryMargin, currentSegment.startPosition.query.position - queryStart.position)
+        assert queryDistance>=0
+        distScore = self.calcScore(0, queryDistance, self.sequentialityScore)
+        return - self.segmentBreakPenalty - self.segmentJoinMultiplier * distScore
+
+    def getEndScore(self, queryEnd: PositionWithSiteId, currentSegment: AlignmentSegment):
+        queryDistance = min(self.secondaryMargin, queryEnd.position - currentSegment.endPosition.query.position)
+        assert queryDistance>=0
+        distScore = self.calcScore(0, queryDistance, self.sequentialityScore)
+        return - self.segmentBreakPenalty - self.segmentJoinMultiplier * distScore
+
+

@@ -61,13 +61,14 @@ def read_alignments_file(alignment_file:str) -> dict:
 def read_segments_file(seg_catch_file: str) -> pd.DataFrame:
     """Function used to read csv file with molecule segments
 
-    :param seg_catch_file: Name of the COMA file with crated segments
+    :param seg_catch_file: Name of the COMA file with created segments
     :type seg_catch_file: str
-    :return: DataFrame with segments crated during COMA workflow
+    :return: DataFrame with segments created during COMA workflow
     :rtype: pd.DataFrame
     """
     df = pd.read_csv(seg_catch_file, sep=";")
     df = df.sort_values(by="queryId")
     small_df = df[~df["segmentNb"].isin([0,1])]
+    small_df = small_df[ small_df.groupby(['queryId'])['alignmentConfidence'].transform(max) == small_df['alignmentConfidence']]
     return small_df
         

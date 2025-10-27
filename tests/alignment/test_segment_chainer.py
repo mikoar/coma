@@ -6,6 +6,7 @@ from src.alignment.segment_chainer import SegmentChainer, SequentialityScorer
 from src.alignment.segments import AlignmentSegment
 from tests.test_doubles.alignment_segment_builder import AlignmentSegmentBuilder
 from tests.test_doubles.scored_aligned_pair_builder import ScoredAlignedPairBuilder
+import itertools
 
 chainer = SegmentChainer(SequentialityScorer(1., 0))
 
@@ -47,7 +48,8 @@ chainer = SegmentChainer(SequentialityScorer(1., 0))
     ], [3, 2, 1]),
 ])
 def test_chain(segments: List[AlignmentSegment], expectedOrder: List[int]):
-    chainedSegments = chainer.chain(segments)
+    qPositions = list(itertools.chain(*[s.getQueryLabels().positions for s in segments]))
+    chainedSegments = chainer.chain(segments, sorted(qPositions))
     assert chainedSegments == [s for _, s in sorted(zip(expectedOrder, segments), key=lambda x: x[0])]
 
 
@@ -69,7 +71,8 @@ def test_chain_dropsOutlyingSegment():
             .withScore(1200.)
             .build()
     ]
-    chainedSegments = chainer.chain(segments)
+    qPositions = list(itertools.chain(*[s.getQueryLabels().positions for s in segments]))
+    chainedSegments = chainer.chain(segments, sorted(qPositions))
     assert chainedSegments == [segments[0], segments[1]]
 
 
@@ -89,7 +92,8 @@ def test_chain_preservesEmptySegments():
             .withScore(0.)
             .build()
     ]
-    chainedSegments = chainer.chain(segments)
+    qPositions = list(itertools.chain(*[s.getQueryLabels().positions for s in segments]))
+    chainedSegments = chainer.chain(segments, sorted(qPositions))
     assert len(chainedSegments) == 3
 
 
@@ -99,7 +103,8 @@ def test_chain_emptySegmentsOnly():
             .withScore(0.)
             .build()
     ]
-    chainedSegments = chainer.chain(segments)
+    qPositions = list(itertools.chain(*[s.getQueryLabels().positions for s in segments]))
+    chainedSegments = chainer.chain(segments, sorted(qPositions))
     assert chainedSegments == segments
 
 
